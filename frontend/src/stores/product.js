@@ -15,10 +15,17 @@ export const useProductStore = defineStore('product', () => {
     try {
       const res = await api.get('/products', { params })
       list.value = res.data.data
+<<<<<<< HEAD
       
       // SỬA DÒNG NÀY: Trỏ đúng vào object 'meta' của Laravel Resource
       pagination.value = res.data.meta 
       
+=======
+
+      // SỬA DÒNG NÀY: Trỏ đúng vào object 'meta' của Laravel Resource
+      pagination.value = res.data.meta
+
+>>>>>>> 11a9119 (complete feature list)
     } catch (e) {
       console.error('fetchProducts error:', e)
     } finally {

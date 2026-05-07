@@ -26,10 +26,17 @@ api.interceptors.response.use(
     (error) => {
         const status = error.response?.status;
         const message = error.response?.data?.message || '';
+<<<<<<< HEAD
         
         // 401 (Hết hạn token) hoặc 403 + bị khóa thì mới đá ra
         const isLocked = status === 403 && (message.includes('khóa') || message.includes('locked'));
         
+=======
+
+        // 401 (Hết hạn token) hoặc 403 + bị khóa thì mới đá ra
+        const isLocked = status === 403 && (message.includes('khóa') || message.includes('locked'));
+
+>>>>>>> 11a9119 (complete feature list)
         if (status === 401 || isLocked) {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_user');
