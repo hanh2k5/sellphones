@@ -1,6 +1,5 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { useRouter } from 'vue-router'
 import api from '../services/api'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -41,7 +40,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Đăng ký - Chỉ gọi API, KHÔNG lưu token (redirect về /login theo báo cáo 4.2.5 STT 8)
+  // Đăng ký
   async function register(name, email, address, password, password_confirmation) {
     loading.value = true
     error.value = null

@@ -19,7 +19,7 @@
           <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.email') }}</label>
           <input v-model="form.email" type="email" placeholder="admin@sellphones.com"
             @input="errors && (errors.email = null)"
-            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300"
+            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
             :class="{'input-error': errors?.email}" />
           <p v-if="errors?.email" class="form-error-label">{{ errors.email[0] }}</p>
         </div>
@@ -28,7 +28,7 @@
           <div class="relative">
             <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="••••••••"
               @input="errors && (errors.password = null)"
-              class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300 pr-14"
+              class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400 pr-14"
               :class="{'input-error': errors?.password}" />
             
             <button type="button" @click="showPassword = !showPassword"
@@ -59,9 +59,9 @@
         </button>
       </form>
 
-      <div class="mt-10 flex justify-between items-center text-xs font-bold uppercase tracking-widest relative z-10">
-        <router-link to="/forgot-password" class="text-slate-400 hover:text-slate-900 transition-all">{{ i18nStore.t('auth.forgot_password') }}</router-link>
-        <router-link to="/register" class="text-indigo-600 hover:text-indigo-700 transition-all">{{ i18nStore.t('auth.create_account') }}</router-link>
+      <div class="mt-12 flex justify-between items-center text-[13px] font-bold uppercase tracking-widest relative z-10 auth-links">
+        <router-link to="/forgot-password" class="hover:text-blue-600 transition-all">{{ i18nStore.t('auth.forgot_password') }}</router-link>
+        <router-link to="/register" class="hover:text-blue-600 transition-all">{{ i18nStore.t('auth.create_account') }}</router-link>
       </div>
     </div>
   </div>
@@ -141,3 +141,13 @@ async function handleLogin() {
 
 onUnmounted(() => clearInterval(lockTimer))
 </script>
+
+<style scoped>
+.auth-links a {
+  color: #334155 !important; /* slate-700 */
+  text-decoration: none;
+}
+.auth-links a:hover {
+  color: #2563eb !important; /* blue-600 */
+}
+</style>

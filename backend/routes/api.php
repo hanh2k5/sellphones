@@ -2,7 +2,6 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CartController;
 use App\Http\Controllers\AuthController;
 
 /*
@@ -11,9 +10,19 @@ use App\Http\Controllers\AuthController;
 |--------------------------------------------------------------------------
 */
 
-// [4.2.5] Đăng ký tài khoản
+// [Nguyễn Duy Khang - 4.2.5] Đăng ký
 Route::post('/register', [AuthController::class, 'register']);
 
-// [4.1.1] Thêm sản phẩm vào giỏ hàng
-Route::get('/cart', [CartController::class, 'index']);
-Route::post('/cart/add', [CartController::class, 'store']);
+// [Nguyễn Duy Khang - 4.2.6] Đăng nhập
+Route::post('/login', [AuthController::class, 'login']);
+
+// Yêu cầu đăng nhập (Sanctum)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
+
+// Status endpoint
+Route::get('/status', function () { 
+    return response()->json(['status' => 'Auth Ready', 'version' => '1.0']); 
+});
