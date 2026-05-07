@@ -19,7 +19,7 @@
           <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.name') }}</label>
           <input v-model="form.name" type="text" :placeholder="i18nStore.t('auth.name')"
             @input="errors && (errors.name = null)"
-            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300"
+            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300"
             :class="{'input-error': errors?.name}" />
           <p v-if="errors?.name" class="form-error-label">{{ errors.name[0] }}</p>
         </div>
@@ -27,7 +27,7 @@
           <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.email') }}</label>
           <input v-model="form.email" type="email" placeholder="email@example.com"
             @input="errors && (errors.email = null)"
-            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300"
+            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300"
             :class="{'input-error': errors?.email}" />
           <p v-if="errors?.email" class="form-error-label">{{ errors.email[0] }}</p>
         </div>
@@ -35,7 +35,7 @@
           <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.address') }}</label>
           <input v-model="form.address" type="text" :placeholder="i18nStore.t('auth.address_placeholder')"
             @input="errors && (errors.address = null)"
-            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300"
+            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300"
             :class="{'input-error': errors?.address}" />
           <p v-if="errors?.address" class="form-error-label">{{ errors.address[0] }}</p>
         </div>
@@ -45,7 +45,7 @@
             <div class="relative">
               <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="••••••••"
                 @input="errors && (errors.password = null)"
-                class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300 pr-12"
+                class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[14px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300 pr-12"
                 :class="{'input-error': errors?.password}" />
               <button type="button" @click="showPassword = !showPassword"
                 class="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 transition-colors">
@@ -64,7 +64,7 @@
             <div class="relative">
               <input v-model="form.password_confirmation" :type="showConfirmPassword ? 'text' : 'password'" placeholder="••••••••"
                 @input="errors && (errors.password_confirmation = null)"
-                class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300 pr-12"
+                class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[14px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300 pr-12"
                 :class="{'input-error': errors?.password_confirmation}" />
               <button type="button" @click="showConfirmPassword = !showConfirmPassword"
                 class="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 transition-colors">
@@ -150,20 +150,21 @@ async function handleRegister() {
     toast.success(i18nStore.t('auth.register_success') || 'Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.')
     router.push('/login')
   } else {
-    // Nếu là lỗi validation
+    // Nếu là lỗi validation từ Backend
     if (result.errors) {
       errors.value = result.errors
+      toast.error('Vui lòng kiểm tra lại thông tin nhập liệu.')
     } else {
-      const msg = result.message || 'Lỗi đăng ký hệ thống'
-      // Đẩy vào label đỏ thay vì alert
+      // Lỗi hệ thống hoặc lỗi không xác định
+      const msg = result.message || 'Lỗi kết nối máy chủ'
+      toast.error(msg)
+      
+      // Nếu lỗi liên quan đến email thì vẫn map vào ô nhập
       if (msg.toLowerCase().includes('email')) {
         errors.value.email = [msg]
-      } else if (msg.toLowerCase().includes('name') || msg.toLowerCase().includes('tên')) {
-        errors.value.name = [msg]
-      } else {
-        errors.value.name = [msg]
       }
     }
   }
+
 }
 </script>
