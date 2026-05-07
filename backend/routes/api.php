@@ -22,6 +22,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 
+// [4.2.1] Route dành cho ADMIN
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('/admin/status', function () {
+        return response()->json(['message' => 'Chào mừng Admin! Bạn có quyền truy cập vùng này.']);
+    });
+});
+
 // Status endpoint
 Route::get('/status', function () { 
     return response()->json(['status' => 'Auth Ready', 'version' => '1.0']); 
