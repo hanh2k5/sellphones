@@ -1,0 +1,23 @@
+
+/* Global Form Error Labels - Đồng bộ theo báo cáo Sellphones */
+.form-error-label {
+  color: #d70018 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  margin-top: 4px;
+  display: block;
+  animation: error-pulse 2s infinite;
+}
+
+@keyframes error-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.input-error {
+  border-color: #fca5a5 !important;
+  background-color: #fff1f2 !important;
+  ring-color: #fecaca !important;
+}

@@ -8,10 +8,10 @@ vendor/
 !.env.example
 
 # Build files
-dist/
-public/build/
-public/hot/
-public/storage
+**/dist/
+**/public/build/
+**/public/hot/
+**/public/storage
 
 # IDEs & Editors
 .vscode/
@@ -27,24 +27,21 @@ Thumbs.db
 xdebug.log
 cachegrind.out.*
 
-
 # Logs & Caches
 *.log
 .phpunit.result.cache
 .phpunit.cache/
 .eslintcache
 .cache/
-storage/logs/*.log
-storage/framework/sessions/*
-storage/framework/views/*.php
-storage/framework/cache/data/*
+**/storage/logs/*.log
+**/storage/framework/sessions/*
+**/storage/framework/views/*.php
+**/storage/framework/cache/data/*
 
 # Other
-/backend/storage/*.key
-/backend/storage/pail
+**/storage/*.key
+**/storage/pail
 /backend/auth.json
-/frontend/dist/
-/frontend/dist-ssr/
 /frontend/coverage/
 
 # Testing
