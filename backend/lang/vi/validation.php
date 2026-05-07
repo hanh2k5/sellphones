@@ -1,0 +1,42 @@
+<?php
+
+return [
+    'required' => ':attribute không được để trống.',
+    'email' => ':attribute phải là một địa chỉ email hợp lệ.',
+    'unique' => ':attribute này đã được sử dụng.',
+    'confirmed' => 'Xác nhận :attribute không khớp.',
+    'image' => ':attribute phải là định dạng hình ảnh.',
+    'mimes' => ':attribute phải là một tập tin có định dạng: :values.',
+    'min' => [
+        'string' => ':attribute phải có ít nhất :min ký tự.',
+        'numeric' => ':attribute phải lớn hơn hoặc bằng :min.',
+    ],
+    'max' => [
+        'string' => ':attribute không được vượt quá :max ký tự.',
+        'numeric' => ':attribute không được lớn hơn :max.',
+    ],
+    'integer' => ':attribute phải là một số nguyên.',
+    'numeric' => ':attribute phải là một con số.',
+    'exists' => ':attribute được chọn không hợp lệ.',
+    'regex' => 'Định dạng :attribute không hợp lệ.',
+    'in' => ':attribute được chọn không hợp lệ.',
+    
+    'attributes' => [
+        'name' => 'Họ tên',
+        'email' => 'Địa chỉ Email',
+        'password' => 'Mật khẩu',
+        'phone' => 'Số điện thoại',
+        'address' => 'Địa chỉ',
+        'quantity' => 'Số lượng',
+        'rating' => 'Số sao',
+        'comment' => 'Bình luận',
+        'product_id' => 'ID sản phẩm',
+        'order_id' => 'ID đơn hàng',
+        'category_id' => 'ID danh mục',
+        'hinh_anh' => 'Hình ảnh',
+        'price' => 'Giá sản phẩm',
+        'stock' => 'Tồn kho',
+        'code' => 'Mã giảm giá',
+        'discount_value' => 'Giá trị giảm',
+    ],
+];
