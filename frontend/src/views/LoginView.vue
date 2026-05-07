@@ -63,7 +63,6 @@
         <router-link to="/forgot-password" class="hover:text-blue-600 transition-all">{{ i18nStore.t('auth.forgot_password') }}</router-link>
         <router-link to="/register" class="hover:text-blue-600 transition-all">{{ i18nStore.t('auth.create_account') }}</router-link>
       </div>
-
     </div>
   </div>
 </template>

@@ -19,7 +19,7 @@
           <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.name') }}</label>
           <input v-model="form.name" type="text" :placeholder="i18nStore.t('auth.name')"
             @input="errors && (errors.name = null)"
-            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300"
+            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
             :class="{'input-error': errors?.name}" />
           <p v-if="errors?.name" class="form-error-label">{{ errors.name[0] }}</p>
         </div>
@@ -27,7 +27,7 @@
           <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.email') }}</label>
           <input v-model="form.email" type="email" placeholder="email@example.com"
             @input="errors && (errors.email = null)"
-            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300"
+            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
             :class="{'input-error': errors?.email}" />
           <p v-if="errors?.email" class="form-error-label">{{ errors.email[0] }}</p>
         </div>
@@ -35,7 +35,7 @@
           <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.address') }}</label>
           <input v-model="form.address" type="text" :placeholder="i18nStore.t('auth.address_placeholder')"
             @input="errors && (errors.address = null)"
-            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300"
+            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
             :class="{'input-error': errors?.address}" />
           <p v-if="errors?.address" class="form-error-label">{{ errors.address[0] }}</p>
         </div>
@@ -45,7 +45,7 @@
             <div class="relative">
               <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="••••••••"
                 @input="errors && (errors.password = null)"
-                class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[14px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300 pr-12"
+                class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[14px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400 pr-12"
                 :class="{'input-error': errors?.password}" />
               <button type="button" @click="showPassword = !showPassword"
                 class="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 transition-colors">
@@ -64,7 +64,7 @@
             <div class="relative">
               <input v-model="form.password_confirmation" :type="showConfirmPassword ? 'text' : 'password'" placeholder="••••••••"
                 @input="errors && (errors.password_confirmation = null)"
-                class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[14px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300 pr-12"
+                class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[14px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400 pr-12"
                 :class="{'input-error': errors?.password_confirmation}" />
               <button type="button" @click="showConfirmPassword = !showConfirmPassword"
                 class="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 transition-colors">
@@ -89,9 +89,11 @@
         </button>
       </form>
 
-      <div class="mt-10 text-center text-xs font-bold uppercase tracking-widest relative z-10">
-        <span class="text-slate-400">{{ i18nStore.t('auth.already_have_account') }} </span>
-        <router-link to="/login" class="text-indigo-600 hover:text-indigo-700 transition-all ml-1">{{ i18nStore.t('auth.login_now') }}</router-link>
+      <div class="mt-10 text-center text-xs font-bold uppercase tracking-widest relative z-10 auth-links">
+        <span class="text-slate-500">{{ i18nStore.t('auth.already_have_account') }} </span>
+        <router-link to="/login" class="hover:text-blue-600 transition-all ml-1">
+          {{ i18nStore.t('auth.login_now') }}
+        </router-link>
       </div>
     </div>
   </div>
@@ -156,15 +158,28 @@ async function handleRegister() {
       toast.error('Vui lòng kiểm tra lại thông tin nhập liệu.')
     } else {
       // Lỗi hệ thống hoặc lỗi không xác định
-      const msg = result.message || 'Lỗi kết nối máy chủ'
+      const msg = result.message || 'Lỗi đăng ký hệ thống'
       toast.error(msg)
       
-      // Nếu lỗi liên quan đến email thì vẫn map vào ô nhập
       if (msg.toLowerCase().includes('email')) {
         errors.value.email = [msg]
+      } else if (msg.toLowerCase().includes('name') || msg.toLowerCase().includes('tên')) {
+        errors.value.name = [msg]
+      } else {
+        errors.value.name = [msg]
       }
     }
   }
-
 }
 </script>
+
+<style scoped>
+.auth-links a {
+  color: #334155 !important; /* slate-700 */
+  text-decoration: none;
+  font-weight: 800;
+}
+.auth-links a:hover {
+  color: #2563eb !important; /* blue-600 */
+}
+</style>
