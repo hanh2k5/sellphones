@@ -37,9 +37,12 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    // --- CART (Tính năng thêm mới) ---
+    // --- CART (Phan Đình Hạnh - 4.1.1 -> 4.1.3) ---
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart', [CartController::class, 'store']);
+    Route::put('/cart/{id}', [CartController::class, 'update']);
+    Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+    Route::delete('/cart', [CartController::class, 'clear']);
 });
 
 // Status endpoint
