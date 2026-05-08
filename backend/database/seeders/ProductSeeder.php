@@ -64,7 +64,7 @@ class ProductSeeder extends Seeder
 
             // CATERGORY 2: SAMSUNG
             [
-                'name' => 'Samsung Galaxy S24 Ultra 256GB',
+                'name' => 'Samsung S24 Ultra 256GB',
                 'price' => 28000000,
                 'hinh_anh' => 'http://localhost/storage/iphone15.jpg',
                 'category_id' => 2,
