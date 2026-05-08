@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CartController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,10 @@ Route::middleware('auth:sanctum')->group(function () {
             return response()->json(['message' => 'Chào mừng Admin!']);
         });
     });
+
+    // --- CART (Tính năng thêm mới) ---
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart', [CartController::class, 'store']);
 });
 
 // Status endpoint

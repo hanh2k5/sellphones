@@ -39,20 +39,29 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
+import { useCartStore } from './stores/cart'
 import { useToast } from './composables/useToast'
 
 import ToastManager from './components/ToastManager.vue'
 import AppBackground from './components/layout/AppBackground.vue'
 import AppNavbar from './components/layout/AppNavbar.vue'
 import AppFooter from './components/layout/AppFooter.vue'
+import { onMounted } from 'vue'
 
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
 
 const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 const searchQuery = ref('')
+
+onMounted(() => {
+  if (authStore.isLoggedIn) {
+    cartStore.fetchCart()
+  }
+})
 
 function doSearch() {
   if (!searchQuery.value.trim()) return
