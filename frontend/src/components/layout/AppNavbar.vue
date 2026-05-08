@@ -45,6 +45,17 @@
           <span class="lang-code">{{ i18n.locale.toUpperCase() }}</span>
         </button>
 
+        <!-- Cart Indicator (Thêm mới) -->
+        <div v-if="isLoggedIn" class="cart-nav-indicator">
+          <router-link to="/cart" class="cart-icon-btn">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+              <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.56-7.43H5.12"/>
+            </svg>
+            <span v-if="cartStore.totalItems > 0" class="cart-badge">{{ cartStore.totalItems }}</span>
+          </router-link>
+        </div>
+
         <!-- User Dropdown -->
         <div v-if="isLoggedIn" class="user-dropdown-wrap">
           <button class="user-btn">
@@ -67,6 +78,7 @@
 
 <script setup>
 import { useI18nStore } from '../../stores/i18n'
+import { useCartStore } from '../../stores/cart'
 
 defineProps({
   searchQuery: String,
@@ -78,6 +90,7 @@ defineProps({
 defineEmits(['update:searchQuery', 'do-search', 'logout'])
 
 const i18n = useI18nStore()
+const cartStore = useCartStore()
 </script>
 
 <style scoped>
@@ -103,6 +116,21 @@ const i18n = useI18nStore()
 .search-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: transparent; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #86868b; cursor: pointer; }
 
 .nav-right { display: flex; align-items: center; gap: 20px; flex: 1; justify-content: flex-end; }
+
+.cart-nav-indicator { position: relative; }
+.cart-icon-btn { 
+  display: flex; align-items: center; justify-content: center; 
+  color: #1d1d1f; transition: 0.2s; position: relative;
+  width: 40px; height: 40px; border-radius: 50%;
+}
+.cart-icon-btn:hover { background: rgba(0,0,0,0.05); }
+.cart-badge {
+  position: absolute; top: 4px; right: 4px;
+  background: #ff3b30; color: #fff; font-size: 10px; font-weight: 800;
+  min-width: 18px; height: 18px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px; border: 2px solid #fff;
+}
 
 .lang-switcher-btn {
   display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.05);
