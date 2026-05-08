@@ -11,11 +11,11 @@ use App\Http\Controllers\ProductController;
 |--------------------------------------------------------------------------
 */
 
-// --- AUTHENTICATION (Khang's 4 features) ---
+// --- AUTHENTICATION (Bảo mật 4 tính năng của Khang) ---
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// --- ONLY PRODUCT DISPLAY (Ha's simplified feature) ---
+// --- ONLY PRODUCT DISPLAY (Tính năng của Hà) ---
 Route::get('/products', [ProductController::class, 'index']);
 
 // --- PROTECTED ROUTES ---
@@ -23,7 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Admin status check (Khang's RBAC)
+    // Route dành riêng cho Admin (Khang's RBAC)
     Route::middleware('admin')->prefix('admin')->group(function () {
         Route::get('/status', function () {
             return response()->json(['message' => 'Chào mừng Admin!']);

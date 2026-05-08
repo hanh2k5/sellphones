@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -83,41 +83,6 @@ class AuthService
         ];
     }
 
-    /**
-     * [Nguyễn Duy Khang - 4.2.1] Thêm mới người dùng (Admin thao tác)
-     */
-    public function createUser(array $data)
-    {
-        return User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-            'phone'    => $data['phone'] ?? null,
-            'address'  => $data['address'] ?? null,
-            'role'     => $data['role'] ?? 'user',
-            'is_active'=> true,
-        ]);
-    }
-
-    /**
-     * [Nguyễn Duy Khang - 4.2.2] Cập nhật thông tin người dùng (Admin)
-     */
-    public function updateUser(User $user, array $data)
-    {
-        if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
-        } else {
-            unset($data['password']);
-        }
-        $user->update($data);
-        return $user;
-    }
-
-    public function getAllUsers()
-    {
-        return User::orderBy('created_at', 'desc')->paginate(10);
-    }
-
     public function lockUser(User $user)
     {
         if ($user->role === 'admin') {
@@ -131,13 +96,5 @@ class AuthService
     {
         $user->update(['is_active' => true, 'login_attempts' => 0, 'locked_until' => null]);
         return $user;
-    }
-
-    public function deleteUser(User $user)
-    {
-        if ($user->role === 'admin') {
-            throw new Exception('Không thể xóa tài khoản quản trị viên.', 422);
-        }
-        return $user->delete();
     }
 }

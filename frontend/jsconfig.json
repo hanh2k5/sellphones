@@ -1,24 +1,9 @@
-<<<<<<< HEAD
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
   "exclude": ["node_modules", "dist"]
 }
-=======
-{
-  "compilerOptions": {
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    }
-  },
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
-}
->>>>>>> 11a9119 (complete feature list)
