@@ -6,7 +6,6 @@ const router = createRouter({
   routes: [
     // Public
     { path: '/', name: 'home', component: () => import('../views/HomeView.vue') },
-    { path: '/products', name: 'products', component: () => import('../views/HomeView.vue') }, // Tạm thời dùng HomeView nếu file khác chưa sẵn sàng
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { guestOnly: true } },
     { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue'), meta: { guestOnly: true } },
 
