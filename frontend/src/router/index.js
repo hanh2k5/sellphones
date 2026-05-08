@@ -12,6 +12,7 @@ const router = createRouter({
     { path: '/products/:id', name: 'product-detail', component: () => import('../views/ProductDetailView.vue') },
     { path: '/cart', name: 'cart', component: () => import('../views/CartView.vue'), meta: { requiresAuth: true } },
     { path: '/checkout', name: 'checkout', component: () => import('../views/CheckoutView.vue'), meta: { requiresAuth: true } },
+    { path: '/orders', name: 'orders', component: () => import('../views/OrderListView.vue'), meta: { requiresAuth: true } },
 
     // Auth required
     { path: '/profile', name: 'profile', component: () => import('../views/HomeView.vue'), meta: { requiresAuth: true } },
