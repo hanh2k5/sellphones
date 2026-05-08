@@ -1,9 +1,13 @@
 <template>
   <div class="product-card-wrap reveal-item">
     <article
-      class="premium-card static-card"
+      class="premium-card"
       tabindex="0"
+      role="link"
       :aria-label="product.name"
+      @click="goToDetail"
+      @keydown.enter.prevent="goToDetail"
+      @keydown.space.prevent="goToDetail"
     >
       <!-- Image Box: Exactly 180px, 1:1 ratio -->
       <div class="premium-card-img-box">
@@ -12,38 +16,34 @@
           :alt="product.name"
           @error="onImgError"
         />
-        <!-- Out of stock badge -->
-        <div v-if="product.stock <= 0" class="out-of-stock-badge">
-          {{ i18n.locale === 'vi' ? 'HẾT HÀNG' : 'OUT OF STOCK' }}
-        </div>
       </div>
 
       <div class="card-body-inner">
         <h2 class="premium-card-title">{{ product.name }}</h2>
         <p class="premium-card-price">{{ i18n.t('product.from_price') }} {{ fmtPrice(product.price) }}</p>
 
-        <!-- Action Row: Add to Cart -->
         <div class="premium-action-row">
-          <button 
-            @click.stop="handleAddToCart" 
-            class="btn-add-cart-minimal"
-            :class="{ 'is-loading': isAdding, 'is-out-of-stock': product.stock <= 0 }"
-            :disabled="isAdding || product.stock <= 0"
+          <!-- Nút Mua ngay (Chính) -->
+          <button
+            class="btn-custom-buy"
+            @click.stop="handleBuyNow"
+            :disabled="isAdding || isBuying"
           >
-            <template v-if="product.stock <= 0">
-              <span>{{ i18n.locale === 'vi' ? 'Hết hàng' : 'Out of stock' }}</span>
-            </template>
-            <template v-else-if="isAdding">
-              <span class="spinner-tiny"></span>
-            </template>
-            <template v-else>
-              <svg class="cart-plus-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.56-7.43H5.12"/>
-                <line x1="12" y1="9" x2="16" y2="9"/><line x1="14" y1="7" x2="14" y2="11"/>
-              </svg>
-              <span>{{ i18n.t('product.add_to_cart') || 'Thêm vào giỏ' }}</span>
-            </template>
+            <span v-if="isBuying" class="spin-dot"></span>
+            <span v-else>{{ i18n.t('home.shop_now') }}</span>
+          </button>
+
+          <!-- Nút Thêm vào giỏ (Phụ - Icon) -->
+          <button 
+            class="btn-custom-add" 
+            @click.stop="handleAddToCart" 
+            :disabled="isAdding || isBuying"
+            :title="i18n.t('product.add_to_cart')"
+          >
+            <span v-if="isAdding" class="spin-dot-dark"></span>
+            <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
           </button>
         </div>
       </div>
@@ -52,29 +52,50 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useCartStore } from '../stores/cart'
 import { useI18nStore } from '../stores/i18n'
 import { useUtils } from '../composables/useUtils'
-import { useCartStore } from '../stores/cart'
 import { useToast } from '../composables/useToast'
-import { ref } from 'vue'
 
 const { fmtPrice, getImageUrl } = useUtils()
 const props = defineProps({ product: { type: Object, required: true } })
-const i18n = useI18nStore()
 const cartStore = useCartStore()
+const i18n = useI18nStore()
+const router = useRouter()
 const toast = useToast()
 
 const isAdding = ref(false)
+const isBuying = ref(false)
+
+function goToDetail() {
+  router.push(`/products/${props.product.id}`)
+}
 
 async function handleAddToCart() {
+  if (props.product.stock <= 0) {
+    toast.error(i18n.t('product.out_of_stock'))
+    return
+  }
   isAdding.value = true
-  try {
-    await cartStore.addToCart(props.product.id)
-    toast.success('Đã thêm vào giỏ hàng!')
-  } catch (err) {
-    toast.error(err.message || 'Lỗi khi thêm vào giỏ')
-  } finally {
-    isAdding.value = false
+  const res = await cartStore.addToCart(props.product.id, 1)
+  isAdding.value = false
+  if (res.success) {
+    toast.success(i18n.t('common.cart_add_success'))
+  }
+}
+
+async function handleBuyNow() {
+  if (props.product.stock <= 0) {
+    toast.error(i18n.t('product.out_of_stock'))
+    return
+  }
+  isBuying.value = true
+  const res = await cartStore.addToCart(props.product.id, 1)
+  isBuying.value = false
+  if (res.success) {
+    router.push('/cart')
   }
 }
 
@@ -95,8 +116,13 @@ function onImgError(e) {
   background: #ffffff; border-radius: 24px;
   padding: 16px; border: 1px solid rgba(0, 0, 0, 0.04);
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  display: flex; flex-direction: column;
+  cursor: pointer; display: flex; flex-direction: column;
   height: 100%; position: relative; overflow: hidden;
+}
+.premium-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
 }
 
 /* Image Presentation */
@@ -106,17 +132,13 @@ function onImgError(e) {
   background: #fff; border-radius: 14px;
   padding: 8px; transition: 0.5s;
 }
+.premium-card:hover .premium-card-img-box img {
+  transform: scale(1.1);
+}
 .premium-card-img-box img {
   max-width: 100%; max-height: 100%;
   object-fit: contain; transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   filter: drop-shadow(0 10px 20px rgba(0,0,0,0.05));
-}
-
-.out-of-stock-badge {
-  position: absolute; top: 12px; right: 12px;
-  background: rgba(30, 41, 59, 0.9); color: #fff;
-  padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800;
-  backdrop-filter: blur(4px);
 }
 
 .card-body-inner { flex: 1; display: flex; flex-direction: column; }
@@ -132,38 +154,37 @@ function onImgError(e) {
 
 .premium-card-price {
   color: #3b82f6; font-weight: 800; font-size: 19px;
-  margin-bottom: 12px; text-align: left;
+  margin-bottom: 18px; text-align: left;
 }
 
-.premium-action-row { margin-top: auto; opacity: 0; transform: translateY(10px); transition: 0.3s; }
-.premium-card:hover .premium-action-row { opacity: 1; transform: translateY(0); }
+.premium-action-row { display: flex; align-items: center; gap: 10px; }
 
-.btn-add-cart-minimal {
-  width: 100%; padding: 12px; border-radius: 14px;
-  background: #1e293b; color: #fff; border: none;
-  font-weight: 700; font-size: 13px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: all 0.2s;
+.btn-custom-buy {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff; font-weight: 700; border-radius: 14px;
+  height: 48px; font-size: 13px; text-transform: uppercase;
+  letter-spacing: 0.05em; border: none; cursor: pointer; flex: 1;
+  transition: 0.3s;
 }
-.btn-add-cart-minimal:hover { background: #0f172a; transform: scale(1.02); }
-.btn-add-cart-minimal:active { transform: scale(0.98); }
-.btn-add-cart-minimal:disabled { background: #94a3b8; cursor: not-allowed; }
-.btn-add-cart-minimal.is-out-of-stock { background: #e2e8f0; color: #94a3b8; }
-
-.spinner-tiny {
-  width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: #fff; border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+.btn-custom-buy:hover:not(:disabled) {
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+  transform: translateY(-2px);
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+.btn-custom-add {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: #f1f5f9; color: #475569;
+  border: none; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: 0.3s;
+}
+.btn-custom-add:hover { background: #e2e8f0; color: #1e293b; }
 
 @media (max-width: 768px) {
   .premium-card { border-radius: 20px; padding: 12px; }
   .premium-card-img-box { height: 160px; }
   .premium-card-title { font-size: 14px; height: 36px; }
-  .premium-card-price { font-size: 16px; margin-bottom: 8px; }
-  .premium-action-row { opacity: 1; transform: none; }
-  .btn-add-cart-minimal { padding: 8px; font-size: 11px; border-radius: 10px; }
+  .premium-card-price { font-size: 16px; }
+  .btn-custom-buy, .btn-custom-add { height: 40px; }
+  .btn-custom-add { width: 40px; }
 }
 </style>
