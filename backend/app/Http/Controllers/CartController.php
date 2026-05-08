@@ -23,10 +23,24 @@ class CartController extends Controller
         $productId = $request->product_id;
         $quantity = $request->quantity ?? 1;
 
+        // Lấy thông tin sản phẩm và tồn kho thực tế
+        $product = Product::findOrFail($productId);
+
         // Kiểm tra xem sản phẩm đã có trong giỏ chưa
         $cartItem = CartItem::where('user_id', $user->id)
             ->where('product_id', $productId)
             ->first();
+
+        $currentQtyInCart = $cartItem ? $cartItem->quantity : 0;
+        $totalRequestedQty = $currentQtyInCart + $quantity;
+
+        // RÀNG BUỘC: Kiểm tra tồn kho thực tế
+        if ($totalRequestedQty > $product->stock) {
+            return response()->json([
+                'success' => false,
+                'message' => "Rất tiếc, sản phẩm này chỉ còn {$product->stock} sản phẩm trong kho. Bạn đã có {$currentQtyInCart} trong giỏ.",
+            ], 422);
+        }
 
         if ($cartItem) {
             // Đã có -> Tăng số lượng
