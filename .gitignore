@@ -15,6 +15,7 @@
 /backend/public/hot/
 /backend/public/storage
 /backend/storage/*.key
+frontend/.vite/
 
 # IDEs & Editors
 .vscode/

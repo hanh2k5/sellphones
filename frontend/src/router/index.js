@@ -11,6 +11,7 @@ const router = createRouter({
     { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue'), meta: { guestOnly: true } },
     { path: '/products/:id', name: 'product-detail', component: () => import('../views/ProductDetailView.vue') },
     { path: '/cart', name: 'cart', component: () => import('../views/CartView.vue'), meta: { requiresAuth: true } },
+    { path: '/checkout', name: 'checkout', component: () => import('../views/CheckoutView.vue'), meta: { requiresAuth: true } },
 
     // Auth required
     { path: '/profile', name: 'profile', component: () => import('../views/HomeView.vue'), meta: { requiresAuth: true } },
