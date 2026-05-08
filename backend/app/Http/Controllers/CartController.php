@@ -3,77 +3,89 @@
 namespace App\Http\Controllers;
 
 use App\Models\CartItem;
-use App\Models\Product;
+use App\Services\CartService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
+/**
+ * SV THỰC HIỆN: PHAN ĐÌNH HẠNH
+ * MỤC: 4.1.1 -> 4.1.3 (GIỎ HÀNG)
+ */
 class CartController extends Controller
 {
+    protected $cartService;
+
+    public function __construct(CartService $cartService)
+    {
+        $this->cartService = $cartService;
+    }
+
+    public function index(Request $request)
+    {
+        $items = CartItem::where('user_id', $request->user()->id)
+            ->with('product')
+            ->get();
+            
+        $totalAmount = $items->sum(fn($item) => $item->product->price * $item->quantity);
+        $totalQuantity = $items->sum('quantity');
+
+        return response()->json([
+            'items'          => $items,
+            'total_amount'   => $totalAmount,
+            'total_quantity' => $totalQuantity
+        ]);
+    }
+
     /**
-     * Thêm sản phẩm vào giỏ hàng
+     * [Phan Đình Hạnh - 4.1.1] Thêm sản phẩm vào giỏ hàng
+     * [Phan Đình Hạnh - 4.1.2] Ràng buộc: Kiểm tra tồn kho thực tế
      */
     public function store(Request $request)
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity' => 'nullable|integer|min:1'
+            'quantity'   => 'required|integer|min:1',
         ]);
 
-        $user = Auth::user();
-        $productId = $request->product_id;
-        $quantity = $request->quantity ?? 1;
-
-        // Lấy thông tin sản phẩm và tồn kho thực tế
-        $product = Product::findOrFail($productId);
-
-        // Kiểm tra xem sản phẩm đã có trong giỏ chưa
-        $cartItem = CartItem::where('user_id', $user->id)
-            ->where('product_id', $productId)
-            ->first();
-
-        $currentQtyInCart = $cartItem ? $cartItem->quantity : 0;
-        $totalRequestedQty = $currentQtyInCart + $quantity;
-
-        // RÀNG BUỘC: Kiểm tra tồn kho thực tế
-        if ($totalRequestedQty > $product->stock) {
-            return response()->json([
-                'success' => false,
-                'message' => "Rất tiếc, sản phẩm này chỉ còn {$product->stock} sản phẩm trong kho. Bạn đã có {$currentQtyInCart} trong giỏ.",
-            ], 422);
-        }
-
-        if ($cartItem) {
-            // Đã có -> Tăng số lượng
-            $cartItem->increment('quantity', $quantity);
-        } else {
-            // Chưa có -> Tạo mới
-            $cartItem = CartItem::create([
-                'user_id' => $user->id,
-                'product_id' => $productId,
-                'quantity' => $quantity
-            ]);
-        }
+        $item = $this->cartService->addToCart(
+            $request->user()->id, 
+            $request->product_id, 
+            $request->quantity
+        );
 
         return response()->json([
-            'success' => true,
-            'message' => 'Đã thêm vào giỏ hàng',
-            'data' => $cartItem
+            'message' => 'Đã thêm vào giỏ hàng!',
+            'item'    => $item->load('product'),
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate(['quantity' => 'required|integer|min:1']);
+
+        $item = $this->cartService->updateQuantity(
+            $request->user()->id, 
+            $id, 
+            $request->quantity
+        );
+
+        return response()->json([
+            'message' => 'Đã cập nhật số lượng!',
+            'item'    => $item->load('product'),
         ]);
     }
 
     /**
-     * Lấy danh sách giỏ hàng (Để hiện số lượng ở Navbar)
+     * [Phan Đình Hạnh - 4.1.3] Xóa sản phẩm khỏi giỏ hàng
      */
-    public function index()
+    public function destroy(Request $request, $id)
     {
-        $items = CartItem::where('user_id', Auth::id())
-            ->with('product')
-            ->get();
-            
-        return response()->json([
-            'success' => true,
-            'data' => $items,
-            'total_items' => $items->sum('quantity')
-        ]);
+        $this->cartService->removeItem($request->user()->id, $id);
+        return response()->json(['message' => 'Đã xóa sản phẩm khỏi giỏ hàng.']);
+    }
+
+    public function clear(Request $request)
+    {
+        $this->cartService->clearCart($request->user()->id);
+        return response()->json(['message' => 'Đã làm trống giỏ hàng.']);
     }
 }
