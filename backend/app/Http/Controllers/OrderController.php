@@ -42,13 +42,18 @@ class OrderController extends Controller
 
     /**
      * [Phan Đình Hạnh - 4.1.4] Đặt hàng (Checkout)
-     * Phần này sẽ được kích hoạt hoàn chỉnh ở bước "Tạo đơn hàng mới".
      */
     public function store(StoreOrderRequest $request)
     {
-        return response()->json([
-            'message' => 'Giao diện Checkout đã sẵn sàng. Hãy yêu cầu tính năng "Tạo đơn hàng mới" để kích hoạt logic lưu dữ liệu!'
-        ], 202); // Accepted but not processed
+        try {
+            $order = $this->orderService->createOrder($request->validated(), $request->user());
+            return response()->json([
+                'order' => (new OrderResource($order))->resolve(),
+                'message' => 'Đặt hàng thành công!'
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 500);
+        }
     }
 
     public function show(Request $request, Order $order)
