@@ -12,6 +12,10 @@
           :alt="product.name"
           @error="onImgError"
         />
+        <!-- Out of stock badge -->
+        <div v-if="product.stock <= 0" class="out-of-stock-badge">
+          {{ i18n.locale === 'vi' ? 'HẾT HÀNG' : 'OUT OF STOCK' }}
+        </div>
       </div>
 
       <div class="card-body-inner">
@@ -23,10 +27,13 @@
           <button 
             @click.stop="handleAddToCart" 
             class="btn-add-cart-minimal"
-            :class="{ 'is-loading': isAdding }"
-            :disabled="isAdding"
+            :class="{ 'is-loading': isAdding, 'is-out-of-stock': product.stock <= 0 }"
+            :disabled="isAdding || product.stock <= 0"
           >
-            <template v-if="isAdding">
+            <template v-if="product.stock <= 0">
+              <span>{{ i18n.locale === 'vi' ? 'Hết hàng' : 'Out of stock' }}</span>
+            </template>
+            <template v-else-if="isAdding">
               <span class="spinner-tiny"></span>
             </template>
             <template v-else>
@@ -105,6 +112,13 @@ function onImgError(e) {
   filter: drop-shadow(0 10px 20px rgba(0,0,0,0.05));
 }
 
+.out-of-stock-badge {
+  position: absolute; top: 12px; right: 12px;
+  background: rgba(30, 41, 59, 0.9); color: #fff;
+  padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800;
+  backdrop-filter: blur(4px);
+}
+
 .card-body-inner { flex: 1; display: flex; flex-direction: column; }
 
 .premium-card-title {
@@ -134,6 +148,7 @@ function onImgError(e) {
 .btn-add-cart-minimal:hover { background: #0f172a; transform: scale(1.02); }
 .btn-add-cart-minimal:active { transform: scale(0.98); }
 .btn-add-cart-minimal:disabled { background: #94a3b8; cursor: not-allowed; }
+.btn-add-cart-minimal.is-out-of-stock { background: #e2e8f0; color: #94a3b8; }
 
 .spinner-tiny {
   width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
