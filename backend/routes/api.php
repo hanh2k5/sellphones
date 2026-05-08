@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +20,10 @@ Route::post('/login', [AuthController::class, 'login']);
 // --- ONLY PRODUCT DISPLAY (Tính năng của Hà) ---
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
+
+// --- CATEGORIES (Tính năng của Hà) ---
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/categories/flat', [CategoryController::class, 'flat']);
 
 // --- PROTECTED ROUTES ---
 Route::middleware('auth:sanctum')->group(function () {

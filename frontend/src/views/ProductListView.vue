@@ -10,7 +10,17 @@
     <div class="compact-filter-bar mb-8 reveal-item">
       <div class="filter-main-row">
         <div class="category-pills">
+          <button @click="resetCategory" class="pill-modern" :class="{ active: !currentCatId }">
+            {{ i18n.locale === 'vi' ? 'Tất cả' : 'All' }}
+          </button>
+          <button v-for="cat in categories" :key="cat.id"
+            @click="setCategory(cat.id)"
+            class="pill-modern" :class="{ active: isParentActive(cat) }">
+            {{ i18n.transName(cat.name) }}
+          </button>
         </div>
+
+        <div class="filter-divider-v"></div>
 
         <div class="utility-row">
           <select v-model="sortBy" @change="doFetch" class="select-minimal">
@@ -23,6 +33,18 @@
           </button>
         </div>
       </div>
+
+      <Transition name="slide-down-fade">
+        <div v-if="activeSubCategories.length" class="sub-category-row pt-3 mt-3 border-t border-slate-100">
+          <div class="category-pills-sm">
+            <button v-for="sub in activeSubCategories" :key="sub.id"
+              @click="setCategory(sub.id)"
+              class="pill-modern-sm" :class="{ active: currentCatId == sub.id }">
+              {{ i18n.transName(sub.name) }}
+            </button>
+          </div>
+        </div>
+      </Transition>
 
       <div class="price-filter-row mt-4 pt-3 border-t border-slate-100">
         <div class="price-pills">
@@ -50,7 +72,7 @@
     </div>
 
     <template v-else>
-      <section v-if="featuredProducts.length && !route.query.search" class="featured-section mb-10 reveal-item">
+      <section v-if="featuredProducts.length && !route.query.search && !route.query.category" class="featured-section mb-10 reveal-item">
         <div class="section-header mb-6">
           <h2 class="section-title">✨ {{ i18n.t('home.featured_products') || 'Sản phẩm nổi bật' }}</h2>
           <div class="section-line"></div>
@@ -110,6 +132,55 @@ const sortBy = ref('')
 const giaTu = ref('')
 const giaDen = ref('')
 const featuredProducts = ref([])
+const categories = ref([])
+
+const currentCatId = computed(() => route.query.category)
+
+const activeParentId = computed(() => {
+  if (!currentCatId.value) return null
+  const cat = findCategoryRecursive(categories.value, currentCatId.value)
+  if (!cat) return null
+  return cat.parent_id || cat.id
+})
+
+const activeSubCategories = computed(() => {
+  if (!activeParentId.value) return []
+  const parent = categories.value.find(c => c.id == activeParentId.value)
+  return parent?.children || []
+})
+
+function findCategoryRecursive(list, id) {
+  for (const c of list) {
+    if (c.id == id) return c
+    if (c.children?.length) {
+      const found = findCategoryRecursive(c.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+function isParentActive(parent) {
+  if (currentCatId.value == parent.id) return true
+  return parent.children?.some(c => c.id == currentCatId.value)
+}
+
+function setCategory(id) {
+  router.push({ path: '/products', query: { ...route.query, category: id } })
+}
+
+function resetCategory() {
+  router.push({ path: '/products', query: { ...route.query, category: undefined } })
+}
+
+async function fetchCategories() {
+  try {
+    const res = await api.get('/categories')
+    categories.value = res.data.data || res.data
+  } catch (e) {
+    console.error('Lỗi tải danh mục:', e)
+  }
+}
 
 async function fetchFeatured() {
   try {
@@ -144,11 +215,12 @@ function initReveal() {
 
 onMounted(() => { 
   doFetch()
+  fetchCategories()
   fetchFeatured()
   nextTick(initReveal) 
 })
 
-watch(() => [route.query.search], () => { doFetch() })
+watch(() => [route.query.category, route.query.search], () => { doFetch() })
 
 function setPriceRange(range) { 
   currentRangeVal.value = range.val; 
@@ -158,10 +230,12 @@ function setPriceRange(range) {
 }
 
 async function doFetch(page = 1) {
+  const category_id = route.query.category || undefined
   const search = route.query.search || undefined
 
   await productStore.fetchProducts({ 
     page, 
+    category_id,
     search,
     gia_tu: giaTu.value || undefined, 
     gia_den: giaDen.value || undefined, 
@@ -201,6 +275,7 @@ function goPage(page) {
   max-width: 1100px; margin: 0 auto 20px; 
 }
 .filter-main-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.filter-divider-v { width: 1px; height: 24px; background: #e2e8f0; margin: 0 10px; }
 .utility-row { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .select-minimal {
   appearance: none; background: #fff; border: 1px solid #e2e8f0;
@@ -214,6 +289,30 @@ function goPage(page) {
   background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
   color: #94a3b8; cursor: pointer; transition: 0.2s;
 }
+
+.category-pills { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.category-pills::-webkit-scrollbar { display: none; }
+
+.pill-modern {
+  padding: 9px 18px; border-radius: 12px; font-size: 13.5px; font-weight: 600;
+  color: #475569; background: #f8fafc; border: 1px solid #f1f5f9;
+  cursor: pointer; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;
+}
+.pill-modern:hover { background: #f1f5f9; border-color: #e2e8f0; color: #1e293b; }
+.pill-modern.active { background: #1e293b; color: #fff; border-color: #1e293b; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+.sub-category-row { display: flex; overflow-x: auto; scrollbar-width: none; }
+.category-pills-sm { display: flex; gap: 8px; }
+.pill-modern-sm {
+  padding: 7px 15px; border-radius: 10px; font-size: 12.5px; font-weight: 600;
+  color: #64748b; background: #fff; border: 1px solid #e2e8f0;
+  cursor: pointer; transition: 0.2s; white-space: nowrap;
+}
+.pill-modern-sm.active { background: #eff6ff; border-color: #3b82f6; color: #2563eb; }
+
+/* Transitions */
+.slide-down-fade-enter-active, .slide-down-fade-leave-active { transition: all 0.3s ease-out; max-height: 100px; opacity: 1; }
+.slide-down-fade-enter-from, .slide-down-fade-leave-to { max-height: 0; opacity: 0; transform: translateY(-10px); margin-top: 0; padding-top: 0; }
 
 .price-pills { display: flex; gap: 8px; flex-wrap: wrap; }
 .pill-tag-minimal {
