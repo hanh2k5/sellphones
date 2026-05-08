@@ -1,6 +1,8 @@
 # Dependencies
-node_modules/
-vendor/
+/backend/vendor/
+/frontend/node_modules/
+.pnp
+.pnp.js
 
 # Environment
 .env
@@ -8,10 +10,11 @@ vendor/
 !.env.example
 
 # Build files
-**/dist/
-**/public/build/
-**/public/hot/
-**/public/storage
+/frontend/dist/
+/backend/public/build/
+/backend/public/hot/
+/backend/public/storage
+/backend/storage/*.key
 
 # IDEs & Editors
 .vscode/
@@ -33,19 +36,20 @@ cachegrind.out.*
 .phpunit.cache/
 .eslintcache
 .cache/
-**/storage/logs/*.log
-**/storage/framework/sessions/*
-**/storage/framework/views/*.php
-**/storage/framework/cache/data/*
+/backend/storage/logs/*.log
+/backend/storage/framework/sessions/*
+/backend/storage/framework/views/*.php
+/backend/storage/framework/cache/data/*
 
 # Other
-**/storage/*.key
-**/storage/pail
 /backend/auth.json
 /frontend/coverage/
+/backend/npm-debug.log*
+/backend/yarn-debug.log*
+/backend/yarn-error.log*
 
 # Testing
-TestResults.xml
-/cypress/videos/
-/cypress/screenshots/
-__screenshots__/
+/frontend/TestResults.xml
+/frontend/cypress/videos/
+/frontend/cypress/screenshots/
+/frontend/__screenshots__/

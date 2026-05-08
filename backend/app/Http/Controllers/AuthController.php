@@ -7,15 +7,12 @@ use App\Services\AuthService;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\ResetPasswordMail;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Exception;
 
 /**
  * SV THỰC HIỆN: NGUYỄN DUY KHANG
- * MỤC: 4.2.1 -> 4.2.8 (XÁC THỰC & BẢO MẬT)
+ * MỤC: 4.2.1 -> 4.2.7 (XÁC THỰC & BẢO MẬT)
  */
 class AuthController extends Controller
 {
@@ -47,7 +44,7 @@ class AuthController extends Controller
 
     /**
      * [Nguyễn Duy Khang - 4.2.6] Đăng nhập hệ thống
-     * [Nguyễn Duy Khang - 4.2.7] Chống brute-force
+     * [Nguyễn Duy Khang - 4.2.7] CHỐNG BRUTE-FORCE (GIỚI HẠN ĐĂNG NHẬP)
      */
     public function login(Request $request)
     {
@@ -84,30 +81,5 @@ class AuthController extends Controller
     public function me()
     {
         return (new UserResource(Auth::user()))->resolve();
-    }
-
-    /**
-     * [Nguyễn Duy Khang - 4.2.11] Quên mật khẩu
-     */
-    public function forgotPassword(Request $request)
-    {
-        $request->validate(['email' => 'required|email']);
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user) {
-            return response()->json(['message' => 'Email không tồn tại trong hệ thống.'], 404);
-        }
-
-        $token = Str::random(64);
-
-        try {
-            Mail::to($user->email)->send(new ResetPasswordMail($token, $user));
-            return response()->json([
-                'message' => 'Mã khôi phục mật khẩu đã được gửi vào email của bạn.',
-                'reset_token' => $token
-            ]);
-        } catch (Exception $e) {
-            return response()->json(['message' => 'Không thể gửi email: ' . $e->getMessage()], 500);
-        }
     }
 }
