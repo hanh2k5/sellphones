@@ -18,6 +18,7 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // --- ONLY PRODUCT DISPLAY (Tính năng của Hà) ---
 Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{product}', [ProductController::class, 'show']);
 
 // --- PROTECTED ROUTES ---
 Route::middleware('auth:sanctum')->group(function () {

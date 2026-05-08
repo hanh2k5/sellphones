@@ -1,7 +1,7 @@
 <template>
   <div class="product-card-wrap reveal-item">
     <article
-      class="premium-card"
+      class="premium-card clickable-card"
       tabindex="0"
       role="link"
       :aria-label="product.name"
@@ -20,7 +20,7 @@
 
       <div class="card-body-inner">
         <h2 class="premium-card-title">{{ product.name }}</h2>
-        <p class="premium-card-price">{{ i18n.t('product.from_price') }} {{ fmtPrice(product.price) }}</p>
+        <p class="premium-card-price">{{ i18n.t('product.from_price') || 'Từ' }} {{ fmtPrice(product.price) }}</p>
 
         <div class="premium-action-row">
           <!-- Nút Mua ngay (Chính) -->

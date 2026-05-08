@@ -8,10 +8,12 @@ export const useProductStore = defineStore('product', () => {
   const trashList = ref([])
   const pagination = ref(null)
   const loading = ref(false)
+  const error = ref(null)
 
   // Danh sách sản phẩm với filter
   async function fetchProducts(params = {}) {
     loading.value = true
+    error.value = null
     try {
       const res = await api.get('/products', { params })
       list.value = res.data.data
@@ -19,8 +21,9 @@ export const useProductStore = defineStore('product', () => {
       // SỬA DÒNG NÀY: Trỏ đúng vào object 'meta' của Laravel Resource
       pagination.value = res.data.meta 
       
-    } catch (e) {
-      console.error('fetchProducts error:', e)
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Lỗi tải sản phẩm'
+      console.error('fetchProducts error:', err)
     } finally {
       loading.value = false
     }
@@ -86,8 +89,8 @@ export const useProductStore = defineStore('product', () => {
   }
 
   return {
-    list, current, trashList, pagination, loading,
+    list, current, trashList, pagination, loading, error,
     fetchProducts, fetchProduct, createProduct, updateProduct,
     deleteProduct, fetchTrash, restoreProduct, forceDeleteProduct, checkUpdated
   }
-})
+})
