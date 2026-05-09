@@ -80,11 +80,16 @@
               </div>
             </div>
 
-            <!-- Price -->
+            <!-- Price & Actions -->
             <div class="w-full lg:w-auto flex flex-col sm:flex-row lg:flex-col items-end gap-6 border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-10">
               <div class="text-right flex-1">
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{{ order.items?.length }} {{ i18n.t('order.items') || 'sản phẩm' }}</p>
                 <p class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 drop-shadow-sm">{{ fmt(order.total_amount) }}</p>
+              </div>
+              <div class="flex gap-3 w-full sm:w-auto">
+                <router-link :to="`/orders/${order.id}`" class="flex-1 sm:flex-none text-center px-8 py-3.5 bg-white hover:bg-slate-50 text-blue-600 shadow-sm border border-slate-100 rounded-2xl text-xs font-bold uppercase tracking-widest hover:shadow-md transition-all active:scale-95">
+                  {{ i18n.locale === 'vi' ? 'Xem chi tiết' : 'View Detail' }}
+                </router-link>
               </div>
             </div>
           </div>
