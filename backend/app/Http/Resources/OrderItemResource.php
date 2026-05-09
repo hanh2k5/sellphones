@@ -13,9 +13,10 @@ class OrderItemResource extends JsonResource
             'id'           => $this->id,
             'product_id'   => $this->product_id,
             'product_name' => $this->product ? $this->product->name : 'Sản phẩm đã bị xóa',
-            'quantity'     => $this->quantity,
-            'price'        => (float) $this->price_at_purchase,
-            'total'        => (float) ($this->quantity * $this->price_at_purchase),
+            'quantity'          => $this->quantity,
+            'price'             => (float) $this->price_at_purchase,
+            'price_at_purchase' => (float) $this->price_at_purchase,
+            'total'             => (float) ($this->quantity * $this->price_at_purchase),
             'product'      => new ProductResource($this->whenLoaded('product')),
         ];
     }
