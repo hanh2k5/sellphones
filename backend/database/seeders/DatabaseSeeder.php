@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             ProductSeeder::class,
             UserSeeder::class,
-            // Thêm các seeder khác nếu cần (UserSeeder, ReviewSeeder...)
+            VoucherSeeder::class,
         ]);
     }
 }
