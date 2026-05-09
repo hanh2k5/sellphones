@@ -101,15 +101,22 @@
             </div>
           </div>
 
+          <!-- Order Summary Totals -->
           <div class="space-y-4 pt-6 border-t border-slate-100 text-[15px] font-medium">
             <div class="flex justify-between text-slate-400">
               <span>{{ i18n.t('cart.subtotal') }}:</span>
               <span class="text-slate-900 font-bold">{{ fmt(cartStore.tongTien) }}</span>
             </div>
-            <div v-if="cartStore.tienGiam > 0" class="flex justify-between text-[#28a745]">
-              <span>{{ i18n.t('admin.manage_vouchers') }}:</span>
+            
+            <!-- Simple Applied Voucher Label -->
+            <div v-if="cartStore.appliedVoucher" class="flex justify-between text-emerald-600 animate-fade-in">
+              <span class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+                {{ i18n.locale === 'vi' ? 'Mã giảm giá' : 'Voucher' }} ({{ cartStore.appliedVoucher.code }}):
+              </span>
               <span class="font-bold">-{{ fmt(cartStore.tienGiam) }}</span>
             </div>
+
             <div class="h-px bg-slate-100 my-2"></div>
             <div class="flex justify-between items-center">
               <span class="text-lg font-bold text-slate-900">{{ i18n.t('order.total') }}:</span>

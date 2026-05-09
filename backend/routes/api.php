@@ -49,6 +49,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
+
+    // --- VOUCHERS (Phan Đình Hạnh - 4.1.13) ---
+    Route::get('/vouchers', [\App\Http\Controllers\VoucherController::class, 'index']);
+    Route::post('/vouchers/apply', [\App\Http\Controllers\VoucherController::class, 'apply']);
 });
 
 // Status endpoint

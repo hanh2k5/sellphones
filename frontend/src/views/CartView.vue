@@ -78,7 +78,47 @@
             </div>
             <div class="h-px bg-slate-100 my-2"></div>
             
-            <!-- Applied Voucher Indicator (Moved up) -->
+            <!-- Voucher Selection List -->
+            <div class="py-4 space-y-4">
+              <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{{ i18n.locale === 'vi' ? 'Chọn mã giảm giá' : 'Select Voucher' }}</label>
+              
+              <div v-if="availableVouchers.length > 0" class="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                <div v-for="v in availableVouchers" :key="v.id" 
+                  @click="!cartStore.appliedVoucher && selectVoucher(v.code)"
+                  class="p-4 rounded-2xl border-2 transition-all cursor-pointer flex justify-between items-center group"
+                  :class="[
+                    cartStore.appliedVoucher?.code === v.code 
+                      ? 'border-blue-600 bg-blue-50' 
+                      : 'border-slate-100 bg-slate-50 hover:border-blue-200'
+                  ]"
+                >
+                  <div>
+                    <p class="font-black text-slate-900 text-sm tracking-tighter">{{ v.code }}</p>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase mt-0.5">
+                      {{ v.discount_type === 'percent' ? `Giảm ${v.discount_value}%` : `Giảm ${fmt(v.discount_value)}` }}
+                    </p>
+                  </div>
+                  <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
+                    :class="cartStore.appliedVoucher?.code === v.code ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 group-hover:border-blue-300'">
+                    <svg v-if="cartStore.appliedVoucher?.code === v.code" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                  </div>
+                </div>
+              </div>
+              <p v-else class="text-[10px] text-slate-400 font-bold italic italic">{{ i18n.locale === 'vi' ? 'Không có mã khả dụng' : 'No vouchers available' }}</p>
+              
+              <!-- Manual Input (Optional fallback, kept small) -->
+              <div v-if="!cartStore.appliedVoucher" class="pt-2">
+                <button @click="showManualInput = !showManualInput" class="text-[10px] font-bold text-blue-600 hover:underline">
+                  {{ showManualInput ? (i18n.locale === 'vi' ? 'Đóng' : 'Close') : (i18n.locale === 'vi' ? 'Nhập mã khác?' : 'Enter other code?') }}
+                </button>
+                <div v-if="showManualInput" class="flex gap-2 mt-2 animate-fade-in">
+                  <input v-model="manualCode" class="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold uppercase" placeholder="CODE..." />
+                  <button @click="selectVoucher(manualCode)" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-bold">OK</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Applied Voucher Indicator -->
             <div v-if="cartStore.appliedVoucher" class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex justify-between items-center animate-fade-in mb-4">
               <div class="flex items-center gap-2 text-emerald-700 text-sm font-bold">
                 <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
@@ -110,7 +150,8 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+import api from '../services/api'
 import { useCartStore } from '../stores/cart'
 import { useI18nStore } from '../stores/i18n'
 import { useToast } from '../composables/useToast'
@@ -122,9 +163,44 @@ const cartStore = useCartStore()
 const i18n = useI18nStore()
 const toast = useToast()
 
+const loading = ref(false)
+const voucherLoading = ref(false)
+const voucherError = ref('')
+const availableVouchers = ref([])
+const showManualInput = ref(false)
+const manualCode = ref('')
+
 onMounted(async () => {
   await cartStore.fetchCart()
+  fetchAvailableVouchers()
 })
+
+async function fetchAvailableVouchers() {
+  try {
+    const res = await api.get('/vouchers')
+    availableVouchers.value = res.data.data
+  } catch (e) {
+    console.error('Lỗi lấy voucher:', e)
+  }
+}
+
+async function selectVoucher(code) {
+  if (!code) return
+  voucherLoading.value = true
+  voucherError.value = ''
+  
+  const res = await cartStore.applyVoucher(code)
+  voucherLoading.value = false
+  
+  if (res.success) {
+    toast.success(res.data.message)
+    manualCode.value = ''
+    showManualInput.value = false
+  } else {
+    voucherError.value = res.message
+    toast.error(res.message)
+  }
+}
 
 async function changeQty(item, newQty) {
   if (newQty < 1) { confirmRemove(item); return }

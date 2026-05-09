@@ -8,17 +8,27 @@ use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\Voucher;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 use Exception;
 
 /**
- * Service xử lý toàn bộ logic nghiệp vụ liên quan đến Đơn hàng.
- * [Phan Đình Hạnh]
+ * Service xử lý logic Đơn hàng & Voucher.
+ * Đảm bảo tính nhất quán dữ liệu thông qua Transaction và Pessimistic Locking.
+ * [Phan Đình Hạnh - 4.1.4 & 4.1.13]
  */
 class OrderService
 {
     /**
-     * [Phan Đình Hạnh - 4.1.5] Tạo đơn hàng mới (Order Creation & Transaction)
+     * Thực hiện quy trình đặt hàng:
+     * 1. Khởi tạo Transaction.
+     * 2. Lock sản phẩm & Trừ tồn kho.
+     * 3. Kiểm tra & Áp dụng Voucher (nếu có).
+     * 4. Tạo bản ghi Order & OrderItems.
+     * 5. Xóa giỏ hàng.
+     * 
+     * @param array $data Thông tin người nhận & phương thức thanh toán
+     * @param User $user Người dùng hiện tại
+     * @return Order
+     * @throws Exception
      */
     public function createOrder(array $data, $user)
     {
@@ -35,7 +45,7 @@ class OrderService
             $totalAmount = 0;
 
             foreach ($cartItems as $item) {
-                // Pessimistic Locking: Chống lỗi bán quá số lượng (Overselling)
+                // Pessimistic Locking: Chống lỗi bán quá số lượng
                 $product = Product::lockForUpdate()->find($item->product_id);
 
                 if (!$product || $product->stock < $item->quantity) {
@@ -46,10 +56,12 @@ class OrderService
                 $totalAmount += $product->price * $item->quantity;
             }
 
+            // --- XỬ LÝ VOUCHER (Tính năng 4.1.13) ---
             $discount = 0;
             $voucherId = null;
             if (!empty($data['voucher_code'])) {
-                $voucher = Voucher::where('code', $data['voucher_code'])->first();
+                // Lock voucher để tránh tranh chấp lượt dùng (Concurrency)
+                $voucher = Voucher::where('code', $data['voucher_code'])->lockForUpdate()->first();
                 if ($voucher && $voucher->isValid()) {
                     $discount = $voucher->calculateDiscount($totalAmount);
                     $voucherId = $voucher->id;
@@ -84,73 +96,5 @@ class OrderService
 
             return $order->load(['items.product', 'voucher']);
         });
-    }
-
-    /**
-     * [Phan Đình Hạnh - 4.1.9] Hủy đơn hàng và Hoàn tồn kho tự động
-     */
-    public function cancelOrder(Order $order, $user, $clientUpdatedAt = null)
-    {
-        if (!$user->isAdmin() && $order->user_id !== $user->id) {
-            throw new Exception('Không có quyền hủy đơn hàng.', 403);
-        }
-
-        if ($order->status === 'shipping' || $order->status === 'completed') {
-            throw new Exception('Không thể hủy đơn hàng đã được duyệt hoặc đã hoàn thành.', 409);
-        }
-
-        if ($order->status === 'cancelled') {
-            throw new Exception('Đơn hàng đã bị hủy trước đó.', 422);
-        }
-
-        return DB::transaction(function () use ($order) {
-            $order->load(['items.product' => fn($q) => $q->withTrashed()]);
-            foreach ($order->items as $item) {
-                if ($item->product) {
-                    $item->product->increment('stock', $item->quantity);
-                }
-            }
-
-            $order->update(['status' => 'cancelled']);
-            $this->cacheStatus($order, 'cancelled', '❌ Đơn hàng đã bị hủy.');
-            
-            return $order->fresh();
-        });
-    }
-
-    /**
-     * [Phan Đình Hạnh - 4.1.8] Duyệt đơn hàng
-     */
-    public function approveOrder(Order $order, $clientUpdatedAt = null)
-    {
-        if ($order->status !== 'pending') {
-            throw new Exception('Đơn hàng không ở trạng thái chờ duyệt.', 422);
-        }
-
-        $order->update(['status' => 'shipping']);
-        $this->cacheStatus($order, 'shipping', '🚀 Đơn hàng đã được duyệt.');
-
-        return $order->fresh();
-    }
-
-    public function completeOrder(Order $order, $clientUpdatedAt = null)
-    {
-        if ($order->status !== 'shipping') {
-            throw new Exception('Chỉ có thể hoàn tất đơn hàng đang giao.', 422);
-        }
-
-        $order->update(['status' => 'completed', 'payment_status' => 'paid']);
-        $this->cacheStatus($order, 'completed', '🎉 Đơn hàng đã hoàn tất.');
-
-        return $order->fresh();
-    }
-
-    private function cacheStatus(Order $order, $status, $message)
-    {
-        cache()->put("order_status_{$order->id}", [
-            'status'     => $status,
-            'updated_at' => now()->toIso8601String(),
-            'message'    => $message,
-        ], 120);
     }
 }
