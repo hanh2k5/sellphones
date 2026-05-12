@@ -1,5 +1,11 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 lg:px-8 py-12 bg-[#f9f9f9] min-h-screen">
+  <div class="max-w-7xl mx-auto px-4 lg:px-8 py-6 md:py-12 bg-[#f9f9f9] min-h-screen">
+    <!-- Back Button -->
+    <button @click="$router.back()" class="btn-back-modern mb-6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7"/></svg>
+      <span>{{ i18n.t('cart.continue_shopping') }}</span>
+    </button>
+
     <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 md:mb-10 border-b border-slate-100 pb-4 md:pb-6 gap-3">
       <h1 class="text-2xl md:text-[40px] font-bold text-slate-900 leading-tight">{{ i18n.t('cart.title') }}.</h1>
       <button v-if="cartStore.items.length > 0" 
@@ -8,7 +14,7 @@
         <svg class="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
-        {{ i18n.t('common.clear_filter') }}
+        {{ i18n.t('common.clear_bag') }}
       </button>
     </div>
 
@@ -48,10 +54,15 @@
             </div>
 
             <!-- Qty Selector Pill -->
-            <div class="flex items-center bg-slate-100 rounded-full w-fit p-1">
-              <button @click="changeQty(item, item.quantity - 1)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-900 font-bold">−</button>
-              <span class="w-10 text-center text-sm font-bold text-slate-900">{{ item.quantity }}</span>
-              <button @click="changeQty(item, item.quantity + 1)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-900 font-bold">+</button>
+            <div class="flex items-center gap-4">
+              <div class="flex items-center bg-slate-100 rounded-full w-fit p-1">
+                <button @click="changeQty(item, item.quantity - 1)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-900 font-bold">−</button>
+                <span class="w-10 text-center text-sm font-bold text-slate-900">{{ item.quantity }}</span>
+                <button @click="changeQty(item, item.quantity + 1)" :disabled="item.quantity >= item.product?.stock" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-900 font-bold disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+              </div>
+              <p v-if="item.product?.stock < 10" class="text-[10px] font-bold text-rose-500 uppercase tracking-tighter">
+                {{ i18n.t('cart.only_left', { stock: item.product.stock }) }}
+              </p>
             </div>
           </div>
         </div>
@@ -60,7 +71,7 @@
 
       <!-- Order Summary Card -->
       <div class="lg:col-span-1">
-        <div class="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm h-fit sticky top-24">
+        <div class="bg-white rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 border border-slate-100 shadow-sm h-fit sticky top-24">
           <h3 class="text-xl font-bold text-slate-900 mb-8">{{ i18n.t('cart.summary') }}</h3>
           
           <div class="space-y-5 mb-10 text-[15px] font-medium">
@@ -74,18 +85,18 @@
             </div>
             <div class="flex justify-between text-slate-400">
               <span>{{ i18n.t('cart.shipping') }}</span>
-              <span class="text-[#28a745] font-bold">{{ i18n.t('product.variant_default') === 'Standard' ? 'Free' : 'Miễn phí' }}</span>
+              <span class="text-[#28a745] font-bold">{{ i18n.t('cart.free') }}</span>
             </div>
             <div class="h-px bg-slate-100 my-2"></div>
             
             <!-- Voucher Selection List -->
             <div class="py-4 space-y-4">
-              <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{{ i18n.locale === 'vi' ? 'Chọn mã giảm giá' : 'Select Voucher' }}</label>
+              <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{{ i18n.t('cart.select_voucher') }}</label>
               
               <div v-if="availableVouchers.length > 0" class="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                 <div v-for="v in availableVouchers" :key="v.id" 
                   @click="!cartStore.appliedVoucher && selectVoucher(v.code)"
-                  class="p-4 rounded-2xl border-2 transition-all cursor-pointer flex justify-between items-center group"
+                  class="p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all cursor-pointer flex justify-between items-center group"
                   :class="[
                     cartStore.appliedVoucher?.code === v.code 
                       ? 'border-blue-600 bg-blue-50' 
@@ -95,7 +106,10 @@
                   <div>
                     <p class="font-black text-slate-900 text-sm tracking-tighter">{{ v.code }}</p>
                     <p class="text-[10px] text-slate-500 font-bold uppercase mt-0.5">
-                      {{ v.discount_type === 'percent' ? `Giảm ${v.discount_value}%` : `Giảm ${fmt(v.discount_value)}` }}
+                      {{ v.discount_type === 'percent' 
+                        ? i18n.t('cart.off_percent', { val: v.discount_value }) 
+                        : i18n.t('cart.off_amount', { val: fmt(v.discount_value) }) 
+                      }}
                     </p>
                   </div>
                   <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
@@ -104,12 +118,12 @@
                   </div>
                 </div>
               </div>
-              <p v-else class="text-[10px] text-slate-400 font-bold italic italic">{{ i18n.locale === 'vi' ? 'Không có mã khả dụng' : 'No vouchers available' }}</p>
+              <p v-else class="text-[10px] text-slate-400 font-bold italic">{{ i18n.t('cart.no_vouchers') }}</p>
               
               <!-- Manual Input (Optional fallback, kept small) -->
               <div v-if="!cartStore.appliedVoucher" class="pt-2">
                 <button @click="showManualInput = !showManualInput" class="text-[10px] font-bold text-blue-600 hover:underline">
-                  {{ showManualInput ? (i18n.locale === 'vi' ? 'Đóng' : 'Close') : (i18n.locale === 'vi' ? 'Nhập mã khác?' : 'Enter other code?') }}
+                  {{ showManualInput ? i18n.t('common.close') : i18n.t('cart.enter_code') }}
                 </button>
                 <div v-if="showManualInput" class="flex gap-2 mt-2 animate-fade-in">
                   <input v-model="manualCode" class="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold uppercase" placeholder="CODE..." />
@@ -119,7 +133,7 @@
             </div>
 
             <!-- Applied Voucher Indicator -->
-            <div v-if="cartStore.appliedVoucher" class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex justify-between items-center animate-fade-in mb-4">
+            <div v-if="cartStore.appliedVoucher" class="bg-emerald-50 border border-emerald-100 rounded-xl md:rounded-2xl p-3 md:p-4 flex justify-between items-center animate-fade-in mb-4">
               <div class="flex items-center gap-2 text-emerald-700 text-sm font-bold">
                 <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
                 <span>{{ i18n.t('cart.voucher_applied') }}: {{ cartStore.appliedVoucher.code }}</span>
@@ -129,9 +143,9 @@
 
             <div class="h-px bg-slate-100 my-4"></div>
 
-            <div class="flex justify-between items-center">
-              <span class="text-lg font-bold text-slate-900">{{ i18n.t('cart.total') }}</span>
-              <span class="text-[32px] font-bold text-blue-600 tracking-tight">{{ fmt(cartStore.thanhToan()) }}</span>
+            <div class="flex justify-between items-center py-2 w-full gap-4">
+              <span class="text-base md:text-lg font-bold text-slate-900 whitespace-nowrap">{{ i18n.t('cart.total') }}</span>
+              <span class="text-2xl md:text-[32px] font-black text-blue-600 tracking-tighter text-right">{{ fmt(cartStore.thanhToan()) }}</span>
             </div>
           </div>
 
@@ -141,10 +155,21 @@
 
           <div class="flex items-center justify-center gap-2 text-slate-400 text-xs font-bold">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-            {{ i18n.locale === 'vi' ? 'Thanh toán an toàn & bảo mật' : 'Secure & encrypted payment' }}
+            {{ i18n.t('cart.secure_payment') }}
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Sticky Mobile Checkout Bar -->
+    <div v-if="cartStore.items.length > 0" class="sticky-mobile-checkout md:hidden">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-slate-500 font-bold text-xs uppercase">{{ i18n.t('cart.total') }}</span>
+        <span class="text-blue-600 font-black text-lg">{{ fmt(cartStore.thanhToan()) }}</span>
+      </div>
+      <router-link to="/checkout" class="btn-checkout-sm">
+        {{ i18n.t('checkout.place_order').toUpperCase() }}
+      </router-link>
     </div>
   </div>
 </template>
@@ -210,41 +235,41 @@ async function changeQty(item, newQty) {
 
 async function confirmRemove(item) {
   const result = await Swal.fire({
-    title: i18n.locale === 'vi' ? 'Xóa sản phẩm?' : 'Remove item?',
-    text: i18n.locale === 'vi' ? 'Bạn có chắc muốn xóa sản phẩm này khỏi giỏ?' : 'Are you sure you want to remove this item?',
+    title: i18n.t('cart.remove_confirm_title'),
+    text: i18n.t('cart.remove_confirm_text'),
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonColor: '#2563eb',
+    confirmButtonColor: '#e11d48',
     cancelButtonColor: '#94a3b8',
-    confirmButtonText: i18n.locale === 'vi' ? 'Đúng, xóa nó!' : 'Yes, remove it!',
-    cancelButtonText: i18n.locale === 'vi' ? 'Bỏ qua' : 'Cancel'
+    confirmButtonText: i18n.t('common.delete'),
+    cancelButtonText: i18n.t('common.cancel')
   })
 
   if (result.isConfirmed) {
-    const res = await cartStore.removeFromCart(item.id)
+    const res = await cartStore.removeItem(item.id)
     if (res.success) {
-      toast.info(i18n.locale === 'vi' ? 'Đã xóa khỏi giỏ hàng' : 'Removed from cart')
+      toast.info(i18n.t('common.remove_success'))
     } else {
-      toast.error(i18n.locale === 'vi' ? 'Lỗi khi xóa' : 'Error removing item')
+      toast.error(i18n.t('common.remove_error'))
     }
   }
 }
 
 async function confirmClearCart() {
   const result = await Swal.fire({
-    title: i18n.locale === 'vi' ? 'Dọn sạch túi hàng?' : 'Clear bag?',
-    text: i18n.locale === 'vi' ? 'Bạn có chắc muốn xóa TOÀN BỘ sản phẩm?' : 'Are you sure you want to clear your entire bag?',
+    title: i18n.t('cart.clear_bag_title'),
+    text: i18n.t('cart.clear_bag_text'),
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#e11d48',
     cancelButtonColor: '#94a3b8',
-    confirmButtonText: i18n.locale === 'vi' ? 'Dọn sạch ngay' : 'Clear now!',
-    cancelButtonText: i18n.locale === 'vi' ? 'Bỏ qua' : 'Cancel'
+    confirmButtonText: i18n.t('cart.clear_bag_confirm'),
+    cancelButtonText: i18n.t('common.cancel')
   })
 
   if (result.isConfirmed) {
     await cartStore.clearCart()
-    toast.success(i18n.locale === 'vi' ? 'Đã dọn sạch túi hàng' : 'Bag cleared')
+    toast.success(i18n.t('common.bag_cleared'))
   }
 }
 
@@ -253,7 +278,7 @@ function removeVoucher() {
   cartStore.tienGiam = 0
   localStorage.removeItem('cart_voucher')
   localStorage.removeItem('cart_discount')
-  toast.info(i18n.locale === 'vi' ? 'Đã hủy mã giảm giá' : 'Voucher removed')
+  toast.info(i18n.t('common.voucher_removed'))
 }
 </script>
 
@@ -274,5 +299,23 @@ function removeVoucher() {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #e2e8f0;
   border-radius: 10px;
+}
+
+.btn-back-modern {
+  display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #e2e8f0;
+  padding: 10px 18px; border-radius: 14px; font-size: 14px; font-weight: 700; color: #64748b;
+  cursor: pointer; transition: 0.2s; width: fit-content;
+}
+.btn-back-modern:hover { color: #1e293b; border-color: #cbd5e1; transform: translateX(-4px); }
+
+.sticky-mobile-checkout {
+  position: fixed; bottom: 0; left: 0; right: 0; background: #fff;
+  padding: 15px 20px; box-shadow: 0 -10px 30px rgba(0,0,0,0.08);
+  border-top: 1px solid #f1f5f9; z-index: 1000;
+}
+.btn-checkout-sm {
+  display: block; width: 100%; background: #1e293b; color: #fff;
+  text-align: center; font-weight: 800; padding: 12px; border-radius: 12px;
+  font-size: 14px; letter-spacing: 0.02em;
 }
 </style>

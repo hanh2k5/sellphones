@@ -56,7 +56,7 @@ class ProductService
          * Nếu thời gian cập nhật cuối cùng ở Client khác ở Server -> Đã có Admin khác vừa sửa xong.
          */
         if (isset($data['updated_at']) && $product->updated_at->toIso8601String() !== $data['updated_at']) {
-            throw new Exception('Sản phẩm đã bị thay đổi bởi người khác. Vui lòng tải lại trang để tránh mất dữ liệu.', 409);
+            throw new Exception(__('messages.data_conflict'), 409);
         }
 
         // Xử lý thay thế ảnh cũ nếu có upload ảnh mới
@@ -81,7 +81,7 @@ class ProductService
     public function deleteProduct(Product $product, $version = null)
     {
         if ($version && $product->updated_at->toIso8601String() !== $version) {
-            throw new Exception('Sản phẩm đã bị thay đổi bởi người khác. Vui lòng tải lại trang.', 409);
+            throw new Exception(__('messages.data_conflict'), 409);
         }
         return $product->delete();
     }

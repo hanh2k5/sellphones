@@ -14,6 +14,7 @@ const router = createRouter({
     { path: '/checkout', name: 'checkout', component: () => import('../views/CheckoutView.vue'), meta: { requiresAuth: true } },
     { path: '/orders', name: 'orders', component: () => import('../views/OrderListView.vue'), meta: { requiresAuth: true } },
     { path: '/orders/:id', name: 'order-detail', component: () => import('../views/OrderDetailView.vue'), meta: { requiresAuth: true } },
+    { path: '/payment/momo', name: 'payment.momo', component: () => import('../views/MomoPaymentView.vue'), meta: { requiresAuth: true } },
 
     // Auth required
     { path: '/profile', name: 'profile', component: () => import('../views/HomeView.vue'), meta: { requiresAuth: true } },
@@ -32,24 +33,22 @@ const router = createRouter({
   scrollBehavior() { return { top: 0 } }
 })
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore()
   const token = authStore.token
   const user = authStore.user
 
   if (to.meta.requiresAuth && !token) {
-    return next({ name: 'login', query: { redirect: to.fullPath } })
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
   
   if (to.meta.requiresAdmin && (!token || user?.role !== 'admin')) {
-    return next({ name: 'home' })
+    return { name: 'home' }
   }
   
   if (to.meta.guestOnly && token) {
-    return next({ name: 'home' })
+    return { name: 'home' }
   }
-
-  next()
 })
 
 export default router

@@ -54,7 +54,7 @@ class CategoryService
     public function delete(Category $category)
     {
         if ($category->products()->count() > 0) {
-            throw new Exception('Không thể xóa danh mục đang chứa sản phẩm.', 422);
+            throw new Exception(__('messages.category_has_products'), 422);
         }
         return $category->delete();
     }

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class ProductSeeder extends Seeder
 {
-    public function run(): void
+public function run(): void
     {
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table('product_images')->truncate();
@@ -246,6 +246,53 @@ class ProductSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+        
+        // CATERGORY 5: ACCESSORIES (PHỤ KIỆN)
+        [
+            'name' => 'Tai nghe AirPods Pro 2 MagSafe',
+            'price' => 5990000,
+            'hinh_anh' => 'http://localhost/storage/iphone15.jpg',
+            'category_id' => 8,
+            'description' => 'Chống ồn chủ động vượt trội, xuyên âm thông minh. Âm thanh không gian cá nhân hóa đỉnh cao.',
+            'stock' => 50,
+            'is_featured' => true,
+            'avg_rating' => 5.0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'name' => 'Tai nghe Sony WH-1000XM5',
+            'price' => 7490000,
+            'hinh_anh' => 'http://localhost/storage/iphone15.jpg',
+            'category_id' => 8,
+            'description' => 'Khả năng chống ồn hàng đầu thế giới với bộ xử lý HD QN1. Thời lượng pin lên đến 30 giờ.',
+            'stock' => 20,
+            'avg_rating' => 4.9,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'name' => 'Củ sạc Apple 20W Type-C',
+            'price' => 550000,
+            'hinh_anh' => 'http://localhost/storage/iphone15.jpg',
+            'category_id' => 7,
+            'description' => 'Sạc nhanh chuẩn PD cho iPhone, iPad. Thiết kế nhỏ gọn, bền bỉ và cực kỳ an toàn.',
+            'stock' => 200,
+            'avg_rating' => 4.8,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'name' => 'Cáp USB-C to Lightning 1m',
+            'price' => 490000,
+            'hinh_anh' => 'http://localhost/storage/iphone15.jpg',
+            'category_id' => 7,
+            'description' => 'Hỗ trợ sạc nhanh và truyền dữ liệu tốc độ cao. Độ bền vượt trội với lớp vỏ dẻo dai.',
+            'stock' => 300,
+            'avg_rating' => 4.7,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
         ];
 
         // Insert từng dòng để loại bỏ triệt để lỗi lệch cột dữ liệu

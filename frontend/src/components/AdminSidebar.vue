@@ -36,7 +36,7 @@
         <span class="nav-icon">🛒</span> {{ i18n.t('admin.orders') }}
       </router-link>
       <router-link to="/admin/users" class="nav-link" :class="{ active: isActive('/admin/users') }" @click="$emit('close')">
-        <span class="nav-icon">👥</span> {{ i18n.locale === 'vi' ? 'Người dùng' : 'Users' }}
+        <span class="nav-icon">👥</span> {{ i18n.t('admin.customers') }}
       </router-link>
       <router-link to="/admin/reviews" class="nav-link" :class="{ active: isActive('/admin/reviews') }" @click="$emit('close')">
         <span class="nav-icon">⭐</span> {{ i18n.t('admin.reviews') }}

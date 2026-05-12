@@ -26,6 +26,7 @@ class CategorySeeder extends Seeder
         DB::table('categories')->insert([
             ['id' => 6, 'parent_id' => 5, 'name' => 'Ốp lưng', 'slug' => 'op-lung', 'created_at' => now(), 'updated_at' => now()],
             ['id' => 7, 'parent_id' => 5, 'name' => 'Sạc & Cáp', 'slug' => 'sac-cap', 'created_at' => now(), 'updated_at' => now()],
+            ['id' => 8, 'parent_id' => 5, 'name' => 'Tai nghe', 'slug' => 'tai-nghe', 'created_at' => now(), 'updated_at' => now()],
         ]);
     }
 }

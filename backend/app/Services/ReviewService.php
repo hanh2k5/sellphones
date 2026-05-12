@@ -21,13 +21,13 @@ class ReviewService
             ->exists();
 
         if (!$hasBought) {
-            throw new Exception('Đơn hàng không hợp lệ hoặc bạn chưa mua sản phẩm này trong đơn hàng này.', 403);
+            throw new Exception(__('messages.order_invalid_or_not_purchased'), 403);
         }
 
         // Kiểm tra xem đã đánh giá chưa (mỗi người 1 lần/sản phẩm)
         $exists = Review::where('user_id', $userId)->where('product_id', $data['product_id'])->exists();
         if ($exists) {
-            throw new Exception('Bạn đã đánh giá sản phẩm này rồi.', 422);
+            throw new Exception(__('messages.review_exists'), 422);
         }
 
         $review = Review::create(array_merge($data, [
@@ -48,11 +48,11 @@ class ReviewService
     {
         // Kiểm tra an toàn người dùng
         if (!$user) {
-            throw new Exception('Vui lòng đăng nhập lại.', 401);
+            throw new Exception(__('messages.login_required'), 401);
         }
 
         if (!$user->isAdmin() && $review->user_id !== $user->id) {
-            throw new Exception('Bạn không có quyền thực hiện hành động này.', 403);
+            throw new Exception(__('messages.unauthorized'), 403);
         }
 
         $product = $review->product;

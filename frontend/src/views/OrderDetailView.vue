@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-4xl mx-auto px-4 py-12 relative z-10">
+  <div class="max-w-7xl mx-auto px-4 lg:px-8 py-12 relative z-10">
     <div v-if="orderStore.loading && !orderStore.current" class="text-center py-20">
       <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
     </div>
@@ -8,8 +8,8 @@
       <!-- Top Bar -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <router-link to="/orders" class="text-blue-600 font-bold text-sm hover:underline flex items-center gap-2 mb-4">
-            ← {{ i18n.locale === 'vi' ? 'Quay lại danh sách' : 'Back to List' }}
+          <router-link to="/orders" class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-white text-slate-600 hover:text-blue-600 font-bold text-xs uppercase tracking-widest rounded-xl border border-slate-100 shadow-sm transition-all active:scale-95 mb-6">
+            <span class="text-base">←</span> {{ i18n.t('common.back_to_list') }}
           </router-link>
           <h1 class="text-3xl font-bold text-slate-900 leading-tight">
             {{ i18n.t('order.id') || 'Đơn hàng' }} {{ orderStore.current.order_code }}
@@ -28,19 +28,19 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Main Content: Items -->
         <div class="lg:col-span-2 space-y-6">
-          <div class="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+          <div class="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm order-card-main">
             <h3 class="text-xl font-bold text-slate-900 mb-6">{{ i18n.t('order.items') || 'Sản phẩm đã mua' }}</h3>
             <div class="divide-y divide-slate-100">
-              <div v-for="item in orderStore.current.items" :key="item.id" class="py-6 flex gap-6 items-center">
-                <div class="w-24 h-24 bg-slate-50 rounded-2xl p-2 shrink-0">
+              <div v-for="item in orderStore.current.items" :key="item.id" class="py-6 flex gap-6 items-center item-row">
+                <div class="w-24 h-24 bg-slate-50 rounded-2xl p-2 shrink-0 img-box">
                   <img :src="getImageUrl(item.product?.hinh_anh)" class="w-full h-full object-contain" />
                 </div>
                 <div class="flex-1">
-                  <h4 class="font-bold text-slate-900 text-lg">{{ item.product?.name }}</h4>
+                  <h4 class="font-bold text-slate-900 text-lg item-name">{{ item.product?.name }}</h4>
                   <p class="text-slate-400 font-medium text-sm">x{{ item.quantity }}</p>
                 </div>
                 <div class="text-right">
-                  <p class="font-bold text-slate-900 text-lg">{{ fmt(item.price_at_purchase * item.quantity) }}</p>
+                  <p class="font-bold text-slate-900 text-lg item-price">{{ fmt(item.price_at_purchase * item.quantity) }}</p>
                   <p class="text-xs text-slate-400 font-bold mt-1">{{ i18n.t('product.price') }}: {{ fmt(item.price_at_purchase) }}</p>
                 </div>
               </div>
@@ -48,9 +48,9 @@
           </div>
 
           <!-- Shipping Info -->
-          <div class="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+          <div class="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm shipping-card-main">
             <h3 class="text-xl font-bold text-slate-900 mb-6">{{ i18n.t('checkout.shipping_info') }}</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 info-grid">
               <div>
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{{ i18n.t('checkout.shipping_name') }}</p>
                 <p class="text-slate-800 font-bold">{{ orderStore.current.receiver_name }}</p>
@@ -69,7 +69,7 @@
 
         <!-- Sidebar: Summary & Payment -->
         <div class="space-y-6">
-          <div class="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm h-fit">
+          <div class="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm summary-card-main">
             <h3 class="text-xl font-bold text-slate-900 mb-6">{{ i18n.t('cart.summary') }}</h3>
             <div class="space-y-4 text-[15px] font-medium">
               <div class="flex justify-between text-slate-400">
@@ -81,9 +81,9 @@
                 <span class="font-bold">-{{ fmt(orderStore.current.discount_amount) }}</span>
               </div>
               <div class="h-px bg-slate-100 my-2"></div>
-              <div class="flex justify-between items-center">
-                <span class="text-lg font-bold text-slate-900">{{ i18n.t('order.total') }}</span>
-                <span class="text-2xl font-bold text-blue-600">{{ fmt(orderStore.current.total_amount) }}</span>
+              <div class="flex justify-between items-center py-2 w-full gap-4">
+                <span class="text-lg font-bold text-slate-900 whitespace-nowrap">{{ i18n.t('order.total') }}</span>
+                <span class="text-2xl font-black text-blue-600 tracking-tighter text-right final-total">{{ fmt(orderStore.current.total_amount) }}</span>
               </div>
             </div>
 
@@ -97,7 +97,7 @@
                 <div>
                   <p class="font-bold text-slate-900 text-sm uppercase">{{ orderStore.current.payment_method }}</p>
                   <p class="text-[11px] font-bold" :class="orderStore.current.payment_status === 'paid' ? 'text-emerald-600' : 'text-amber-600'">
-                    {{ orderStore.current.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán' }}
+                    {{ orderStore.current.payment_status === 'paid' ? i18n.t('order.payment_paid') : i18n.t('order.payment_pending') }}
                   </p>
                 </div>
               </div>
@@ -135,8 +135,9 @@ function calculateSubtotal() {
 
 function statusLabel(s) {
   return { 
-    pending:    i18n.t('order.status_pending') || 'Chờ duyệt', 
-    shipping:   i18n.t('order.status_shipping') || 'Đang giao',
+    pending:    i18n.t('order.status_pending') || 'Chờ xác nhận', 
+    processing: i18n.t('order.status_processing') || 'Đang xử lý',
+    shipping:   i18n.t('order.status_shipping') || 'Đang giao hàng',
     completed:  i18n.t('order.status_completed') || 'Hoàn thành', 
     cancelled:  i18n.t('order.status_cancelled') || 'Đã hủy' 
   }[s] || s
@@ -145,6 +146,7 @@ function statusLabel(s) {
 function statusClass(s) {
   return {
     pending:    'bg-amber-50 text-amber-600 border-amber-100',
+    processing: 'bg-indigo-50 text-indigo-600 border-indigo-100',
     shipping:   'bg-blue-50 text-blue-600 border-blue-100',
     completed:  'bg-emerald-50 text-emerald-600 border-emerald-100',
     cancelled:  'bg-rose-50 text-rose-600 border-rose-100',
@@ -153,11 +155,18 @@ function statusClass(s) {
 </script>
 
 <style scoped>
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.animate-fade-in { animation: fadeIn 0.5s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 768px) {
+  .py-12 { padding-top: 20px; }
+  .text-3xl { font-size: 1.5rem; }
+  .order-card-main, .shipping-card-main, .summary-card-main { border-radius: 1.25rem; padding: 20px !important; }
+  .item-row { gap: 12px; padding: 15px 0; }
+  .img-box { width: 60px; height: 60px; }
+  .item-name { font-size: 1rem; }
+  .item-price { font-size: 1rem; }
+  .info-grid { gap: 20px; }
+  .final-total { font-size: 1.5rem; }
 }
 </style>

@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import api from '../services/api'
+import { useI18nStore } from './i18n'
 
 export const useCartStore = defineStore('cart', () => {
   const items = ref([])
@@ -45,7 +46,7 @@ export const useCartStore = defineStore('cart', () => {
       await fetchCart()
       return { success: true, message: res.data.message }
     } catch (e) {
-      return { success: false, message: e.response?.data?.message || 'Lỗi thêm vào giỏ!' }
+      return { success: false, message: e.response?.data?.message || useI18nStore().t('common.error') }
     }
   }
 
@@ -95,7 +96,7 @@ export const useCartStore = defineStore('cart', () => {
       tienGiam.value = 0
       localStorage.removeItem('cart_voucher')
       localStorage.removeItem('cart_discount')
-      return { success: false, message: e.response?.data?.message || 'Mã không hợp lệ!' }
+      return { success: false, message: e.response?.data?.message || useI18nStore().t('common.error') }
     }
   }
 

@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import api from '../services/api'
+import { useI18nStore } from './i18n'
 
 export const useOrderStore = defineStore('order', () => {
   const orders     = ref([])
@@ -46,7 +47,7 @@ export const useOrderStore = defineStore('order', () => {
     } catch (e) {
       return {
         success: false,
-        message: e.response?.data?.message || 'Không thể đặt hàng!',
+        message: e.response?.data?.message || useI18nStore().t('common.error'),
       }
     }
   }
@@ -59,7 +60,7 @@ export const useOrderStore = defineStore('order', () => {
     } catch (e) {
       return {
         success:  false,
-        message:  e.response?.data?.message || 'Không thể hủy đơn hàng!',
+        message:  e.response?.data?.message || useI18nStore().t('common.error'),
         conflict: e.response?.data?.conflict || false,
         status:   e.response?.data?.status,
       }
@@ -74,7 +75,7 @@ export const useOrderStore = defineStore('order', () => {
     } catch (e) {
       return {
         success:  false,
-        message:  e.response?.data?.message || 'Không thể duyệt đơn hàng!',
+        message:  e.response?.data?.message || useI18nStore().t('common.error'),
         conflict: e.response?.data?.conflict || false,
         status:   e.response?.data?.status,
       }
@@ -88,7 +89,7 @@ export const useOrderStore = defineStore('order', () => {
     } catch (e) {
       return {
         success: false,
-        message: e.response?.data?.message || 'Không thể xóa đơn hàng!',
+        message: e.response?.data?.message || useI18nStore().t('common.error'),
       }
     }
   }

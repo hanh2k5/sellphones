@@ -5,7 +5,17 @@
         <!-- Brand -->
         <div class="footer-col">
           <div class="footer-brand">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-.5-.22-1.07-.46-1.92-.46-.86 0-1.4.23-1.96.46-1.04.46-2.02.58-2.97-.4C4.16 17.38 3.5 12.06 5.5 8.6c1-1.74 2.76-2.82 4.7-2.85 1.1-.02 1.95.43 2.6.43.6 0 1.63-.53 2.92-.4 1.34.13 2.37.62 2.9 1.4-2.73 1.63-2.3 5.15.44 6.27-.6 1.54-1.37 3.08-2.02 3.84zM12.03 5.75c-.2-.02-.4-.02-.6-.02.05-2.26 1.9-4.2 4.14-4.23.23 0 .46.03.7.05-2.1 2.38-4.04 4.2-4.24 4.2z"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="url(#footerBrandGradient)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <defs>
+                <linearGradient id="footerBrandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1" />
+                </linearGradient>
+              </defs>
+              <rect x="5" y="2" width="14" height="20" rx="3" ry="3"></rect>
+              <path d="M10 5h4" stroke-width="2" stroke="url(#footerBrandGradient)"></path>
+              <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            </svg>
             <span>SELLPHONES</span>
           </div>
           <p class="footer-desc">{{ i18n.t('footer.brand_desc') }}</p>
