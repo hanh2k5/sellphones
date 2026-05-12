@@ -6,10 +6,12 @@
     "logout": "Đăng xuất",
     "profile": "Tài khoản",
     "orders": "Đơn hàng",
+    "my_orders": "Đơn hàng của tôi",
     "admin": "Quản trị",
     "cart": "Giỏ hàng"
   },
   "common": {
+    "clear_bag": "Xóa hết giỏ hàng",
     "update_review": "Cập nhật đánh giá",
     "search_placeholder": "Tìm sản phẩm...",
     "processing": "Đang xử lý...",
@@ -39,7 +41,21 @@
     "add_success": "Đã thêm vào giỏ hàng",
     "cart_add_success": "Đã thêm vào giỏ hàng thành công!",
     "clear_filter": "Xóa sạch giỏ hàng",
-    "anonymous": "Ẩn danh"
+    "anonymous": "Ẩn danh",
+    "back_to_cart": "Quay lại giỏ hàng",
+    "active": "Kích hoạt",
+    "bag_cleared": "Đã dọn sạch túi hàng",
+    "voucher_removed": "Đã hủy mã giảm giá",
+    "reset_filters": "Đặt lại bộ lọc",
+    "view_details": "Xem chi tiết",
+    "back_to_list": "Quay lại danh sách",
+    "logout_success": "Đã đăng xuất",
+    "login_success": "Đăng nhập thành công!",
+    "close": "Đóng",
+    "remove_success": "Đã xóa khỏi giỏ hàng",
+    "remove_error": "Lỗi khi xóa sản phẩm",
+    "console_stop": "DỪNG LẠI!",
+    "console_warning": "Đây là tính năng dành cho nhà phát triển. Nếu ai đó bảo bạn sao chép-dán nội dung nào đó vào đây để 'hack' tài khoản, thì đó là một trò lừa đảo và sẽ cung cấp cho họ quyền truy cập vào tài khoản của bạn."
   },
   "auth": {
     "login": "Đăng nhập",
@@ -71,7 +87,8 @@
     "password_error": "Vui lòng nhập mật khẩu",
     "address_error": "Vui lòng nhập địa chỉ giao hàng",
     "current_password_required": "Vui lòng nhập mật khẩu hiện tại",
-    "new_password_required": "Vui lòng nhập mật khẩu mới"
+    "new_password_required": "Vui lòng nhập mật khẩu mới",
+    "password_confirmation_error": "Mật khẩu xác nhận không khớp"
   },
   "cart": {
     "title": "Giỏ hàng của bạn",
@@ -88,7 +105,21 @@
     "voucher_placeholder": "Mã giảm giá",
     "voucher_applied": "Đã áp dụng",
     "use_now": "Dùng ngay",
-    "min_order": "Cho đơn từ {val}"
+    "min_order": "Cho đơn từ {val}",
+    "continue_shopping": "Tiếp tục mua sắm",
+    "only_left": "Chỉ còn {stock} sp",
+    "free": "Miễn phí",
+    "select_voucher": "Chọn mã giảm giá",
+    "off_percent": "Giảm {val}%",
+    "off_amount": "Giảm {val}",
+    "no_vouchers": "Không có mã khả dụng",
+    "enter_code": "Nhập mã khác?",
+    "secure_payment": "Thanh toán an toàn & bảo mật",
+    "clear_bag_title": "Dọn sạch túi hàng?",
+    "clear_bag_text": "Bạn có chắc muốn xóa TOÀN BỘ sản phẩm?",
+    "clear_bag_confirm": "Dọn sạch ngay",
+    "remove_confirm_title": "Xóa sản phẩm?",
+    "remove_confirm_text": "Bạn có chắc muốn xóa sản phẩm này khỏi giỏ?"
   },
   "order": {
     "title": "Lịch sử mua hàng",
@@ -114,9 +145,12 @@
     "items": "Sản phẩm",
     "no_orders": "Bạn chưa có đơn hàng nào.",
     "status_pending": "Chờ xác nhận",
+    "status_processing": "Đang xử lý",
     "status_shipping": "Đang giao hàng",
     "status_completed": "Đã hoàn thành",
-    "status_cancelled": "Đã hủy"
+    "status_cancelled": "Đã hủy",
+    "payment_paid": "Đã thanh toán",
+    "payment_pending": "Chờ thanh toán"
   },
   "checkout": {
     "title": "Thanh toán",
@@ -137,6 +171,22 @@
     "success_title": "Đặt hàng thành công!",
     "success_desc": "Cảm ơn bạn đã mua sắm. Đơn hàng của bạn đang được xử lý.",
     "fail_msg": "Thanh toán thất bại, vui lòng thử lại!",
+    "momo_timer": "Thời gian thanh toán",
+    "momo_order_payment": "Thanh toán đơn hàng",
+    "momo_total_amount": "Tổng tiền cần trả",
+    "momo_scan_instruction": "Sử dụng App MoMo để quét mã",
+    "momo_scan_desc": "Mở ứng dụng, chọn 'Quét mã' và xác nhận thanh toán.",
+    "momo_confirm_btn": "XÁC NHẬN ĐÃ THANH TOÁN",
+    "momo_cancel_btn": "Hủy bỏ giao dịch",
+    "momo_security_note": "Giao dịch được bảo mật bởi MoMo Security",
+    "momo_order_not_found": "Không tìm thấy thông tin đơn hàng.",
+    "momo_already_paid": "Đơn hàng này đã được thanh toán!",
+    "momo_access_denied": "Không có quyền truy cập đơn hàng này.",
+    "momo_success_alert": "Thanh toán đơn hàng thành công qua ví MoMo.",
+    "momo_cancel_confirm_title": "Hủy thanh toán?",
+    "momo_cancel_confirm_text": "Bạn có chắc muốn hủy bỏ giao dịch này?",
+    "momo_timeout_title": "Hết thời gian!",
+    "momo_timeout_text": "Giao dịch đã hết hạn thanh toán.",
     "momo_gateway": "Thanh toán an toàn với MoMo",
     "momo_scan": "Mở ứng dụng MoMo để quét mã QR",
     "momo_simulate": "MÔ PHỎNG ĐÃ QUÉT MÃ",
@@ -203,6 +253,7 @@
     "stock_count": "Còn {count} cái",
     "out_of_stock": "Hết hàng",
     "must_purchase": "🛒 Bạn cần mua sản phẩm này trước để viết đánh giá",
+    "must_purchase_desc": "Hãy mua sản phẩm và đợi đơn hàng hoàn tất để chia sẻ cảm nhận của bạn nhé!",
     "linked_order": "Đã liên kết Đơn hàng",
     "select_rating": "Chọn mức đánh giá",
     "your_comment": "Nhận xét của bạn...",
@@ -214,7 +265,10 @@
     "be_the_first": "Hãy là người đầu tiên chia sẻ!",
     "must_login_review": "Vui lòng đăng nhập để đánh giá",
     "select_rating_error": "Vui lòng chọn số sao!",
-    "enter_order_id_error": "Vui lòng nhập Order ID!"
+    "enter_order_id_error": "Vui lòng nhập Order ID!",
+    "order_processing": "Đơn hàng của bạn đang được xử lý",
+    "wait_for_completion": "Hãy đợi đơn hàng được chuyển sang trạng thái \"Hoàn tất\" để đánh giá nhé!",
+    "view_cart": "Xem giỏ hàng"
   },
   "admin": {
     "total_vouchers": "Tổng số mã",
@@ -417,7 +471,7 @@
     "contact": "Liên hệ",
     "warranty": "Bảo hành",
     "returns": "Đổi trả",
-    "copyright": "© 2026 Sellphones. Thiết kế bởi Hạnh - Thông - Bình."
+    "copyright": "© 2026 Sellphones. Thiết kế bởi Hạnh - khang - Hà."
   },
   "ai": {
     "title": "AI Tư vấn",

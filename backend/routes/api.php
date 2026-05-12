@@ -7,6 +7,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\VoucherController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,10 +50,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
+    Route::post('/orders/{order}/confirm-payment', [OrderController::class, 'confirmPayment']);
 
     // --- VOUCHERS (Phan Đình Hạnh - 4.1.13) ---
-    Route::get('/vouchers', [\App\Http\Controllers\VoucherController::class, 'index']);
-    Route::post('/vouchers/apply', [\App\Http\Controllers\VoucherController::class, 'apply']);
+    Route::get('/vouchers', [VoucherController::class, 'index']);
+    Route::post('/vouchers/apply', [VoucherController::class, 'apply']);
 });
 
 // Status endpoint

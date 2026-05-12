@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import api from '../services/api'
+import { useI18nStore } from './i18n'
 
 export const useAuthStore = defineStore('auth', () => {
   const safeParse = (key) => {
@@ -33,8 +34,8 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('auth_user', JSON.stringify(res.data.user))
       return { success: true }
     } catch (err) {
-      error.value = err.response?.data?.message || 'Đăng nhập thất bại!'
-      return { success: false, message: error.value, data: err.response?.data }
+      error.value = err.response?.data?.message || useI18nStore().t('common.error')
+      return { success: false, message: err.response?.data?.message || useI18nStore().t('common.error'), data: err.response?.data }
     } finally {
       loading.value = false
     }
@@ -48,7 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
       await api.post('/register', { name, email, address, password, password_confirmation })
       return { success: true }
     } catch (err) {
-      error.value = err.response?.data?.message || 'Đăng ký thất bại!'
+      error.value = err.response?.data?.message || useI18nStore().t('common.error')
       return { success: false, message: error.value, errors: err.response?.data?.errors }
     } finally {
       loading.value = false

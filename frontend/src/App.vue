@@ -70,11 +70,11 @@ const { categories, fetchCategories } = useCategories()
 
 // Cho phép dùng F12 nhưng hiển thị cảnh báo bảo mật chuyên nghiệp
 console.log(
-  "%cDỪNG LẠI!",
-  "color: red; font-size: 50px; font-weight: bold; -webkit-text-stroke: 1px black;"
+  `%c${i18n.t('common.console_stop')}`,
+  "color: #e11d48; font-size: 50px; font-weight: bold; -webkit-text-stroke: 1px black;"
 );
 console.log(
-  "%cĐây là tính năng dành cho nhà phát triển. Nếu ai đó bảo bạn sao chép-dán nội dung nào đó vào đây để 'hack' tài khoản, thì đó là một trò lừa đảo và sẽ cung cấp cho họ quyền truy cập vào tài khoản của bạn.",
+  `%c${i18n.t('common.console_warning')}`,
   "font-size: 18px;"
 );
 console.log(
@@ -159,7 +159,7 @@ async function handleLogout() {
   await authStore.logout()
   cartStore.items = []
   cartStore.soLuong = 0
-  toast.success('Đã đăng xuất')
+  toast.success(i18n.t('common.logout_success'))
   router.push('/login')
 }
 </script>

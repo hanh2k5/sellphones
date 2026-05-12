@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import api from '../services/api'
+import { useI18nStore } from './i18n'
 
 export const useProductStore = defineStore('product', () => {
   const list = ref([])
@@ -22,7 +23,7 @@ export const useProductStore = defineStore('product', () => {
       pagination.value = res.data.meta 
       
     } catch (err) {
-      error.value = err.response?.data?.message || 'Lỗi tải sản phẩm'
+      error.value = err.response?.data?.message || useI18nStore().t('common.error')
       console.error('fetchProducts error:', err)
     } finally {
       loading.value = false

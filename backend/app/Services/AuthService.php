@@ -35,14 +35,14 @@ class AuthService
         $user = User::where('email', $email)->first();
 
         if (!$user) {
-            throw ValidationException::withMessages(['email' => ['Địa chỉ email này không tồn tại trong hệ thống.']]);
+            throw ValidationException::withMessages(['email' => [__('messages.email_not_exists')]]);
         }
 
         // Kiểm tra xem tài khoản có đang bị khóa tạm thời không
         if ($user->locked_until && Carbon::now()->lessThan($user->locked_until)) {
             $minutes = ceil(Carbon::now()->diffInMinutes($user->locked_until));
             throw ValidationException::withMessages([
-                'password' => ["🔒 Tài khoản đang bị khóa tạm thời. Vui lòng thử lại sau $minutes phút."]
+                'password' => [__('messages.account_locked', ['minutes' => $minutes])]
             ]);
         }
 
@@ -54,18 +54,18 @@ class AuthService
             if ($user->login_attempts >= 5) {
                 $user->update(['locked_until' => Carbon::now()->addMinutes(5)]);
                 throw ValidationException::withMessages([
-                    'password' => ['Bạn đã nhập sai quá 5 lần. Tài khoản bị khóa tạm thời trong 5 phút.']
+                    'password' => [__('messages.account_locked_5_minutes')]
                 ]);
             }
 
             throw ValidationException::withMessages([
-                'password' => ["Mật khẩu không chính xác. Bạn còn $remaining lần thử trước khi bị khóa."]
+                'password' => [__('messages.incorrect_password', ['remaining' => $remaining])]
             ]);
         }
 
         if (!$user->is_active) {
             throw ValidationException::withMessages([
-                'email' => ['Tài khoản của bạn đã bị khóa bởi quản trị viên.'],
+                'email' => [__('messages.account_deactivated')],
             ]);
         }
 
@@ -86,7 +86,7 @@ class AuthService
     public function lockUser(User $user)
     {
         if ($user->role === 'admin') {
-            throw new Exception('Không thể khóa tài khoản quản trị viên.', 422);
+            throw new Exception(__('messages.admin_lock_error'), 422);
         }
         $user->update(['is_active' => false]);
         return $user;

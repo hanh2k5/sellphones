@@ -1,7 +1,7 @@
 <template>
   <div class="product-card-wrap reveal-item">
     <article
-      class="premium-card clickable-card"
+      class="premium-card"
       tabindex="0"
       role="link"
       :aria-label="product.name"
@@ -9,21 +9,26 @@
       @keydown.enter.prevent="goToDetail"
       @keydown.space.prevent="goToDetail"
     >
-      <!-- Image Box: Exactly 180px, 1:1 ratio -->
+      <!-- Image Box: Exactly 180px, 1:1 ratio with premium background -->
       <div class="premium-card-img-box">
         <img
           :src="getImageUrl(product.hinh_anh)"
           :alt="product.name"
           @error="onImgError"
         />
+        <div class="img-overlay-glow"></div>
       </div>
 
       <div class="card-body-inner">
         <h2 class="premium-card-title">{{ product.name }}</h2>
-        <p class="premium-card-price">{{ i18n.t('product.from_price') || 'Từ' }} {{ fmtPrice(product.price) }}</p>
+        
+        <div class="price-box">
+          <span class="price-label">{{ i18n.t('product.from_price') }}</span>
+          <p class="premium-card-price">{{ fmtPrice(product.price) }}</p>
+        </div>
 
         <div class="premium-action-row">
-          <!-- Nút Mua ngay (Chính) -->
+          <!-- Buy Now Button (Main) -->
           <button
             class="btn-custom-buy"
             @click.stop="handleBuyNow"
@@ -33,7 +38,7 @@
             <span v-else>{{ i18n.t('home.shop_now') }}</span>
           </button>
 
-          <!-- Nút Thêm vào giỏ (Phụ - Icon) -->
+          <!-- Add to Cart Button (Secondary Icon) -->
           <button 
             class="btn-custom-add" 
             @click.stop="handleAddToCart" 
@@ -82,7 +87,10 @@ async function handleAddToCart() {
   const res = await cartStore.addToCart(props.product.id, 1)
   isAdding.value = false
   if (res.success) {
-    toast.success(i18n.t('common.cart_add_success'))
+    toast.success(i18n.t('common.cart_add_success'), {
+      label: i18n.t('product.view_cart'),
+      url: '/cart'
+    })
   }
 }
 
@@ -107,8 +115,8 @@ function onImgError(e) {
 <style scoped>
 /* ===== MODERN PREMIUM CARD ===== */
 .product-card-wrap {
-  opacity: 0; transform: translateY(20px);
-  transition: all 0.8s cubic-bezier(0.2, 1, 0.2, 1);
+  opacity: 0; transform: translateY(30px);
+  transition: all 0.7s cubic-bezier(0.2, 1, 0.2, 1);
 }
 .product-card-wrap.is-visible { opacity: 1; transform: translateY(0); }
 
@@ -118,73 +126,111 @@ function onImgError(e) {
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer; display: flex; flex-direction: column;
   height: 100%; position: relative; overflow: hidden;
-}
-.premium-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.08);
-  border-color: rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
 }
 
-/* Image Presentation */
+@media (hover: hover) and (pointer: fine) {
+  .premium-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.08);
+    border-color: rgba(59,130,246,0.1);
+  }
+  .premium-card:hover .premium-card-img-box img {
+    transform: scale(1.1) translateY(-5px) rotate(2deg);
+  }
+  .premium-card:hover .img-overlay-glow {
+    opacity: 1;
+  }
+}
+
 .premium-card-img-box {
-  width: 100%; height: 180px; margin-bottom: 12px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  height: 240px; border-radius: 20px;
   display: flex; align-items: center; justify-content: center;
-  background: #fff; border-radius: 14px;
-  padding: 8px; transition: 0.5s;
+  padding: 30px; overflow: hidden; position: relative;
+  transition: background 0.4s;
 }
-.premium-card:hover .premium-card-img-box img {
-  transform: scale(1.1);
+.img-overlay-glow {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: radial-gradient(circle at center, rgba(37,99,235,0.05) 0%, transparent 70%);
+  opacity: 0; transition: opacity 0.5s; pointer-events: none;
 }
+
 .premium-card-img-box img {
   max-width: 100%; max-height: 100%;
-  object-fit: contain; transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.05));
+  object-fit: contain;
+  filter: drop-shadow(0 15px 25px rgba(0,0,0,0.08));
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  mix-blend-mode: darken;
 }
 
-.card-body-inner { flex: 1; display: flex; flex-direction: column; }
+.card-body-inner {
+  padding: 20px 8px 8px;
+  display: flex; flex-direction: column; flex-grow: 1;
+}
 
 .premium-card-title {
-  font-size: 17px; font-weight: 700; color: #1e293b;
-  margin-bottom: 8px; text-align: left;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+  font-size: 17px; font-weight: 800; color: #1e293b;
+  margin-bottom: 8px; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; min-height: 2.7em;
+  letter-spacing: -0.01em;
 }
 
+.price-box { margin-bottom: 15px; }
 .premium-card-price {
-  color: #3b82f6; font-weight: 800; font-size: 19px;
-  margin-bottom: 18px; text-align: left;
+  font-size: 20px; font-weight: 900; color: #d70018;
+  margin: 0; line-height: 1;
+}
+.price-label {
+  font-size: 11px; font-weight: 800; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 4px; display: block;
 }
 
-.premium-action-row { display: flex; align-items: center; gap: 10px; }
-
+.premium-action-row {
+  display: flex; gap: 10px; margin-top: auto;
+}
 .btn-custom-buy {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #fff; font-weight: 700; border-radius: 14px;
-  height: 48px; font-size: 13px; text-transform: uppercase;
-  letter-spacing: 0.05em; border: none; cursor: pointer; flex: 1;
-  transition: 0.3s;
+  flex: 1; background: #0071e3; color: #fff;
+  border: none; height: 44px; border-radius: 12px;
+  font-weight: 800; font-size: 13.5px;
+  cursor: pointer; transition: all 0.3s;
 }
-.btn-custom-buy:hover:not(:disabled) {
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
-  transform: translateY(-2px);
+.btn-custom-buy:hover {
+  background: #0077ed;
+  box-shadow: 0 8px 20px rgba(0,113,227,0.3);
+  transform: scale(1.02);
 }
 
 .btn-custom-add {
-  width: 48px; height: 48px; border-radius: 14px;
-  background: #f1f5f9; color: #475569;
-  border: none; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: 0.3s;
+  width: 44px; height: 44px; border-radius: 12px;
+  border: 1.5px solid #e2e8f0; background: #fff;
+  color: #64748b; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.3s;
 }
-.btn-custom-add:hover { background: #e2e8f0; color: #1e293b; }
+.btn-custom-add:hover {
+  border-color: #0071e3; color: #0071e3;
+  background: #f0f7ff; transform: rotate(8deg);
+}
+
+.spin-dot, .spin-dot-dark {
+  width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.spin-dot-dark { border-color: rgba(0,0,0,0.1); border-top-color: #1e293b; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 768px) {
-  .premium-card { border-radius: 20px; padding: 12px; }
-  .premium-card-img-box { height: 160px; }
-  .premium-card-title { font-size: 14px; height: 36px; }
+  .premium-card { border-radius: 16px; padding: 10px; }
+  .premium-card-img-box { height: 140px; border-radius: 14px; padding: 15px; margin-bottom: 0; }
+  .card-body-inner { padding: 12px 4px 4px; }
+  .premium-card-title { font-size: 13.5px; min-height: 2.7em; margin-bottom: 5px; }
   .premium-card-price { font-size: 16px; }
-  .btn-custom-buy, .btn-custom-add { height: 40px; }
-  .btn-custom-add { width: 40px; }
+  .price-label { font-size: 10px; margin-bottom: 2px; }
+  .price-box { margin-bottom: 10px; }
+  .btn-custom-buy, .btn-custom-add { height: 36px; border-radius: 10px; font-size: 11px; }
+  .btn-custom-add { width: 36px; }
 }
 </style>

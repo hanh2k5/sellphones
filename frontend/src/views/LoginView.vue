@@ -1,6 +1,6 @@
 <template>
   <div class="flex-1 flex items-center justify-center py-20 px-4 relative z-10 bg-[#f9f9f9]">
-    <div class="backdrop-blur-2xl bg-white/60 border border-white/80 rounded-[3rem] shadow-[0_8px_30px_rgba(0,0,0,0.06)] w-full max-w-md p-10 relative overflow-hidden">
+    <div class="backdrop-blur-2xl bg-white/60 border border-white/80 rounded-[2.5rem] md:rounded-[3rem] shadow-[0_8px_30px_rgba(0,0,0,0.06)] w-full max-w-md p-6 md:p-10 relative overflow-hidden">
       <!-- Glow effect behind form -->
       <div class="absolute -top-[20%] -right-[20%] w-[60%] h-[60%] rounded-full bg-blue-300/30 blur-[80px] pointer-events-none"></div>
       <div class="absolute -bottom-[20%] -left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-300/30 blur-[80px] pointer-events-none"></div>
@@ -16,19 +16,19 @@
       <!-- Form -->
       <form @submit.prevent="handleLogin" novalidate class="space-y-6 relative z-10">
         <div>
-          <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.email') }}</label>
-          <input v-model="form.email" type="email" placeholder="admin@sellphones.com"
+          <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.email') }}</label>
+          <input v-model="form.email" type="email" inputmode="email" autocomplete="email" placeholder="email@example.com"
             @input="errors && (errors.email = null)"
-            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
+            class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
             :class="{'input-error': errors?.email}" />
           <p v-if="errors?.email" class="form-error-label">{{ errors.email[0] }}</p>
         </div>
         <div class="relative group">
-          <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.password') }}</label>
+          <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.password') }}</label>
           <div class="relative">
-            <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="••••••••"
+            <input v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" placeholder="••••••••"
               @input="errors && (errors.password = null)"
-              class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400 pr-14"
+              class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400 pr-14"
               :class="{'input-error': errors?.password}" />
             
             <button type="button" @click="showPassword = !showPassword"
@@ -72,11 +72,13 @@ import { ref, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useI18nStore } from '../stores/i18n'
+import { useToast } from '../composables/useToast'
 
 const authStore = useAuthStore()
 const i18nStore = useI18nStore()
 const router = useRouter()
 const route = useRoute()
+const toast = useToast()
 
 const form = ref({ email: '', password: '' })
 const errorMsg = ref('')
@@ -95,27 +97,28 @@ async function handleLogin() {
   // Client-side validation
   let hasError = false
   if (!form.value.email?.trim()) {
-    errors.value.email = [i18nStore.t('auth.email_error') || 'Vui lòng nhập email']
+    errors.value.email = [i18nStore.t('auth.email_error')]
     hasError = true
   }
   if (!form.value.password?.trim()) {
-    errors.value.password = [i18nStore.t('auth.password_error') || 'Vui lòng nhập mật khẩu']
+    errors.value.password = [i18nStore.t('auth.password_error')]
     hasError = true
   }
   if (hasError) return
 
   const result = await authStore.login(form.value.email, form.value.password)
   if (result.success) {
+    toast.success(i18nStore.t('common.login_success'))
     router.push(route.query.redirect || '/')
   } else {
     // Nếu là lỗi validation hoặc sai tài khoản
     if (result.data?.errors) {
       errors.value = result.data.errors
     } else {
-      const msg = result.message || 'Lỗi đăng nhập hệ thống'
+      const msg = result.message || i18nStore.t('common.error')
       if (msg.toLowerCase().includes('email')) {
         errors.value.email = [msg]
-      } else if (msg.toLowerCase().includes('password') || msg.toLowerCase().includes('mật khẩu')) {
+      } else if (msg.toLowerCase().includes('password') || msg.toLowerCase().includes(i18nStore.t('common.password').toLowerCase())) {
         errors.value.password = [msg]
       } else {
         errors.value.email = [msg]

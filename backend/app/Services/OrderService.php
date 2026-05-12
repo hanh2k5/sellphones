@@ -38,7 +38,7 @@ class OrderService
             ->get();
 
         if ($cartItems->isEmpty()) {
-            throw new Exception('Giỏ hàng trống.', 422);
+            throw new Exception(__('messages.cart_empty'), 422);
         }
 
         return DB::transaction(function () use ($data, $user, $cartItems) {
@@ -49,7 +49,7 @@ class OrderService
                 $product = Product::lockForUpdate()->find($item->product_id);
 
                 if (!$product || $product->stock < $item->quantity) {
-                    throw new Exception("Sản phẩm {$item->product->name} không đủ tồn kho.", 422);
+                    throw new Exception(__('messages.stock_insufficient', ['name' => $item->product->name]), 422);
                 }
                 
                 $product->decrement('stock', $item->quantity);

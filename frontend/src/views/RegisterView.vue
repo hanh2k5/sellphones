@@ -1,11 +1,14 @@
 <template>
-  <div class="flex-1 flex items-center justify-center py-20 px-4 relative z-10 bg-[#f9f9f9]">
-    <div class="backdrop-blur-2xl bg-white/60 border border-white/80 rounded-[3rem] shadow-[0_8px_30px_rgba(0,0,0,0.06)] w-full max-w-md p-10 relative overflow-hidden">
-      <!-- Glow effect behind form -->
-      <div class="absolute -top-[20%] -right-[20%] w-[60%] h-[60%] rounded-full bg-blue-300/30 blur-[80px] pointer-events-none"></div>
-      <div class="absolute -bottom-[20%] -left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-300/30 blur-[80px] pointer-events-none"></div>
+  <div class="flex-1 flex items-center justify-center py-12 md:py-20 px-4 relative z-10 bg-[#f9f9f9]">
+    <!-- Back Button -->
+    <button @click="$router.back()" class="auth-back-btn">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 19l-7-7 7-7"/></svg>
+    </button>
+
+    <div class="backdrop-blur-2xl bg-white/60 border border-white/80 rounded-[2.5rem] md:rounded-[3rem] shadow-[0_8px_30px_rgba(0,0,0,0.06)] w-full max-w-md p-6 md:p-10 relative overflow-hidden">
+      <!-- Glow effect -->
+      <div class="absolute -top-[20%] -right-[20%] w-[60%] h-[60%] rounded-full bg-blue-300/20 blur-[80px] pointer-events-none"></div>
       
-      <!-- Logo / Title -->
       <div class="text-center mb-10 relative z-10">
         <h1 class="text-4xl font-bold tracking-tight text-slate-800">
           <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Sell</span>phones
@@ -13,87 +16,55 @@
         <p class="text-slate-500 mt-2 font-medium">{{ i18nStore.t('auth.start_experience') }}</p>
       </div>
 
-      <!-- Form -->
-      <form @submit.prevent="handleRegister" novalidate class="space-y-5 relative z-10">
+      <form @submit.prevent="handleRegister" novalidate class="space-y-4 relative z-10">
         <div>
-          <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.name') }}</label>
+          <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.name') }}</label>
           <input v-model="form.name" type="text" :placeholder="i18nStore.t('auth.name')"
-            @input="errors && (errors.name = null)"
-            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
+            class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
             :class="{'input-error': errors?.name}" />
           <p v-if="errors?.name" class="form-error-label">{{ errors.name[0] }}</p>
         </div>
+
         <div>
-          <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.email') }}</label>
-          <input v-model="form.email" type="email" placeholder="email@example.com"
-            @input="errors && (errors.email = null)"
-            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
+          <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.email') }}</label>
+          <input v-model="form.email" type="email" inputmode="email" placeholder="email@example.com"
+            class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
             :class="{'input-error': errors?.email}" />
           <p v-if="errors?.email" class="form-error-label">{{ errors.email[0] }}</p>
         </div>
+
         <div>
-          <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.address') }}</label>
+          <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.address') }}</label>
           <input v-model="form.address" type="text" :placeholder="i18nStore.t('auth.address_placeholder')"
-            @input="errors && (errors.address = null)"
-            class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-6 py-4 text-[15px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
+            class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
             :class="{'input-error': errors?.address}" />
           <p v-if="errors?.address" class="form-error-label">{{ errors.address[0] }}</p>
         </div>
+
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-[10px] font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.password') }}</label>
-            <div class="relative">
-              <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="••••••••"
-                @input="errors && (errors.password = null)"
-                class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[14px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400 pr-12"
-                :class="{'input-error': errors?.password}" />
-              <button type="button" @click="showPassword = !showPassword"
-                class="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 transition-colors">
-                <svg v-if="!showPassword" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                </svg>
-              </button>
-            </div>
+            <label class="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.password') }}</label>
+            <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="••••"
+              class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[14px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
+              :class="{'input-error': errors?.password}" />
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-slate-700 mb-2 uppercase tracking-widest">{{ i18nStore.t('auth.confirm_password') }}</label>
-            <div class="relative">
-              <input v-model="form.password_confirmation" :type="showConfirmPassword ? 'text' : 'password'" placeholder="••••••••"
-                @input="errors && (errors.password_confirmation = null)"
-                class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[14px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400 pr-12"
-                :class="{'input-error': errors?.password_confirmation}" />
-              <button type="button" @click="showConfirmPassword = !showConfirmPassword"
-                class="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 transition-colors">
-                <svg v-if="!showConfirmPassword" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                </svg>
-              </button>
-            </div>
+            <label class="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.confirm_password') }}</label>
+            <input v-model="form.password_confirmation" :type="showPassword ? 'text' : 'password'" placeholder="••••"
+              class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[14px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
+              :class="{'input-error': errors?.password_confirmation}" />
           </div>
         </div>
-        <p v-if="errors?.password || errors?.password_confirmation" class="form-error-label">
-          {{ (errors.password?.[0] || errors.password_confirmation?.[0]) }}
-        </p>
 
         <button type="submit" :disabled="authStore.loading"
-          class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:grayscale text-white font-bold py-5 rounded-2xl transition-all duration-300 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-95 text-xs uppercase tracking-[0.2em] mt-4">
+          class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-bold py-5 rounded-2xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-xs uppercase tracking-[0.2em] mt-4">
           {{ authStore.loading ? i18nStore.t('auth.creating').toUpperCase() : i18nStore.t('auth.create_now').toUpperCase() }}
         </button>
       </form>
 
-      <div class="mt-10 text-center text-xs font-bold uppercase tracking-widest relative z-10 auth-links">
+      <div class="mt-8 text-center text-xs font-bold uppercase tracking-widest relative z-10">
         <span class="text-slate-500">{{ i18nStore.t('auth.already_have_account') }} </span>
-        <router-link to="/login" class="hover:text-blue-600 transition-all ml-1">
-          {{ i18nStore.t('auth.login_now') }}
-        </router-link>
+        <router-link to="/login" class="text-blue-600 hover:underline ml-1">{{ i18nStore.t('auth.login_now') }}</router-link>
       </div>
     </div>
   </div>
@@ -112,74 +83,47 @@ const router = useRouter()
 const toast = useToast()
 
 const form = ref({ name: '', email: '', address: '', password: '', password_confirmation: '' })
-const errorMsg = ref('')
 const errors = ref({})
 const showPassword = ref(false)
-const showConfirmPassword = ref(false)
 
 async function handleRegister() {
-  errorMsg.value = ''
   errors.value = {}
-
-  // Client-side validation
   let hasError = false
-  if (!form.value.name?.trim()) {
-    errors.value.name = [i18nStore.t('auth.name_error') || 'Vui lòng nhập họ tên']
-    hasError = true
-  }
-  if (!form.value.email?.trim()) {
-    errors.value.email = [i18nStore.t('auth.email_error') || 'Vui lòng nhập email']
-    hasError = true
-  }
-  if (!form.value.address?.trim()) {
-    errors.value.address = [i18nStore.t('auth.address_error') || 'Vui lòng nhập địa chỉ']
-    hasError = true
-  }
-  if (!form.value.password?.trim()) {
-    errors.value.password = [i18nStore.t('auth.password_error') || 'Vui lòng nhập mật khẩu']
-    hasError = true
-  }
+  if (!form.value.name?.trim()) { errors.value.name = [i18nStore.t('auth.name_error')]; hasError = true }
+  if (!form.value.email?.trim()) { errors.value.email = [i18nStore.t('auth.email_error')]; hasError = true }
+  if (!form.value.address?.trim()) { errors.value.address = [i18nStore.t('auth.address_error')]; hasError = true }
+  if (!form.value.password?.trim()) { errors.value.password = [i18nStore.t('auth.password_error')]; hasError = true }
   if (form.value.password !== form.value.password_confirmation) {
-    errors.value.password_confirmation = ['Mật khẩu xác nhận không khớp']
+    errors.value.password_confirmation = [i18nStore.t('auth.password_confirmation_error')]
     hasError = true
   }
-
   if (hasError) return
 
   const result = await authStore.register(form.value.name, form.value.email, form.value.address, form.value.password, form.value.password_confirmation)
-
   if (result.success) {
-    toast.success(i18nStore.t('auth.register_success') || 'Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.')
+    toast.success(i18nStore.t('auth.register_success'))
     router.push('/login')
   } else {
-    // Nếu là lỗi validation từ Backend
-    if (result.errors) {
-      errors.value = result.errors
-      toast.error('Vui lòng kiểm tra lại thông tin nhập liệu.')
-    } else {
-      // Lỗi hệ thống hoặc lỗi không xác định
-      const msg = result.message || 'Lỗi đăng ký hệ thống'
-      toast.error(msg)
-      
-      if (msg.toLowerCase().includes('email')) {
-        errors.value.email = [msg]
-      } else if (msg.toLowerCase().includes('name') || msg.toLowerCase().includes('tên')) {
-        errors.value.name = [msg]
-      } else {
-        errors.value.name = [msg]
-      }
-    }
+    if (result.errors) errors.value = result.errors
+    else toast.error(result.message || 'Error')
   }
 }
 </script>
 
 <style scoped>
-.auth-links a {
-  color: #334155 !important; /* slate-700 */
-  text-decoration: none;
-  font-weight: 800;
+.form-error-label { color: #ef4444; font-size: 11px; font-weight: 700; margin-top: 4px; }
+.input-error { border-color: #ef4444 !important; }
+
+.auth-back-btn {
+  position: absolute; top: 20px; left: 20px; width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; border-radius: 14px; color: #64748b;
+  border: 1px solid #e2e8f0; cursor: pointer; transition: 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05); z-index: 50;
 }
-.auth-links a:hover {
-  color: #2563eb !important; /* blue-600 */
+.auth-back-btn:hover { color: #1e293b; border-color: #cbd5e1; transform: translateX(-4px); }
+
+@media (max-width: 768px) {
+  .auth-back-btn { top: 12px; left: 12px; width: 38px; height: 38px; }
 }
 </style>

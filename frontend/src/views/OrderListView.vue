@@ -51,7 +51,7 @@
               <span class="text-2xl">📦</span>
             </div>
             <div>
-              <h3 class="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{{ i18n.t('order.id') || 'Đơn hàng' }} {{ order.order_code }}</h3>
+              <h3 class="font-bold text-slate-800 text-base md:text-lg group-hover:text-blue-600 transition-colors">{{ i18n.t('order.id') || 'Đơn hàng' }} {{ order.order_code }}</h3>
               <p class="text-[13px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{{ formatDate(order.created_at) }}</p>
             </div>
           </div>
@@ -86,9 +86,9 @@
                 <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{{ order.items?.length }} {{ i18n.t('order.items') || 'sản phẩm' }}</p>
                 <p class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 drop-shadow-sm">{{ fmt(order.total_amount) }}</p>
               </div>
-              <div class="flex gap-3 w-full sm:w-auto">
-                <router-link :to="`/orders/${order.id}`" class="flex-1 sm:flex-none text-center px-8 py-3.5 bg-white hover:bg-slate-50 text-blue-600 shadow-sm border border-slate-100 rounded-2xl text-xs font-bold uppercase tracking-widest hover:shadow-md transition-all active:scale-95">
-                  {{ i18n.locale === 'vi' ? 'Xem chi tiết' : 'View Detail' }}
+              <div class="flex gap-4 w-full sm:w-auto">
+                <router-link :to="`/orders/${order.id}`" class="flex-1 sm:flex-none text-center px-8 py-4 bg-white hover:bg-slate-50 text-blue-600 shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-slate-100 rounded-2xl text-[13px] font-bold uppercase tracking-widest hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-all duration-300 active:scale-95">
+                  {{ i18n.t('common.view_details') }}
                 </router-link>
               </div>
             </div>
@@ -120,6 +120,10 @@
 </template>
 
 <script setup>
+/**
+ * SV THỰC HIỆN: PHAN ĐÌNH HẠNH
+ * MỤC: 4.1.7 - HIỂN THỊ DANH SÁCH ĐƠN HÀNG (USER)
+ */
 import { onMounted } from 'vue'
 import { useOrderStore } from '../stores/order'
 import { useI18nStore } from '../stores/i18n'
@@ -140,16 +144,18 @@ function goPage(page) {
 
 function statusLabel(s) {
   return { 
-    pending:    i18n.t('order.status_pending') || 'Chờ duyệt', 
-    shipping:   i18n.t('order.status_shipping') || 'Đang giao',
-    completed:  i18n.t('order.status_completed') || 'Hoàn thành', 
-    cancelled:  i18n.t('order.status_cancelled') || 'Đã hủy' 
+    pending:    i18n.t('order.status_pending'), 
+    processing: i18n.t('order.status_processing'),
+    shipping:   i18n.t('order.status_shipping'),
+    completed:  i18n.t('order.status_completed'), 
+    cancelled:  i18n.t('order.status_cancelled') 
   }[s] || s
 }
 
 function statusClass(s) {
   return {
     pending:    'bg-amber-50 text-amber-600 border-amber-100',
+    processing: 'bg-indigo-50 text-indigo-600 border-indigo-100',
     shipping:   'bg-blue-50 text-blue-600 border-blue-100',
     completed:  'bg-emerald-50 text-emerald-600 border-emerald-100',
     cancelled:  'bg-rose-50 text-rose-600 border-rose-100',
@@ -160,4 +166,24 @@ function statusClass(s) {
 <style scoped>
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+@media (max-width: 768px) {
+  .max-w-5xl { padding-top: 15px; padding-bottom: 30px; }
+  .mb-12 { margin-bottom: 1rem !important; }
+  .text-4xl { font-size: 1.3rem !important; }
+  .text-slate-500.mt-2 { font-size: 13px; }
+  .backdrop-blur-xl { border-radius: 1.25rem !important; }
+  .p-6, .p-8 { padding: 14px; }
+  .w-14 { width: 36px; height: 36px; }
+  .w-14 .text-2xl { font-size: 1.25rem; }
+  h3 { font-size: 15px !important; }
+  .text-xs { font-size: 11px !important; }
+  .px-5.py-2 { padding: 6px 12px; font-size: 9px; border-radius: 8px; }
+  .flex.-space-x-4 { gap: 6px; margin-left: 0; }
+  .w-20 { width: 52px; height: 52px; border-radius: 12px; }
+  .text-3xl { font-size: 1.25rem !important; }
+  .px-8.py-4 { padding: 10px 16px; font-size: 11px; border-radius: 12px; }
+  .gap-8 { gap: 1rem; }
+  .pl-10 { padding-left: 0; border-left: none; }
+  .pt-6 { padding-top: 1rem; }
+}
 </style>

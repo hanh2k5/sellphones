@@ -65,11 +65,12 @@ return [
 
     // Voucher
     'voucher_created'      => 'Voucher created!',
-    'voucher_updated'      => 'Voucher updated!',
+    'voucher_updated'      => 'Voucher updated successfully!',
+    'min_order_error'      => 'Minimum order value of :min is required to apply this code.',
+    'voucher_applied'      => 'Voucher applied successfully!',
     'voucher_deleted'      => 'Voucher deleted!',
     'voucher_not_found'    => 'Voucher code not found!',
     'voucher_expired'      => 'Voucher expired or fully used!',
-    'voucher_applied'      => 'Applied! Discount: :amount',
 
     // Review
     'review_created'       => 'Thank you for your review!',
@@ -103,4 +104,21 @@ return [
         'category_id' => 'Category',
         'quantity'    => 'Quantity',
     ],
+    'cart_empty' => 'Your cart is empty.',
+    'stock_insufficient' => 'Product :name does not have enough stock.',
+    'review_exists' => 'You have already reviewed this product.',
+    'unauthorized' => 'You are not authorized to perform this action.',
+    'login_required' => 'Please login again.',
+    'category_has_products' => 'Cannot delete a category that contains products.',
+    'admin_lock_error' => 'Cannot lock an administrator account.',
+    'data_conflict' => 'This data has been modified by another user. Please refresh the page.',
+    'order_success' => 'Order placed successfully!',
+    'already_paid' => 'This order has already been paid.',
+    'momo_success' => 'MoMo payment successful!',
+    'order_invalid_or_not_purchased' => 'Invalid order or you have not purchased this product.',
+    'email_not_exists' => 'This email address does not exist in our system.',
+    'account_locked' => '🔒 This account is temporarily locked. Please try again in :minutes minutes.',
+    'account_locked_5_minutes' => 'You have entered the wrong password more than 5 times. The account is temporarily locked for 5 minutes.',
+    'incorrect_password' => 'Incorrect password. You have :remaining attempts left before being locked.',
+    'account_deactivated' => 'Your account has been deactivated by an administrator.',
 ];

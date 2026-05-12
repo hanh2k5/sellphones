@@ -10,8 +10,13 @@
           @click="remove(toast.id)"
         >
           <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white shadow-md" :class="iconBgClass(toast.type)" v-html="toastIcon(toast.type)"></div>
-          <span class="flex-1 leading-relaxed text-slate-700">{{ toast.message }}</span>
-          <button class="opacity-30 hover:opacity-100 transition-opacity flex-shrink-0 text-slate-400 p-1 hover:bg-slate-100 rounded-lg ml-2">
+          <div class="flex-1 flex flex-col gap-1">
+            <span class="leading-tight text-slate-700">{{ toast.message }}</span>
+            <button v-if="toast.action" @click.stop="handleAction(toast)" class="text-[11px] font-bold text-blue-600 hover:underline text-left uppercase tracking-wider">
+              {{ toast.action.label }}
+            </button>
+          </div>
+          <button @click.stop="remove(toast.id)" class="opacity-30 hover:opacity-100 transition-opacity flex-shrink-0 text-slate-400 p-1 hover:bg-slate-100 rounded-lg ml-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
@@ -21,9 +26,17 @@
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router'
 import { useToast } from '../composables/useToast'
 
+const router = useRouter()
 const { toasts, remove } = useToast()
+
+function handleAction(toast) {
+  if (toast.action.url) router.push(toast.action.url)
+  else if (toast.action.callback) toast.action.callback()
+  remove(toast.id)
+}
 
 function toastClass(type) {
   return {

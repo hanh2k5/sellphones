@@ -38,7 +38,7 @@ class VoucherController extends Controller
 
             if ($totalAmount < $voucher->min_order_value) {
                 return response()->json([
-                    'message' => 'Đơn hàng chưa đạt giá trị tối thiểu ' . number_format($voucher->min_order_value, 0, ',', '.') . 'đ để áp dụng mã này.'
+                    'message' => __('messages.min_order_error', ['min' => number_format($voucher->min_order_value, 0, ',', '.') . 'đ'])
                 ], 422);
             }
 
@@ -47,7 +47,7 @@ class VoucherController extends Controller
             return response()->json([
                 'voucher'  => (new VoucherResource($voucher))->resolve(),
                 'discount' => $discount,
-                'message'  => 'Áp dụng mã giảm giá thành công!'
+                'message'  => __('messages.voucher_applied')
             ]);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 422);

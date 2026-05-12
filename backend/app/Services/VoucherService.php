@@ -20,11 +20,11 @@ class VoucherService
         $voucher = Voucher::where('code', strtoupper($code))->first();
 
         if (!$voucher) {
-            throw new Exception('Mã giảm giá không tồn tại.', 404);
+            throw new Exception(__('messages.voucher_not_found'), 404);
         }
 
         if (!$voucher->isValid()) {
-            throw new Exception('Mã giảm giá đã hết hạn hoặc hết lượt sử dụng.', 422);
+            throw new Exception(__('messages.voucher_expired'), 422);
         }
 
         return $voucher;
