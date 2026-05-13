@@ -22,6 +22,7 @@ return [
     'after'    => 'The :attribute must be a date after :date.',
     'image'    => 'The :attribute must be an image.',
     'mimes'    => 'The :attribute must be a file of type: :values.',
+    'phone_regex' => 'Invalid phone number (must be 10 digits and start with 0).',
 
     'attributes' => [
         'name'             => 'name',
@@ -36,6 +37,8 @@ return [
         'voucher_code'     => 'voucher code',
         'payment_method'   => 'payment method',
         'shipping_address' => 'shipping address',
+        'receiver_name'    => 'receiver name',
+        'phone'            => 'phone number',
         'rating'           => 'rating',
         'comment'          => 'comment',
         'code'             => 'voucher code',

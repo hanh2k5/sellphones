@@ -97,4 +97,43 @@ class OrderService
             return $order->load(['items.product', 'voucher']);
         });
     }
+
+    /**
+     * [Phan Đình Hạnh - 4.1.9] Hủy đơn hàng và Hoàn tồn kho tự động
+     * Kỹ thuật: Optimistic Locking & Database Transaction.
+     */
+    public function cancelOrder(Order $order, $user, $clientUpdatedAt = null)
+    {
+        // 1. Kiểm tra quyền hạn (Admin hoặc chủ đơn hàng)
+        if (!$user->isAdmin() && $order->user_id !== $user->id) {
+            throw new Exception(__('messages.unauthorized'), 403);
+        }
+
+        // 2. LOGIC TRANH CHẤP (Optimistic Locking)
+        if ($clientUpdatedAt && $order->updated_at->toIso8601String() !== $clientUpdatedAt) {
+            throw new Exception(__('messages.order_conflict'), 409);
+        }
+
+        // 3. Kiểm tra trạng thái hợp lệ để hủy
+        if (in_array($order->status, ['completed', 'cancelled'])) {
+            throw new Exception('Không thể hủy đơn hàng đã hoàn thành hoặc đã bị hủy trước đó.', 422);
+        }
+
+        // 4. Thực hiện Hủy & Hoàn kho trong Transaction
+        return DB::transaction(function () use ($order) {
+            // Hoàn tồn kho
+            $order->load(['items.product' => fn($q) => $q->withTrashed()]);
+            foreach ($order->items as $item) {
+                if ($item->product) {
+                    // Cộng lại số lượng vào kho
+                    $item->product->increment('stock', $item->quantity);
+                }
+            }
+
+            // Cập nhật trạng thái
+            $order->update(['status' => 'cancelled']);
+            
+            return $order->fresh();
+        });
+    }
 }
