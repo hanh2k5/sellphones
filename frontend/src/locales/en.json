@@ -500,5 +500,14 @@
     "new_password": "New Password",
     "confirm_new_password": "Confirm New Password",
     "update_password": "Update Password"
+  },
+  "chat": {
+    "title": "SellPhones AI Assistant",
+    "status": "Online",
+    "clear": "Clear chat",
+    "welcome": "Hello! I am Ngoc - your friendly AI assistant at SellPhones. How can I help you today? 😊",
+    "placeholder": "Type your question here...",
+    "clear_confirm": "Are you sure you want to clear the entire conversation?",
+    "login_required": "Please login to use the AI consultation feature!"
   }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -80,4 +81,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Báo cáo 4.1.13: Thêm mã giảm giá (Voucher) vào đơn hàng
     Route::get('/vouchers', [VoucherController::class, 'index']);
     Route::post('/vouchers/apply', [VoucherController::class, 'apply']);
+
+    // AI Chatbot [Phan Đình Hạnh - 4.1.11]
+    Route::get('/ai/chats', [ChatController::class, 'index']);
+    Route::post('/ai/chats', [ChatController::class, 'send']);
+    Route::delete('/ai/chats', [ChatController::class, 'clear']);
 });
