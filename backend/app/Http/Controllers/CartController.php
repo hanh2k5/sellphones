@@ -21,12 +21,16 @@ class CartController extends Controller
 
     public function index(Request $request)
     {
-        $items = CartItem::where('user_id', $request->user()->id)
-            ->with('product')
-            ->get();
+        $query = CartItem::where('user_id', $request->user()->id)
+            ->with('product');
             
-        $totalAmount = $items->sum(fn($item) => $item->product->price * $item->quantity);
-        $totalQuantity = $items->sum('quantity');
+        // Tính tổng tiền và tổng số lượng dựa trên TOÀN BỘ giỏ hàng
+        $allItems = (clone $query)->get();
+        $totalAmount = $allItems->sum(fn($item) => $item->product->price * $item->quantity);
+        $totalQuantity = $allItems->sum('quantity');
+
+        // Phân trang danh sách hiển thị
+        $items = $query->paginate(10);
 
         return response()->json([
             'items'          => $items,
