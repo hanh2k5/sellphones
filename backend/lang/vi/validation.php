@@ -20,6 +20,7 @@ return [
     'exists' => ':attribute được chọn không hợp lệ.',
     'regex' => 'Định dạng :attribute không hợp lệ.',
     'in' => ':attribute được chọn không hợp lệ.',
+    'phone_regex' => 'Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).',
     
     'attributes' => [
         'name' => 'Họ tên',
@@ -38,5 +39,9 @@ return [
         'stock' => 'Tồn kho',
         'code' => 'Mã giảm giá',
         'discount_value' => 'Giá trị giảm',
+        'voucher_code' => 'Mã giảm giá',
+        'payment_method' => 'Phương thức thanh toán',
+        'shipping_address' => 'Địa chỉ giao hàng',
+        'receiver_name' => 'Họ tên người nhận',
     ],
 ];

@@ -216,4 +216,21 @@ class OrderController extends Controller
         return response()->json(['success' => true, 'message' => __('messages.update_success'), 'order' => new OrderResource($order)]);
     }
 
+    /**
+     * [Phan Đình Hạnh - 4.1.9] Hủy đơn hàng và Hoàn tồn kho tự động
+     */
+    public function cancel(Request $request, Order $order)
+    {
+        try {
+            $updatedOrder = $this->orderService->cancelOrder($order, $request->user(), $request->updated_at);
+            return response()->json([
+                'success' => true,
+                'message' => __('messages.update_success'),
+                'order'   => new OrderResource($updatedOrder)
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 500);
+        }
+    }
+
 }

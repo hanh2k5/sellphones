@@ -15,7 +15,7 @@ class StoreOrderRequest extends FormRequest
     }
 
     /**
-     * Ràng buộc dữ liệu theo đúng báo cáo 4.1.2 STT 2
+     * [Phan Đình Hạnh - 4.1.2 STT 2] Ràng buộc dữ liệu đặt hàng
      */
     public function rules(): array
     {
@@ -29,13 +29,27 @@ class StoreOrderRequest extends FormRequest
     }
 
     /**
-     * Thông báo lỗi bằng Tiếng Việt chuẩn
+     * Tùy chỉnh thông báo lỗi (Sử dụng Localization để hỗ trợ cả Anh/Việt)
      */
     public function messages(): array
     {
         return [
-            'phone.regex' => 'Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).',
-            'receiver_name.max' => 'Họ tên không được quá 50 ký tự.',
+            'phone.regex' => __('validation.phone_regex'),
+            'receiver_name.max' => __('validation.max.string', ['attribute' => __('validation.attributes.receiver_name'), 'max' => 50]),
+        ];
+    }
+
+    /**
+     * Định nghĩa tên hiển thị của các trường dữ liệu
+     */
+    public function attributes(): array
+    {
+        return [
+            'voucher_code'     => __('validation.attributes.voucher_code'),
+            'payment_method'   => __('validation.attributes.payment_method'),
+            'shipping_address' => __('validation.attributes.shipping_address'),
+            'receiver_name'    => __('validation.attributes.receiver_name'),
+            'phone'            => __('validation.attributes.phone'),
         ];
     }
 }

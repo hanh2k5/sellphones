@@ -100,6 +100,13 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 <span>{{ i18n.t('common.complete') || 'Hoàn tất' }}</span>
               </button>
+
+              <!-- Báo cáo 4.1.9: Hủy đơn hàng (Admin/User) -->
+              <button v-if="['pending', 'shipping'].includes(order.status)" @click="handleCancel(order)" 
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white rounded-lg transition-all font-bold text-[10px] uppercase border border-rose-200 shadow-sm whitespace-nowrap">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <span>{{ i18n.t('common.cancel') }}</span>
+              </button>
               
               <span v-if="['completed', 'cancelled'].includes(order.status)" class="text-[10px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-1 rounded-md whitespace-nowrap">
                 {{ i18n.t('admin.order_locked') }}
@@ -134,28 +141,35 @@
             </div>
 
             <!-- Footer: Price & Actions -->
-            <div class="flex justify-between items-end pt-3 border-t border-slate-50 mt-1">
-              <div class="flex flex-col">
+            <div class="flex justify-between items-end pt-3 border-t border-slate-50 mt-1 gap-2">
+              <div class="flex flex-col shrink-0">
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ i18n.t('admin.total_amount') }}</span>
-                <span class="text-base font-bold text-red-600 mt-0.5">{{ fmtPrice(order.total_amount) }}</span>
+                <span class="text-base font-bold text-red-600 mt-0.5 whitespace-nowrap">{{ fmtPrice(order.total_amount) }}</span>
               </div>
               
-              <div class="flex gap-2">
+              <div class="flex gap-1.5 flex-wrap justify-end">
                 <!-- Duyệt đơn -->
                 <button v-if="order.status === 'pending'" @click="handleUpdateStatus(order)" 
-                  class="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-transform shadow-md shadow-green-800/20">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  class="flex items-center gap-1 px-2.5 py-1.5 bg-green-600 text-white rounded-lg text-[10px] font-bold active:scale-95 transition-transform shadow-md shadow-green-800/20 whitespace-nowrap">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                   {{ i18n.t('admin.approve_order') }}
                 </button>
 
                 <!-- Hoàn tất -->
                 <button v-if="order.status === 'shipping'" @click="handleUpdateStatus(order)" 
-                  class="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-transform shadow-md shadow-blue-800/20">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  class="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold active:scale-95 transition-transform shadow-md shadow-blue-800/20 whitespace-nowrap">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                   {{ i18n.t('common.complete') || 'Hoàn tất' }}
                 </button>
 
-                <div v-if="['completed', 'cancelled'].includes(order.status)" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase">
+                <!-- Hủy đơn -->
+                <button v-if="['pending', 'shipping'].includes(order.status)" @click="handleCancel(order)" 
+                  class="flex items-center gap-1 px-2.5 py-1.5 bg-rose-600 text-white rounded-lg text-[10px] font-bold active:scale-95 transition-transform shadow-md shadow-rose-800/20 whitespace-nowrap">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                  {{ i18n.t('common.cancel') }}
+                </button>
+
+                <div v-if="['completed', 'cancelled'].includes(order.status)" class="flex items-center gap-1.5 px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-bold uppercase whitespace-nowrap">
                   {{ i18n.t('admin.order_locked') }}
                 </div>
               </div>
@@ -244,6 +258,23 @@ async function handleUpdateStatus(order) {
   } catch (e) {
     if (e.response?.status === 409) {
       // Báo cáo 4.1.8 STT 3: Xử lý ngoại lệ, thông báo tranh chấp dữ liệu (Optimistic Locking)
+      showConflictAlert.value = true
+      toast.warning(e.response?.data?.message || i18n.t('admin.data_conflict'))
+    } else {
+      toast.error(e.response?.data?.message || i18n.t('common.error'))
+    }
+  }
+}
+
+// Báo cáo 4.1.9 STT 1: Chức năng Hủy đơn hàng và Hoàn tồn kho
+async function handleCancel(order) {
+  try {
+    await ordersApi.cancel(order.id, order.updated_at)
+    toast.success(i18n.t('admin.order_updated_success'))
+    fetchOrders()
+  } catch (e) {
+    if (e.response?.status === 409) {
+      // Báo cáo 4.1.9 STT 2: Xử lý tranh chấp dữ liệu khi hủy
       showConflictAlert.value = true
       toast.warning(e.response?.data?.message || i18n.t('admin.data_conflict'))
     } else {

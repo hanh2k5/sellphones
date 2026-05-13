@@ -71,6 +71,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     // Báo cáo 4.1.14: Thanh toán qua cổng ví điện tử (Fake MoMo UI)
     Route::post('/orders/{order}/confirm-payment', [OrderController::class, 'confirmPayment']);
+    // Báo cáo 4.1.9: Hủy đơn hàng và Hoàn tồn kho tự động
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
 
     // --- VOUCHERS (Phan Đình Hạnh) ---
     // Báo cáo 4.1.13: Thêm mã giảm giá (Voucher) vào đơn hàng
