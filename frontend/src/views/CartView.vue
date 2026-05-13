@@ -67,6 +67,29 @@
           </div>
         </div>
 
+        <!-- Pagination (Chuẩn Apple - 10 mục/trang) -->
+        <div v-if="cartStore.pagination && cartStore.pagination.last_page > 1" class="flex justify-center mt-8 pb-4">
+          <div class="pagination-apple-wrapper">
+            <ul class="pagination-apple">
+              <!-- Back -->
+              <li v-if="cartStore.pagination.current_page > 1" class="page-item">
+                <button class="page-link" @click="goPage(cartStore.pagination.current_page - 1)">«</button>
+              </li>
+
+              <!-- Dynamic Numbers -->
+              <li v-for="p in visiblePages" :key="p" class="page-item"
+                :class="{ active: p === cartStore.pagination.current_page }">
+                <button v-if="p !== '...'" class="page-link" @click="goPage(p)">{{ p }}</button>
+                <span v-else class="page-link-text">...</span>
+              </li>
+
+              <!-- Next -->
+              <li v-if="cartStore.pagination.current_page < cartStore.pagination.last_page" class="page-item">
+                <button class="page-link" @click="goPage(cartStore.pagination.current_page + 1)">»</button>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <!-- Order Summary Card -->
@@ -175,7 +198,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { vouchersApi } from '../api'
 import { useCartStore } from '../stores/cart'
 import { useI18nStore } from '../stores/i18n'
@@ -196,9 +219,32 @@ const showManualInput = ref(false)
 const manualCode = ref('')
 
 onMounted(async () => {
-  await cartStore.fetchCart()
+  await cartStore.fetchCart(1)
   fetchAvailableVouchers()
 })
+
+// Logic hiển thị trang thông minh
+const visiblePages = computed(() => {
+  if (!cartStore.pagination) return []
+  const current = cartStore.pagination.current_page
+  const last = cartStore.pagination.last_page
+  const range = 2
+  const pages = []
+
+  for (let i = 1; i <= last; i++) {
+    if (i === 1 || i === last || (i >= current - range && i <= current + range)) {
+      pages.push(i)
+    } else if (pages[pages.length - 1] !== '...') {
+      pages.push('...')
+    }
+  }
+  return pages
+})
+
+function goPage(page) {
+  cartStore.fetchCart(page)
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 async function fetchAvailableVouchers() {
   try {
@@ -318,4 +364,22 @@ function removeVoucher() {
   text-align: center; font-weight: 800; padding: 12px; border-radius: 12px;
   font-size: 14px; letter-spacing: 0.02em;
 }
+
+/* Pagination Chuẩn như trang Sản phẩm */
+.pagination-apple-wrapper { 
+  background: #fff; border-radius: 50px; padding: 6px; 
+  border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.04); 
+}
+.pagination-apple { display: flex; align-items: center; gap: 4px; list-style: none; padding: 0; margin: 0; }
+.page-link { 
+  min-width: 44px; height: 44px; border-radius: 50%; 
+  display: flex; align-items: center; justify-content: center; 
+  font-weight: 800; font-size: 14px; color: #64748b; 
+  cursor: pointer; transition: 0.3s; background: transparent; border: none; 
+}
+.page-link-text {
+  min-width: 30px; text-align: center; color: #94a3b8; font-weight: bold;
+}
+.page-link:hover { background: #f1f5f9; color: #1e293b; }
+.page-item.active .page-link { background: #1e293b; color: #fff; box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
 </style>

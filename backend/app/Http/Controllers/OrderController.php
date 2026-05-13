@@ -41,7 +41,8 @@ class OrderController extends Controller
             $query->where('user_id', $user->id);
         }
 
-        $orders = $query->orderBy('created_at', 'desc')->paginate(10);
+        $perPage = $request->input('per_page', 10); // Mặc định về 10 theo yêu cầu của bạn
+        $orders = $query->orderBy('created_at', 'desc')->paginate($perPage);
         return OrderResource::collection($orders);
     }
 
@@ -92,7 +93,7 @@ class OrderController extends Controller
     public function confirmPayment(Request $request, Order $order)
     {
         $user = $request->user();
-        
+
         // Xác thực quyền sở hữu giao dịch
         if ($order->user_id !== $user->id) {
             return response()->json(['message' => __('messages.unauthorized')], 403);
@@ -173,7 +174,8 @@ class OrderController extends Controller
                 ->orWhere('email', 'like', "%$search%"));
         }
 
-        $orders = $query->paginate(15);
+        $perPage = $request->input('per_page', 10); // Mặc định về 10 theo yêu cầu của bạn
+        $orders = $query->paginate($perPage);
         return OrderResource::collection($orders);
     }
 
@@ -232,5 +234,23 @@ class OrderController extends Controller
             return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 500);
         }
     }
+    /**
+     * [Phan Đình Hạnh - 4.1.10] Xóa vĩnh viễn đơn hàng
+     * Ràng buộc logic tuyệt đối: Chỉ cho phép thực hiện lệnh xóa nếu status đang là cancelled (Đã hủy).
+     */
+    public function destroy(Order $order)
+    {
+        if ($order->status !== 'cancelled') {
+            return response()->json([
+                'message' => 'Chỉ có thể xóa vĩnh viễn các đơn hàng đã bị hủy.'
+            ], 422);
+        }
 
+        $order->delete(); // Do đã có cascadeOnDelete nên sẽ tự xóa order_items
+
+        return response()->json([
+            'success' => true,
+            'message' => __('messages.order_deleted')
+        ]);
+    }
 }

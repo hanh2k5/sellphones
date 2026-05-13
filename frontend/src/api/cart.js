@@ -6,7 +6,7 @@ import api from '../services/api'
 
 export const cartApi = {
   /** Lấy giỏ hàng hiện tại */
-  get: () => api.get('/cart'),
+  get: (params) => api.get('/cart', { params }),
 
   /** Thêm sản phẩm vào giỏ */
   add: (productId, quantity = 1) => api.post('/cart', { product_id: productId, quantity }),

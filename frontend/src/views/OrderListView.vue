@@ -96,24 +96,28 @@
         </div>
       </div>
 
-      <!-- Pagination -->
-      <div v-if="orderStore.pagination && orderStore.pagination.last_page > 1" class="flex justify-center gap-4 mt-16 flex-wrap pb-12">
-        <button
-          @click="goPage(orderStore.pagination.current_page - 1)"
-          :disabled="orderStore.pagination.current_page <= 1"
-          class="w-14 h-14 flex items-center justify-center rounded-2xl text-lg font-bold transition-all disabled:opacity-30 disabled:grayscale backdrop-blur-md bg-white/60 border border-white/80 hover:bg-white text-slate-600 shadow-sm hover:shadow-md active:scale-90"
-        >←</button>
-        <button
-          v-for="page in orderStore.pagination.last_page" :key="page"
-          @click="goPage(page)"
-          class="w-14 h-14 flex items-center justify-center rounded-2xl text-[15px] font-bold transition-all duration-300"
-          :class="page === orderStore.pagination.current_page ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/30 -translate-y-1 scale-110' : 'backdrop-blur-md bg-white/60 border border-white/80 hover:bg-white text-slate-600 shadow-sm hover:shadow-md hover:-translate-y-0.5'"
-        >{{ page }}</button>
-        <button
-          @click="goPage(orderStore.pagination.current_page + 1)"
-          :disabled="orderStore.pagination.current_page >= orderStore.pagination.last_page"
-          class="w-14 h-14 flex items-center justify-center rounded-2xl text-lg font-bold transition-all disabled:opacity-30 disabled:grayscale backdrop-blur-md bg-white/60 border border-white/80 hover:bg-white text-slate-600 shadow-sm hover:shadow-md active:scale-90"
-        >→</button>
+      <!-- Pagination (Chuẩn như trang Sản phẩm - 10 đơn/trang) -->
+      <div v-if="orderStore.pagination && orderStore.pagination.last_page > 1" class="flex justify-center mt-12 pb-12">
+        <div class="pagination-apple-wrapper">
+          <ul class="pagination-apple">
+            <!-- Back -->
+            <li v-if="orderStore.pagination.current_page > 1" class="page-item">
+              <button class="page-link" @click="goPage(orderStore.pagination.current_page - 1)">«</button>
+            </li>
+
+            <!-- Dynamic Numbers -->
+            <li v-for="p in visiblePages" :key="p" class="page-item"
+              :class="{ active: p === orderStore.pagination.current_page }">
+              <button v-if="p !== '...'" class="page-link" @click="goPage(p)">{{ p }}</button>
+              <span v-else class="page-link-text">...</span>
+            </li>
+
+            <!-- Next -->
+            <li v-if="orderStore.pagination.current_page < orderStore.pagination.last_page" class="page-item">
+              <button class="page-link" @click="goPage(orderStore.pagination.current_page + 1)">»</button>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -124,7 +128,7 @@
  * SV THỰC HIỆN: PHAN ĐÌNH HẠNH
  * MỤC: 4.1.7 - HIỂN THỊ DANH SÁCH ĐƠN HÀNG (USER)
  */
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useOrderStore } from '../stores/order'
 import { useI18nStore } from '../stores/i18n'
 import { useUtils } from '../composables/useUtils'
@@ -133,12 +137,29 @@ const orderStore = useOrderStore()
 const i18n = useI18nStore()
 const { fmtPrice: fmt, getImageUrl, fmtDate: formatDate } = useUtils()
 
+// Logic hiển thị trang thông minh
+const visiblePages = computed(() => {
+  const current = orderStore.pagination.current_page
+  const last = orderStore.pagination.last_page
+  const range = 2
+  const pages = []
+
+  for (let i = 1; i <= last; i++) {
+    if (i === 1 || i === last || (i >= current - range && i <= current + range)) {
+      pages.push(i)
+    } else if (pages[pages.length - 1] !== '...') {
+      pages.push('...')
+    }
+  }
+  return pages
+})
+
 onMounted(async () => {
-  await orderStore.fetchOrders({ page: 1 })
+  await orderStore.fetchOrders({ page: 1, per_page: 10 })
 })
 
 function goPage(page) {
-  orderStore.fetchOrders({ page })
+  orderStore.fetchOrders({ page, per_page: 10 })
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -186,4 +207,22 @@ function statusClass(s) {
   .pl-10 { padding-left: 0; border-left: none; }
   .pt-6 { padding-top: 1rem; }
 }
+
+/* Pagination Chuẩn như trang Sản phẩm */
+.pagination-apple-wrapper { 
+  background: #fff; border-radius: 50px; padding: 6px; 
+  border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.04); 
+}
+.pagination-apple { display: flex; align-items: center; gap: 4px; list-style: none; padding: 0; margin: 0; }
+.page-link { 
+  min-width: 44px; height: 44px; border-radius: 50%; 
+  display: flex; align-items: center; justify-content: center; 
+  font-weight: 800; font-size: 14px; color: #64748b; 
+  cursor: pointer; transition: 0.3s; background: transparent; border: none; 
+}
+.page-link-text {
+  min-width: 30px; text-align: center; color: #94a3b8; font-weight: bold;
+}
+.page-link:hover { background: #f1f5f9; color: #1e293b; }
+.page-item.active .page-link { background: #1e293b; color: #fff; box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
 </style>

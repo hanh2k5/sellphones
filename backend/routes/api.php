@@ -51,6 +51,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/orders/{order}/status', [OrderController::class, 'updateStatus']);
         Route::post('/orders/{order}/confirm', [OrderController::class, 'confirmOrder']);
         Route::post('/orders/{order}/complete', [OrderController::class, 'completeOrder']);
+        // Báo cáo 4.1.10: Xóa vĩnh viễn đơn hàng
+        Route::delete('/orders/{order}', [OrderController::class, 'destroy']);
     });
 
     // --- GIỎ HÀNG (Phan Đình Hạnh) ---

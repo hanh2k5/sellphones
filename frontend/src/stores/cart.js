@@ -6,6 +6,7 @@ import { useToast } from '../composables/useToast'
 
 export const useCartStore = defineStore('cart', () => {
   const items = ref([])
+  const pagination = ref(null)
   const tongTien = ref(0)
   const soLuong = ref(0)
   const loading = ref(false)
@@ -22,11 +23,16 @@ export const useCartStore = defineStore('cart', () => {
   const appliedVoucher = ref(safeParse('cart_voucher'))
   const tienGiam = ref(Number(localStorage.getItem('cart_discount') || 0))
 
-  async function fetchCart() {
+  async function fetchCart(page = 1) {
     loading.value = true
     try {
-      const res = await cartApi.get()
-      items.value = res.data.items
+      const res = await cartApi.get({ page })
+      items.value = res.data.items.data
+      pagination.value = {
+        current_page: res.data.items.current_page,
+        last_page: res.data.items.last_page,
+        total: res.data.items.total
+      }
       tongTien.value = res.data.total_amount
       soLuong.value = res.data.total_quantity
       
@@ -54,8 +60,7 @@ export const useCartStore = defineStore('cart', () => {
   async function removeFromCart(cartItemId) {
     try {
       await cartApi.remove(cartItemId)
-      items.value = items.value.filter(i => i.id !== cartItemId)
-      recalcTotal()
+      await fetchCart(pagination.value?.current_page || 1)
       return { success: true }
     } catch (e) {
       return { success: false }
@@ -109,7 +114,7 @@ export const useCartStore = defineStore('cart', () => {
   const thanhToan = () => Math.max(0, tongTien.value - tienGiam.value)
 
   return {
-    items, tongTien, soLuong, loading, appliedVoucher, tienGiam, thanhToan,
+    items, pagination, tongTien, soLuong, loading, appliedVoucher, tienGiam, thanhToan,
     fetchCart, addToCart, removeFromCart, updateQty, clearCart, applyVoucher
   }
 })
