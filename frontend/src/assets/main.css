@@ -134,8 +134,22 @@ a { text-decoration: none; color: inherit; }
 /* ====================================================
    RESPONSIVE
    ==================================================== */
-@media (max-width: 640px) {
-  .admin-table th, .admin-table td { padding: 10px 10px; font-size: 12px; }
+@media (max-width: 768px) {
+  .admin-table thead { display: none; }
+  .admin-table { min-width: 0 !important; }
+  .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; box-sizing: border-box; }
+  .admin-table tr { margin-bottom: 15px; border: 1px solid #e5e5ea; border-radius: 14px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden; padding: 4px; }
+  .admin-table td { 
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 12px 14px; border-bottom: 1px dashed #f0f0f0; text-align: right; font-size: 13px;
+  }
+  .admin-table td:last-child { border-bottom: none; }
+  .admin-table td::before { 
+    content: attr(data-label); font-weight: 700; color: #86868b; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; text-align: left; margin-right: 15px; flex-shrink: 0;
+  }
+  .admin-table td > div, .admin-table td > span { flex: 1; display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+  .action-row { justify-content: flex-end; width: 100%; margin-top: 4px; }
+  
   .hide-mobile { display: none !important; }
   .modal-overlay { align-items: flex-end; padding: 0; }
   .modal-box { border-radius: 22px 22px 0 0; }
@@ -263,3 +277,11 @@ a { text-decoration: none; color: inherit; }
   30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
   40%, 60% { transform: translate3d(4px, 0, 0); }
 }
+
+/* Hide default browser eye icon in password fields (e.g. Edge) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+}

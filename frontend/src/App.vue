@@ -53,7 +53,7 @@ import { useCartStore } from './stores/cart'
 import { useI18nStore } from './stores/i18n'
 import { useToast } from './composables/useToast'
 import { useCategories } from './composables/useCategories'
-import api from './services/api'
+import { productsApi } from './api'
 
 import ToastManager from './components/ToastManager.vue'
 import AppBackground from './components/layout/AppBackground.vue'
@@ -88,6 +88,12 @@ const suggestions = ref([])
 const showSuggest = ref(false)
 let searchTimer = null
 const showCategories = ref(false)
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') syncTabs()
+}
+const handleStorageChange = (e) => {
+  if (e.key === 'cart_voucher') cartStore.fetchCart()
+}
 
 function goCategory(id) {
   showCategories.value = false
@@ -99,7 +105,7 @@ function handleSearchInput(val) {
   if (!val.trim()) { suggestions.value = []; return }
   searchTimer = setTimeout(async () => {
     try {
-      const res = await api.get('/products', { params: { search: val, limit: 5 }})
+      const res = await productsApi.list({ search: val, limit: 5 })
       suggestions.value = res.data.data
     } catch {}
   }, 300)
@@ -142,17 +148,14 @@ onMounted(() => {
   fetchCategories()
   if (authStore.isLoggedIn) cartStore.fetchCart() 
   window.addEventListener('click', closeMenus)
-  window.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') syncTabs()
-  })
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'cart_voucher') cartStore.fetchCart()
-  })
+  window.addEventListener('visibilitychange', handleVisibilityChange)
+  window.addEventListener('storage', handleStorageChange)
 })
 
 onUnmounted(() => {
   window.removeEventListener('click', closeMenus)
-  window.removeEventListener('visibilitychange', syncTabs)
+  window.removeEventListener('visibilitychange', handleVisibilityChange)
+  window.removeEventListener('storage', handleStorageChange)
 })
 
 async function handleLogout() {

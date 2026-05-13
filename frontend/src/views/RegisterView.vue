@@ -1,9 +1,6 @@
 <template>
   <div class="flex-1 flex items-center justify-center py-12 md:py-20 px-4 relative z-10 bg-[#f9f9f9]">
-    <!-- Back Button -->
-    <button @click="$router.back()" class="auth-back-btn">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 19l-7-7 7-7"/></svg>
-    </button>
+
 
     <div class="backdrop-blur-2xl bg-white/60 border border-white/80 rounded-[2.5rem] md:rounded-[3rem] shadow-[0_8px_30px_rgba(0,0,0,0.06)] w-full max-w-md p-6 md:p-10 relative overflow-hidden">
       <!-- Glow effect -->
@@ -20,39 +17,56 @@
         <div>
           <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.name') }}</label>
           <input v-model="form.name" type="text" :placeholder="i18nStore.t('auth.name')"
+            @input="errors && (errors.name = null)"
             class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
             :class="{'input-error': errors?.name}" />
           <p v-if="errors?.name" class="form-error-label">{{ errors.name[0] }}</p>
         </div>
 
-        <div>
-          <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.email') }}</label>
-          <input v-model="form.email" type="email" inputmode="email" placeholder="email@example.com"
-            class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
-            :class="{'input-error': errors?.email}" />
-          <p v-if="errors?.email" class="form-error-label">{{ errors.email[0] }}</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.email') }}</label>
+            <input v-model="form.email" type="email" inputmode="email" autocomplete="email" placeholder="admin@gmail.com"
+              @input="errors && (errors.email = null)"
+              class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
+              :class="{'input-error': errors?.email}" />
+            <p v-if="errors?.email" class="form-error-label">{{ errors.email[0] }}</p>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.phone') || 'SỐ ĐIỆN THOẠI' }}</label>
+            <input v-model="form.phone" type="tel" inputmode="tel" placeholder="0901234567"
+              @input="errors && (errors.phone = null)"
+              class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
+              :class="{'input-error': errors?.phone}" />
+            <p v-if="errors?.phone" class="form-error-label">{{ errors.phone[0] }}</p>
+          </div>
         </div>
 
         <div>
           <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.address') }}</label>
           <input v-model="form.address" type="text" :placeholder="i18nStore.t('auth.address_placeholder')"
+            @input="errors && (errors.address = null)"
             class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
             :class="{'input-error': errors?.address}" />
           <p v-if="errors?.address" class="form-error-label">{{ errors.address[0] }}</p>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.password') }}</label>
             <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="••••"
+              @input="errors && (errors.password = null)"
               class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[14px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
               :class="{'input-error': errors?.password}" />
+            <p v-if="errors?.password" class="form-error-label">{{ errors.password[0] }}</p>
           </div>
           <div>
             <label class="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.confirm_password') }}</label>
             <input v-model="form.password_confirmation" :type="showPassword ? 'text' : 'password'" placeholder="••••"
+              @input="errors && (errors.password_confirmation = null)"
               class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[14px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
               :class="{'input-error': errors?.password_confirmation}" />
+            <p v-if="errors?.password_confirmation" class="form-error-label">{{ errors.password_confirmation[0] }}</p>
           </div>
         </div>
 
@@ -82,7 +96,7 @@ const i18nStore = useI18nStore()
 const router = useRouter()
 const toast = useToast()
 
-const form = ref({ name: '', email: '', address: '', password: '', password_confirmation: '' })
+const form = ref({ name: '', email: '', phone: '', address: '', password: '', password_confirmation: '' })
 const errors = ref({})
 const showPassword = ref(false)
 
@@ -91,6 +105,15 @@ async function handleRegister() {
   let hasError = false
   if (!form.value.name?.trim()) { errors.value.name = [i18nStore.t('auth.name_error')]; hasError = true }
   if (!form.value.email?.trim()) { errors.value.email = [i18nStore.t('auth.email_error')]; hasError = true }
+  
+  if (!form.value.phone?.trim()) { 
+    errors.value.phone = [i18nStore.t('auth.phone_error') || 'Vui lòng nhập số điện thoại']; 
+    hasError = true 
+  } else if (!/^0[0-9]{9}$/.test(form.value.phone.trim())) {
+    errors.value.phone = [i18nStore.t('auth.phone_error') || 'Vui lòng nhập số điện thoại hợp lệ (10 chữ số)']; 
+    hasError = true 
+  }
+
   if (!form.value.address?.trim()) { errors.value.address = [i18nStore.t('auth.address_error')]; hasError = true }
   if (!form.value.password?.trim()) { errors.value.password = [i18nStore.t('auth.password_error')]; hasError = true }
   if (form.value.password !== form.value.password_confirmation) {
@@ -99,7 +122,7 @@ async function handleRegister() {
   }
   if (hasError) return
 
-  const result = await authStore.register(form.value.name, form.value.email, form.value.address, form.value.password, form.value.password_confirmation)
+  const result = await authStore.register(form.value.name, form.value.email, form.value.address, form.value.phone, form.value.password, form.value.password_confirmation)
   if (result.success) {
     toast.success(i18nStore.t('auth.register_success'))
     router.push('/login')

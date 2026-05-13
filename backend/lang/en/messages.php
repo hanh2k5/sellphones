@@ -60,6 +60,7 @@ return [
     'order_cant_delete_pending'   => 'Cannot delete a pending order!',
     'order_cant_delete_confirmed' => 'Cannot delete a confirmed order!',
     'order_paid'           => 'Payment confirmed!',
+    'update_success'       => 'Updated successfully.',
     'order_already_processed' => 'Order already processed!',
     'cart_empty'           => 'Cart is empty or products are no longer available!',
 

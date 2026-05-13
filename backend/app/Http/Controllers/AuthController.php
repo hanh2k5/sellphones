@@ -8,6 +8,7 @@ use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
 use Exception;
 
 /**
@@ -62,7 +63,20 @@ class AuthController extends Controller
                 'message' => 'Đăng nhập thành công!'
             ]);
         } catch (ValidationException $e) {
-            return response()->json(['message' => $e->getMessage(), 'errors' => $e->errors()], 422);
+            $user = User::where('email', $request->email)->first();
+            $retryAfter = null;
+
+            if ($user?->locked_until && Carbon::now()->lessThan($user->locked_until)) {
+                $retryAfter = Carbon::now()->diffInSeconds($user->locked_until);
+            }
+
+            return response()->json([
+                'message' => $e->getMessage(),
+                'errors' => $e->errors(),
+                'attempts_left' => $user ? max(0, 5 - (int) $user->login_attempts) : null,
+                'locked' => (bool) $retryAfter,
+                'retry_after' => $retryAfter,
+            ], 422);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 401);
         }
