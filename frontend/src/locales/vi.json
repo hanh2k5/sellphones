@@ -500,5 +500,14 @@
     "new_password": "Mật khẩu mới",
     "confirm_new_password": "Xác nhận mật khẩu mới",
     "update_password": "Cập nhật mật khẩu"
+  },
+  "chat": {
+    "title": "Trợ lý ảo SellPhones",
+    "status": "Đang trực tuyến",
+    "clear": "Xóa chat",
+    "welcome": "Chào bạn! Mình là Ngọc - trợ lý ảo của SellPhones. Mình có thể giúp gì cho bạn hôm nay? 😊",
+    "placeholder": "Nhập câu hỏi tại đây...",
+    "clear_confirm": "Bạn có chắc chắn muốn xóa toàn bộ đoạn hội thoại này?",
+    "login_required": "Vui lòng đăng nhập để sử dụng tính năng tư vấn AI!"
   }
 }

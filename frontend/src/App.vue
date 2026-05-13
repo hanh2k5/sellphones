@@ -40,6 +40,7 @@
         </main>
 
         <AppFooter />
+        <ChatFloating />
       </div>
     </template>
   </div>
@@ -59,6 +60,7 @@ import ToastManager from './components/ToastManager.vue'
 import AppBackground from './components/layout/AppBackground.vue'
 import AppNavbar from './components/layout/AppNavbar.vue'
 import AppFooter from './components/layout/AppFooter.vue'
+import ChatFloating from './components/ChatFloating.vue'
 
 const authStore = useAuthStore()
 const cartStore = useCartStore()
