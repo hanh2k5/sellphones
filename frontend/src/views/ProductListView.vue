@@ -108,7 +108,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProductStore } from '../stores/product'
 import { useI18nStore } from '../stores/i18n'
 import ProductCard from '../components/ProductCard.vue'
-import api from '../services/api'
+import { categoriesApi } from '../api'
 
 const productStore = useProductStore()
 const i18n = useI18nStore()
@@ -122,7 +122,7 @@ const categories = ref([])
 
 async function fetchCategories() {
   try {
-    const res = await api.get('/categories')
+    const res = await categoriesApi.tree()
     categories.value = res.data.data || res.data
   } catch {}
 }

@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import api from '../services/api'
+import { authApi } from '../api'
 import { useI18nStore } from './i18n'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -27,7 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     error.value = null
     try {
-      const res = await api.post('/login', { email, password })
+      const res = await authApi.login({ email, password })
       user.value = res.data.user
       token.value = res.data.token
       localStorage.setItem('auth_token', res.data.token)
@@ -35,18 +35,23 @@ export const useAuthStore = defineStore('auth', () => {
       return { success: true }
     } catch (err) {
       error.value = err.response?.data?.message || useI18nStore().t('common.error')
-      return { success: false, message: err.response?.data?.message || useI18nStore().t('common.error'), data: err.response?.data }
+      return {
+        success: false,
+        message: err.response?.data?.message || useI18nStore().t('common.error'),
+        data: err.response?.data,
+        attemptsLeft: err.response?.data?.attempts_left,
+      }
     } finally {
       loading.value = false
     }
   }
 
   // Đăng ký
-  async function register(name, email, address, password, password_confirmation) {
+  async function register(name, email, address, phone, password, password_confirmation) {
     loading.value = true
     error.value = null
     try {
-      await api.post('/register', { name, email, address, password, password_confirmation })
+      await authApi.register({ name, email, address, phone, password, password_confirmation })
       return { success: true }
     } catch (err) {
       error.value = err.response?.data?.message || useI18nStore().t('common.error')
@@ -59,7 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Đăng xuất
   async function logout() {
     try {
-      await api.post('/logout')
+      await authApi.logout()
     } catch {}
     user.value = null
     token.value = null
@@ -72,7 +77,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Lấy thông tin user mới nhất
   async function fetchMe() {
     try {
-      const res = await api.get('/me')
+      const res = await authApi.me()
       user.value = res.data
       localStorage.setItem('auth_user', JSON.stringify(res.data))
     } catch {}

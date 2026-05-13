@@ -22,6 +22,9 @@
         </div>
         <div class="topbar-right">
           <span class="topbar-time">{{ currentTime }}</span>
+          <button @click="i18n.toggleLocale()" class="topbar-btn lang-btn">
+            {{ i18n.locale.toUpperCase() }}
+          </button>
           <router-link to="/" class="topbar-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
             <span class="topbar-btn-text">{{ i18n.t('admin.view_site') }}</span>
@@ -69,11 +72,12 @@ const pageTitle = computed(() => {
     '/admin/users': i18n.t('admin.manage_users'),
     '/admin/reviews': i18n.t('admin.reviews'),
     '/admin/products/trash': i18n.t('admin.trash'),
+    '/admin': i18n.t('admin.dashboard'),
   }
   if (map[route.path]) return map[route.path]
   if (route.path.startsWith('/admin/products/edit')) return i18n.t('admin.edit') + ' ' + i18n.t('admin.manage_products').toLowerCase()
   if (route.path.startsWith('/admin/products/create')) return i18n.t('admin.add') + ' ' + i18n.t('admin.manage_products').toLowerCase()
-  return 'Admin Panel'
+  return i18n.t('admin.dashboard')
 })
 
 const currentTime = computed(() =>
@@ -233,7 +237,7 @@ onUnmounted(() => clearInterval(timer))
 @media (max-width: 900px) {
   .mobile-menu-btn { display: flex; }
   .sidebar-overlay.show { display: block; }
-  .topbar-time { display: none; }
+  .topbar-time { font-size: 10px; }
   .admin-page-content { padding: 16px 12px; }
 }
 @media (max-width: 480px) {

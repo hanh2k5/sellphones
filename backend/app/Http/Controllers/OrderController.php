@@ -31,7 +31,8 @@ class OrderController extends Controller
     {
         $user = $request->user();
         // Eager loading để tối ưu hiệu năng (N+1 query)
-        $query = Order::with(['items.product' => fn($q) => $q->withTrashed(), 'voucher']);
+        $query = Order::with(['items.product' => fn($q) => $q->withTrashed(), 'voucher'])
+            ->filter($request->all());
 
         // Phân quyền: Admin xem tất cả, User xem đơn của mình
         if ($request->is('api/admin/*') && $user->isAdmin()) {
@@ -113,4 +114,106 @@ class OrderController extends Controller
             'message' => __('messages.momo_success')
         ]);
     }
+
+    /**
+     * [Phan Đình Hạnh - 4.1.8] Duyệt đơn hàng & Xử lý tranh chấp (Optimistic Locking)
+     */
+    public function updateStatus(Request $request, Order $order)
+    {
+        // 1. Chỉ Admin mới được phép duyệt
+        if (!$request->user()->isAdmin()) {
+            return response()->json(['message' => __('messages.unauthorized')], 403);
+        }
+
+        $request->validate([
+            'status' => 'required|string|in:pending,confirmed,shipping,shipped,cancelled',
+            'last_updated_at' => 'required|string' // Client gửi ISO8601 của updated_at lúc họ LOAD trang
+        ]);
+
+        // 2. LOGIC TRẢNH CHẤP (2-Tab Logic)
+        // So sánh timestamp (với độ trễ nhỏ do làm tròn nếu cần, nhưng Carbon toIso8601String là chuẩn nhất)
+        $clientTime = $request->last_updated_at;
+        $serverTime = $order->updated_at->toIso8601String();
+
+        if ($clientTime !== $serverTime) {
+            return response()->json([
+                'success' => false,
+                'message' => __('messages.order_conflict'),
+                'current_data' => new OrderResource($order)
+            ], 409); // 409 Conflict
+        }
+
+        // 3. Cập nhật trạng thái
+        $order->update([
+            'status' => $request->status
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => __('messages.update_success'),
+            'order'   => new OrderResource($order)
+        ]);
+    }
+
+    /**
+     * [Phan Đình Hạnh - Báo cáo 4.1.6] Danh sách đơn hàng cho Admin
+     * Lấy danh sách kèm theo thông tin User và Sản phẩm (kể cả sản phẩm đã xóa mềm - withTrashed).
+     */
+    public function adminIndex(Request $request)
+    {
+        $query = Order::with(['items.product' => fn($q) => $q->withTrashed(), 'voucher', 'user:id,name,email'])
+            ->orderBy('created_at', 'desc');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('user', fn($q) => $q->where('name', 'like', "%$search%")
+                ->orWhere('email', 'like', "%$search%"));
+        }
+
+        $orders = $query->paginate(15);
+        return OrderResource::collection($orders);
+    }
+
+    /**
+     * [Phan Đình Hạnh - Báo cáo 4.1.8] Duyệt đơn hàng (pending → shipping)
+     * Kỹ thuật: Optimistic Locking so sánh updated_at để ngăn chặn lỗi 2 tab Admin cùng thao tác.
+     */
+    public function confirmOrder(Request $request, Order $order)
+    {
+        $request->validate(['updated_at' => 'required|string']);
+
+        if ($request->updated_at !== $order->updated_at->toIso8601String()) {
+            return response()->json(['message' => __('messages.order_conflict')], 409);
+        }
+
+        if ($order->status !== 'pending') {
+            return response()->json(['message' => 'Đơn hàng không ở trạng thái chờ xử lý.'], 422);
+        }
+
+        $order->update(['status' => 'shipping']);
+        return response()->json(['success' => true, 'message' => __('messages.update_success'), 'order' => new OrderResource($order)]);
+    }
+
+    /**
+     * [Admin] Hoàn thành đơn (shipping → completed) với Optimistic Locking
+     */
+    public function completeOrder(Request $request, Order $order)
+    {
+        $request->validate(['updated_at' => 'required|string']);
+
+        if ($request->updated_at !== $order->updated_at->toIso8601String()) {
+            return response()->json(['message' => __('messages.order_conflict')], 409);
+        }
+
+        if ($order->status !== 'shipping') {
+            return response()->json(['message' => 'Đơn hàng không ở trạng thái đang giao.'], 422);
+        }
+
+        $order->update(['status' => 'completed']);
+        return response()->json(['success' => true, 'message' => __('messages.update_success'), 'order' => new OrderResource($order)]);
+    }
+
 }

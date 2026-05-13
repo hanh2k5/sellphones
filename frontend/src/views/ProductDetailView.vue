@@ -125,35 +125,7 @@
           <h3 class="section-label">{{ i18n.t('product.reviews') }}</h3>
         </div>
         
-        <!-- Review Form & Conditional Info Cards -->
-        <div v-if="authStore.isLoggedIn && (editingReviewId || (eligibleOrderId && !userReview))" class="review-form-card backdrop-blur-xl bg-white/40 rounded-[2rem] p-6 md:p-10 border border-white/60 shadow-xl mb-10">
-          <div class="flex items-center gap-4 mb-6">
-            <div class="rating-input flex gap-2">
-              <button v-for="i in 5" :key="i" @click="reviewForm.rating = i" class="text-2xl transition-all" :class="i <= reviewForm.rating ? 'text-amber-400 scale-110' : 'text-slate-300'">★</button>
-            </div>
-            <span v-if="reviewForm.rating > 0" class="text-xs font-black uppercase tracking-widest text-slate-400 bg-white/60 px-3 py-1 rounded-lg border border-white shadow-sm">{{ reviewForm.rating }} / 5</span>
-          </div>
-          <textarea v-model="reviewForm.comment" :placeholder="i18n.t('product.your_comment')" class="w-full bg-white/60 border border-white shadow-inner rounded-2xl px-6 py-4 text-base focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-300 resize-none mb-6 transition-all min-h-[120px]"></textarea>
-          <div class="flex justify-end">
-            <button @click="submitReview" :disabled="!reviewForm.rating || submittingReview" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-10 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest disabled:opacity-50 transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center gap-3">
-              <span v-if="submittingReview" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              {{ submittingReview ? i18n.t('common.saving') : i18n.t('common.submit_review') }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Info Cards when not eligible -->
-        <div v-else-if="authStore.isLoggedIn && !eligibleOrderId && !userReview" class="backdrop-blur-md border rounded-[2rem] p-8 mb-10 text-center shadow-sm" :class="hasPendingOrder ? 'bg-blue-50/60 border-blue-200' : 'bg-orange-50/60 border-orange-200'">
-          <div class="text-4xl mb-3">{{ hasPendingOrder ? '🚚' : '🛍️' }}</div>
-          <p class="font-bold mb-2" :class="hasPendingOrder ? 'text-blue-800' : 'text-orange-800'">
-            {{ hasPendingOrder ? i18n.t('product.order_processing') : i18n.t('product.must_purchase') }}
-          </p>
-          <p class="text-[13px] font-medium opacity-80" :class="hasPendingOrder ? 'text-blue-600' : 'text-orange-600'">
-            {{ hasPendingOrder ? i18n.t('product.wait_for_completion') : i18n.t('product.must_purchase_desc') }}
-          </p>
-        </div>
-
-        <div v-else-if="!authStore.isLoggedIn" class="backdrop-blur-md bg-white/40 border border-white/60 rounded-[2rem] p-8 mb-10 text-center shadow-sm">
+        <div v-if="!authStore.isLoggedIn" class="backdrop-blur-md bg-white/40 border border-white/60 rounded-[2rem] p-8 mb-10 text-center shadow-sm">
           <div class="text-3xl mb-3">🔑</div>
           <p class="text-slate-600 font-bold mb-4">{{ i18n.t('product.must_login_review') || 'Vui lòng đăng nhập để đánh giá' }}</p>
           <router-link to="/login" class="inline-block bg-blue-600 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:bg-blue-700 transition-all uppercase text-xs tracking-widest">{{ i18n.t('nav.login') }}</router-link>
@@ -197,15 +169,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../services/api'
+import { productsApi } from '../api'
 import { useCartStore } from '../stores/cart'
 import { useAuthStore } from '../stores/auth'
 import { useI18nStore } from '../stores/i18n'
 import { useToast } from '../composables/useToast'
 import { useUtils } from '../composables/useUtils'
-import Swal from 'sweetalert2'
 
 const { fmtPrice, fmtDate, getImageUrl } = useUtils()
 const route = useRoute()
@@ -221,37 +192,12 @@ const activeImage = ref(null)
 const qty = ref(1)
 const adding = ref(false)
 const buying = ref(false)
-const reviewForm = ref({ rating: 0, comment: '' })
-const submittingReview = ref(false)
-const eligibleOrderId = ref(null)
-const editingReviewId = ref(null)
-const hasPendingOrder = ref(false)
-
-const userReview = computed(() => {
-  if (!product.value || !authStore.user) return null
-  return product.value.reviews?.find(r => r.user_id === authStore.user.id)
-})
-
-async function findEligibleOrder() {
-  try {
-    const res = await api.get('/orders', { params: { product_id: product.value?.id } })
-    const orders = res.data.data || []
-    
-    // Tìm đơn hàng hoàn thành
-    const completed = orders.find(o => o.status === 'completed')
-    if (completed) eligibleOrderId.value = completed.id
-    
-    // Kiểm tra xem có đơn hàng nào đang chờ xử lý không
-    hasPendingOrder.value = orders.some(o => ['pending', 'processing', 'shipping'].includes(o.status))
-  } catch {}
-}
 
 onMounted(async () => {
   try {
-    const res = await api.get(`/products/${route.params.id}`)
+    const res = await productsApi.show(route.params.id)
     product.value = res.data
     activeImage.value = res.data.hinh_anh
-    if (authStore.isLoggedIn) await findEligibleOrder()
   } catch {
     product.value = null
   } finally {
@@ -278,23 +224,6 @@ async function buyNow() {
   const res = await cartStore.addToCart(product.value.id, qty.value)
   buying.value = false
   if (res.success) router.push('/cart')
-}
-
-async function submitReview() {
-  submittingReview.value = true
-  try {
-    const res = await api.post(`/products/${product.value.id}/reviews`, {
-      order_id: eligibleOrderId.value,
-      rating: reviewForm.value.rating,
-      comment: reviewForm.value.comment
-    })
-    product.value.reviews.unshift(res.data.review)
-    toast.success(i18n.t('common.review_success'))
-  } catch (e) {
-    toast.error(i18n.t('common.error'))
-  } finally {
-    submittingReview.value = false
-  }
 }
 
 function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }

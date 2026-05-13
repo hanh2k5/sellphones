@@ -94,7 +94,7 @@
  */
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../services/api'
+import { ordersApi } from '../api'
 import { useI18nStore } from '../stores/i18n'
 import { useToast } from '../composables/useToast'
 import { useUtils } from '../composables/useUtils'
@@ -147,7 +147,7 @@ onUnmounted(() => {
  */
 async function fetchOrderDetails() {
   try {
-    const res = await api.get(`/orders/${orderId.value}`)
+    const res = await ordersApi.show(orderId.value)
     // Chặn nếu đơn hàng đã được thanh toán
     if (res.data.payment_status === 'paid') {
       toast.success(i18n.t('checkout.momo_already_paid'))
@@ -165,7 +165,7 @@ async function fetchOrderDetails() {
 async function confirmPayment() {
   loading.value = true
   try {
-    const res = await api.post(`/orders/${orderId.value}/confirm-payment`)
+    const res = await ordersApi.confirmPayment(orderId.value)
     if (res.data.success) {
       await Swal.fire({
         title: i18n.t('common.success'),

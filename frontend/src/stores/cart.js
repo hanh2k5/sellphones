@@ -1,7 +1,8 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import api from '../services/api'
+import { cartApi, vouchersApi } from '../api'
 import { useI18nStore } from './i18n'
+import { useToast } from '../composables/useToast'
 
 export const useCartStore = defineStore('cart', () => {
   const items = ref([])
@@ -24,7 +25,7 @@ export const useCartStore = defineStore('cart', () => {
   async function fetchCart() {
     loading.value = true
     try {
-      const res = await api.get('/cart')
+      const res = await cartApi.get()
       items.value = res.data.items
       tongTien.value = res.data.total_amount
       soLuong.value = res.data.total_quantity
@@ -34,7 +35,7 @@ export const useCartStore = defineStore('cart', () => {
         await applyVoucher(appliedVoucher.value.code)
       }
     } catch (e) {
-      console.error(e)
+      useToast().error(e.response?.data?.message || useI18nStore().t('common.error'))
     } finally {
       loading.value = false
     }
@@ -42,7 +43,7 @@ export const useCartStore = defineStore('cart', () => {
 
   async function addToCart(productId, quantity = 1) {
     try {
-      const res = await api.post('/cart', { product_id: productId, quantity })  // Đúng ERD
+      const res = await cartApi.add(productId, quantity)
       await fetchCart()
       return { success: true, message: res.data.message }
     } catch (e) {
@@ -52,7 +53,7 @@ export const useCartStore = defineStore('cart', () => {
 
   async function removeFromCart(cartItemId) {
     try {
-      await api.delete(`/cart/${cartItemId}`)
+      await cartApi.remove(cartItemId)
       items.value = items.value.filter(i => i.id !== cartItemId)
       recalcTotal()
       return { success: true }
@@ -63,7 +64,7 @@ export const useCartStore = defineStore('cart', () => {
 
   async function updateQty(cartItemId, qty) {
     try {
-      await api.put(`/cart/${cartItemId}`, { quantity: qty })  // Đúng ERD
+      await cartApi.update(cartItemId, qty)
       await fetchCart()
       return { success: true }
     } catch (e) {
@@ -72,7 +73,7 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   async function clearCart() {
-    try { await api.delete('/cart') } catch {}
+    try { await cartApi.clear() } catch {}
     items.value = []
     tongTien.value = 0
     soLuong.value = 0
@@ -85,7 +86,7 @@ export const useCartStore = defineStore('cart', () => {
 
   async function applyVoucher(code) {
     try {
-      const res = await api.post('/vouchers/apply', { code })   // Đúng ERD: field 'code'
+      const res = await vouchersApi.apply(code)
       appliedVoucher.value = res.data.voucher
       tienGiam.value = res.data.discount
       localStorage.setItem('cart_voucher', JSON.stringify(res.data.voucher))

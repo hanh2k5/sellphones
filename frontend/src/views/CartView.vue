@@ -176,7 +176,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import api from '../services/api'
+import { vouchersApi } from '../api'
 import { useCartStore } from '../stores/cart'
 import { useI18nStore } from '../stores/i18n'
 import { useToast } from '../composables/useToast'
@@ -202,10 +202,10 @@ onMounted(async () => {
 
 async function fetchAvailableVouchers() {
   try {
-    const res = await api.get('/vouchers')
+    const res = await vouchersApi.list()
     availableVouchers.value = res.data.data
   } catch (e) {
-    console.error('Lỗi lấy voucher:', e)
+    toast.error(e.response?.data?.message || i18n.t('common.error'))
   }
 }
 
@@ -246,7 +246,7 @@ async function confirmRemove(item) {
   })
 
   if (result.isConfirmed) {
-    const res = await cartStore.removeItem(item.id)
+    const res = await cartStore.removeFromCart(item.id)
     if (res.success) {
       toast.info(i18n.t('common.remove_success'))
     } else {

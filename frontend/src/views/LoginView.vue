@@ -17,7 +17,7 @@
       <form @submit.prevent="handleLogin" novalidate class="space-y-6 relative z-10">
         <div>
           <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.email') }}</label>
-          <input v-model="form.email" type="email" inputmode="email" autocomplete="email" placeholder="email@example.com"
+          <input v-model="form.email" type="email" inputmode="email" autocomplete="email" placeholder="admin@gmail.com"
             @input="errors && (errors.email = null)"
             class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
             :class="{'input-error': errors?.email}" />
@@ -59,8 +59,7 @@
         </button>
       </form>
 
-      <div class="mt-12 flex justify-between items-center text-[13px] font-bold uppercase tracking-widest relative z-10 auth-links">
-        <router-link to="/forgot-password" class="hover:text-blue-600 transition-all">{{ i18nStore.t('auth.forgot_password') }}</router-link>
+      <div class="mt-12 flex justify-end items-center text-[13px] font-bold uppercase tracking-widest relative z-10 auth-links">
         <router-link to="/register" class="hover:text-blue-600 transition-all">{{ i18nStore.t('auth.create_account') }}</router-link>
       </div>
     </div>
@@ -93,6 +92,8 @@ async function handleLogin() {
   errorMsg.value = ''
   errors.value = {}
   attemptsLeft.value = null
+  lockedUntil.value = false
+  clearInterval(lockTimer)
 
   // Client-side validation
   let hasError = false
