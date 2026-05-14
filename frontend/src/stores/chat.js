@@ -1,13 +1,15 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { chatApi } from '../api'
+import { useCartStore } from './cart'
 
 /**
- * [Phan Đình Hạnh - 4.1.11 STT 4] Store quản lý hội thoại và trạng thái AI
+ * [Phan Đình Hạnh - 4.1.11 & 4.1.12] Store quản lý hội thoại và Agent giỏ hàng
  */
 export const useChatStore = defineStore('chat', () => {
   const messages = ref([])
   const loading = ref(false)
+  const cartStore = useCartStore()
 
   async function fetchHistory() {
     try {
@@ -24,6 +26,12 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const res = await chatApi.sendMessage(text)
       messages.value.push(res.data)
+
+      // Xử lý đồng bộ giỏ hàng khi AI thêm đồ (4.1.12 STT 4)
+      if (res.data.action === 'cart_updated') {
+        cartStore.fetchCart()
+      }
+      return res.data; // QUAN TRỌNG: Trả về để Component biết mà hiện thông báo
     } catch (e) {
       console.error("AI Chat Error:", e)
       messages.value.push({ 
@@ -32,6 +40,7 @@ export const useChatStore = defineStore('chat', () => {
         message_content: "Rất tiếc, tôi đang gặp khó khăn khi kết nối. Bạn vui lòng thử lại sau nhé!", 
         created_at: new Date().toISOString() 
       })
+      return null;
     } finally {
       loading.value = false
     }

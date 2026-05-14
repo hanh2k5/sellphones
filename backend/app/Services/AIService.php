@@ -7,36 +7,41 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * [Phan Đình Hạnh - 4.1.11 STT 2] Dịch vụ AI tích hợp dữ liệu sản phẩm thực tế
+ * [Phan Đình Hạnh - 4.1.11 & 4.1.12] AI Service - Bản Tự Động Phục Hồi (Auto-Failover)
  */
 class AIService
 {
     protected $apiKey;
-    protected $apiUrl;
+    protected $primaryModel = "gemini-2.5-flash-lite";
+    protected $fallbackModels = [
+        "gemini-3.1-flash-lite",
+        "gemini-3.1-flash-image-preview", 
+        "gemini-3-flash-preview",
+        "gemini-3.1-pro-preview"
+    ];
 
     public function __construct()
     {
         $this->apiKey = env('GEMINI_API_KEY');
-        $this->apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
     }
 
     public function chat($userMessage, $history = [])
     {
-        // Nhúng dữ liệu sản phẩm (STT 2)
-        $products = Product::select('name', 'price', 'stock')->where('stock', '>', 0)->limit(20)->get();
-        $productContext = "Dữ liệu sản phẩm thực tế:\n";
+        $products = Product::select('id', 'name', 'price', 'stock')->where('stock', '>', 0)->limit(15)->get();
+        $productContext = "DANH SÁCH SẢN PHẨM:\n";
         foreach ($products as $p) {
-            $productContext .= "- {$p->name}: Giá " . number_format($p->price) . "đ, Còn {$p->stock} máy.\n";
+            $productContext .= "- ID: {$p->id} | {$p->name} | Giá: " . number_format($p->price) . "đ | Kho: {$p->stock}\n";
         }
 
-        $systemPrompt = "You are 'Ngọc' - a professional and friendly AI Assistant for Sellphones store.
-        RULES:
-        1. LANGUAGE: Respond in the SAME language as the user (English if they ask in English, Vietnamese if they ask in Vietnamese).
-        2. EMOTIONS: Use appropriate emojis (😊, 📱, ✨, 📦) to make the conversation friendly and human-like.
-        3. DATA: Only provide info based on the provided product list.
-        
-        REAL-TIME DATA:
-        $productContext";
+        $systemInstruction = [
+            'parts' => [['text' => "Bạn là Ngọc, trợ lý Sellphones. 
+            NHIỆM VỤ:
+            1. Tư vấn sản phẩm chuyên nghiệp, ngắn gọn, có Emoji.
+            2. LUÔN trả lời bằng ngôn ngữ người dùng đang hỏi (Việt/Anh).
+            3. Dùng 'add_to_cart' khi khách muốn mua.
+            4. Không chào hỏi lặp lại.
+            Data: $productContext"]]
+        ];
 
         $contents = [];
         foreach ($history as $msg) {
@@ -45,28 +50,52 @@ class AIService
                 'parts' => [['text' => $msg['message_content']]]
             ];
         }
+        $contents[] = ['role' => 'user', 'parts' => [['text' => $userMessage]]];
 
-        $contents[] = [
-            'role' => 'user',
-            'parts' => [['text' => "Ngữ cảnh: $systemPrompt\n\nCâu hỏi: $userMessage"]]
-        ];
+        $tools = [['function_declarations' => [[
+            'name' => 'add_to_cart',
+            'description' => 'Thêm sản phẩm vào giỏ hàng.',
+            'parameters' => [
+                'type' => 'OBJECT',
+                'properties' => [
+                    'product_id' => ['type' => 'NUMBER'],
+                    'quantity' => ['type' => 'NUMBER']
+                ],
+                'required' => ['product_id', 'quantity']
+            ]
+        ]]]];
 
-        try {
-            $response = Http::post("{$this->apiUrl}?key={$this->apiKey}", [
-                'contents' => $contents,
-            ]);
+        // Danh sách các model để thử (Model 2.5 của bạn đứng đầu)
+        $modelsToTry = array_merge([$this->primaryModel], $this->fallbackModels);
 
-            if ($response->successful()) {
-                $data = $response->json();
-                return $data['candidates'][0]['content']['parts'][0]['text'] ?? "AI không trả về nội dung.";
+        foreach ($modelsToTry as $modelName) {
+            try {
+                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$this->apiKey}";
+                $response = Http::post($url, [
+                    'contents' => $contents,
+                    'system_instruction' => $systemInstruction,
+                    'tools' => $tools
+                ]);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $candidate = $data['candidates'][0] ?? null;
+                    if (isset($candidate['content']['parts'][0]['functionCall'])) {
+                        return ['type' => 'function_call', 'function' => $candidate['content']['parts'][0]['functionCall']];
+                    }
+                    return ['type' => 'text', 'content' => $candidate['content']['parts'][0]['text'] ?? "Xin lỗi..."];
+                }
+
+                // Nếu lỗi 429 hoặc 404, thử model tiếp theo
+                Log::warning("Model {$modelName} failed ({$response->status()}), trying next...");
+                continue;
+
+            } catch (\Exception $e) {
+                Log::error("Error with model {$modelName}: " . $e->getMessage());
+                continue;
             }
-
-            // Log lỗi chi tiết từ Google (Rất quan trọng)
-            Log::error("Gemini API Fail: " . $response->status() . " - " . $response->body());
-            return "Hệ thống AI đang bận.";
-        } catch (\Exception $e) {
-            Log::error("AI Service Exception: " . $e->getMessage());
-            return "Lỗi kết nối AI.";
         }
+
+        return ['type' => 'text', 'content' => "⚠️ Tất cả Model đều đang bận hoặc hết lượt. Bạn vui lòng thử lại sau nhé!"];
     }
 }

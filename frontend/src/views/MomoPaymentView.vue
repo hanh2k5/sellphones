@@ -188,6 +188,7 @@ async function cancelPayment() {
     text: i18n.t('checkout.momo_cancel_confirm_text'),
     icon: 'warning',
     showCancelButton: true,
+    reverseButtons: true,
     confirmButtonColor: '#ae146d',
     cancelButtonColor: '#94a3b8',
     confirmButtonText: i18n.t('common.confirm'),

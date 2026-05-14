@@ -30,7 +30,7 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $products = $this->productService->getAllProducts($request->all());
+         $products = $this->productService->getAllProducts($request->all());
         return ProductResource::collection($products);
     }
 

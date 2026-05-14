@@ -141,9 +141,9 @@ onUnmounted(() => window.removeEventListener('click', closeDropdown))
   max-width: 1400px; margin: 0 auto; padding: 0 24px;
   height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 40px;
 }
-.nav-left { display: flex; align-items: center; gap: 20px; }
-.nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: #1e293b; letter-spacing: -0.03em; }
-.brand-icon { width: 28px; height: 28px; }
+.nav-left { display: flex; align-items: center; gap: 20px; height: 100%; }
+.nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: #1e293b; letter-spacing: -0.03em; align-self: center; }
+.brand-icon { width: 28px; height: 28px; display: block; }
 
 /* CENTER: Search */
 .nav-search-wrap { flex: 1; max-width: 600px; position: relative; }

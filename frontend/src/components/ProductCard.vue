@@ -122,7 +122,7 @@ function onImgError(e) {
 
 .premium-card {
   background: #ffffff; border-radius: 24px;
-  padding: 16px; border: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 12px; border: 1px solid rgba(0, 0, 0, 0.04);
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer; display: flex; flex-direction: column;
   height: 100%; position: relative; overflow: hidden;
@@ -145,9 +145,9 @@ function onImgError(e) {
 
 .premium-card-img-box {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  height: 240px; border-radius: 20px;
+  height: 160px; border-radius: 20px;
   display: flex; align-items: center; justify-content: center;
-  padding: 30px; overflow: hidden; position: relative;
+  padding: 10px; overflow: hidden; position: relative;
   transition: background 0.4s;
 }
 .img-overlay-glow {
@@ -165,21 +165,21 @@ function onImgError(e) {
 }
 
 .card-body-inner {
-  padding: 20px 8px 8px;
+  padding: 8px 4px 4px;
   display: flex; flex-direction: column; flex-grow: 1;
 }
 
 .premium-card-title {
-  font-size: 17px; font-weight: 800; color: #1e293b;
-  margin-bottom: 8px; line-height: 1.35;
+  font-size: 15px; font-weight: 800; color: #1e293b;
+  margin-bottom: 4px; line-height: 1.35;
   display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden; min-height: 2.7em;
   letter-spacing: -0.01em;
 }
 
-.price-box { margin-bottom: 15px; }
+.price-box { margin-bottom: 8px; }
 .premium-card-price {
-  font-size: 20px; font-weight: 900; color: #d70018;
+  font-size: 18px; font-weight: 900; color: #d70018;
   margin: 0; line-height: 1;
 }
 .price-label {
