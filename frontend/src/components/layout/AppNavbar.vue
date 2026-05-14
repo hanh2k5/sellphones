@@ -17,6 +17,34 @@
           </svg>
           <span class="brand-name">SELLPHONES</span>
         </router-link>
+        
+        <div class="nav-category-wrap">
+          <div class="nav-category-btn" @click="$emit('toggle-categories')">
+            <span>{{ i18n.t('nav.all_categories') }}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" :class="{ 'rotate-180': showCategories }" class="transition-transform"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          
+          <!-- Category Dropdown -->
+          <Transition name="suggest">
+            <div v-if="showCategories" class="category-dropdown-custom">
+              <div class="category-header">
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">{{ i18n.t('admin.manage_categories_sub') }}</p>
+              </div>
+              <div class="category-list">
+                <button
+                  v-for="cat in categories.filter(c => !c.parent_id)"
+                  :key="cat.id"
+                  type="button"
+                  @click="$emit('go-category', cat.id)"
+                  class="category-item-custom"
+                >
+                  <span class="cat-icon" v-html="getCategoryIcon(cat.name)"></span>
+                  <span class="cat-name">{{ i18n.transName(cat.name) }}</span>
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </div>
       </div>
 
       <!-- CENTER: Search -->
@@ -91,6 +119,8 @@ import { useI18nStore } from '../../stores/i18n'
 import { useUtils } from '../../composables/useUtils'
 
 const props = defineProps({
+  showCategories: Boolean,
+  categories: Array,
   searchQuery: String,
   showSuggest: Boolean,
   suggestions: Array,
@@ -101,6 +131,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits([
+  'toggle-categories', 
+  'go-category', 
   'update:searchQuery', 
   'do-search', 
   'show-suggest', 
@@ -126,6 +158,13 @@ function onImgError(e) {
   e.target.src = 'https://via.placeholder.com/40'
 }
 
+function getCategoryIcon(name) {
+  const n = (name || '').toLowerCase()
+  if (n.includes('iphone') || n.includes('apple')) return `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.8"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-.5-.22-1.07-.46-1.92-.46-.86 0-1.4.23-1.96.46-1.04.46-2.02.58-2.97-.4C4.16 17.38 3.5 12.06 5.5 8.6c1-1.74 2.76-2.82 4.7-2.85 1.1-.02 1.95.43 2.6.43.6 0 1.63-.53 2.92-.4 1.34.13 2.37.62 2.9 1.4-2.73 1.63-2.3 5.15.44 6.27-.6 1.54-1.37 3.08-2.02 3.84zM12.03 5.75c-.2-.02-.4-.02-.6-.02.05-2.26 1.9-4.2 4.14-4.23.23 0 .46.03.7.05-2.1 2.38-4.04 4.2-4.24 4.2z"/></svg>`
+  if (n.includes('phụ kiện') || n.includes('accessory')) return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`
+  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>`
+}
+
 onMounted(() => window.addEventListener('click', closeDropdown))
 onUnmounted(() => window.removeEventListener('click', closeDropdown))
 </script>
@@ -141,9 +180,36 @@ onUnmounted(() => window.removeEventListener('click', closeDropdown))
   max-width: 1400px; margin: 0 auto; padding: 0 24px;
   height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 40px;
 }
-.nav-left { display: flex; align-items: center; gap: 20px; height: 100%; }
+.nav-left { display: flex; align-items: center; gap: 20px; height: 100%; flex: 1; min-width: 250px; }
 .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: #1e293b; letter-spacing: -0.03em; align-self: center; }
 .brand-icon { width: 28px; height: 28px; display: block; }
+
+.nav-category-btn { 
+  display: flex; align-items: center; gap: 4px; cursor: pointer; 
+  font-weight: 700; font-size: 14px; color: #1e293b; padding: 8px 12px; 
+  border-radius: 10px; transition: 0.2s; white-space: nowrap; flex-shrink: 0;
+}
+.nav-category-btn:hover { background: #f1f5f9; color: #3b82f6; }
+
+/* Category Dropdown */
+.nav-category-wrap { position: relative; }
+.category-dropdown-custom {
+  position: absolute; top: calc(100% + 8px); left: 0; width: 240px;
+  background: rgba(255,255,255,0.9); backdrop-filter: blur(20px);
+  border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+  border: 1px solid rgba(0,0,0,0.08); padding: 12px; z-index: 100;
+}
+.category-item-custom {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  border-radius: 10px; cursor: pointer; transition: 0.2s;
+  color: #1e293b; font-size: 13px; font-weight: 700;
+  background: none; border: none; width: 100%; text-align: left;
+}
+.category-item-custom:hover {
+  background: rgba(59,130,246,0.08); color: #3b82f6;
+  transform: translateX(4px);
+}
+.cat-icon { font-size: 16px; opacity: 0.8; }
 
 /* CENTER: Search */
 .nav-search-wrap { flex: 1; max-width: 600px; position: relative; }
