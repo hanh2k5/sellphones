@@ -131,6 +131,56 @@
           <router-link to="/login" class="inline-block bg-blue-600 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:bg-blue-700 transition-all uppercase text-xs tracking-widest">{{ i18n.t('nav.login') }}</router-link>
         </div>
 
+        <!-- Form đánh giá: Hiện khi đang sửa HOẶC (đã mua & chưa đánh giá) -->
+        <div v-else-if="authStore.isLoggedIn && (editingReviewId || (eligibleOrderId && !userReview))" 
+             class="backdrop-blur-xl bg-white/60 rounded-[2rem] p-8 mb-10 border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-fade-in">
+          <h3 class="font-bold text-slate-800 mb-5 text-lg">{{ editingReviewId ? i18n.t('common.update_review') : i18n.t('product.write_review') }}</h3>
+          
+          <!-- Tự động liên kết Order ID -->
+          <div class="text-sm font-bold text-emerald-700 bg-emerald-50/80 backdrop-blur-sm border border-emerald-200 rounded-xl px-4 py-3 mb-5 shadow-sm flex items-center gap-2">
+            <span>✅</span> {{ i18n.t('product.linked_order') }} #{{ eligibleOrderId || reviewForm.order_id_input }}
+          </div>
+
+          <!-- Chọn sao -->
+          <div class="flex items-center gap-2 mb-5">
+            <div class="flex gap-1">
+              <button v-for="i in 5" :key="i" @click="reviewForm.rating = i" class="text-3xl transition-transform hover:scale-110 active:scale-125 drop-shadow-sm">
+                <span :class="i <= reviewForm.rating ? 'text-yellow-400' : 'text-slate-300'">★</span>
+              </button>
+            </div>
+            <span class="text-[15px] font-bold ml-3 px-3 py-1 bg-white/80 rounded-lg shadow-sm text-slate-600 border border-white">{{ reviewForm.rating > 0 ? ratingLabel(reviewForm.rating) : i18n.t('product.select_rating') }}</span>
+          </div>
+          <textarea v-model="reviewForm.comment" rows="3" :placeholder="i18n.t('product.your_comment')" class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 resize-none mb-5 transition-all text-slate-800 placeholder-slate-400"></textarea>
+
+          <div v-if="reviewError" class="text-sm font-bold text-rose-600 mb-4 bg-rose-50/80 p-3 rounded-xl border border-rose-200 flex items-center gap-2">⚠️ {{ reviewError }}</div>
+          
+          <div class="flex justify-end gap-3">
+            <button v-if="editingReviewId" @click="cancelEdit" class="px-6 py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider text-slate-500 hover:text-slate-700 transition-all active:scale-95">
+              {{ i18n.t('common.cancel') }}
+            </button>
+            <button @click="submitReview" :disabled="!reviewForm.rating || submittingReview" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider disabled:opacity-50 disabled:grayscale transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2">
+              <span v-if="submittingReview" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              {{ submittingReview ? i18n.t('common.saving') : (editingReviewId ? i18n.t('common.update_review') : i18n.t('common.submit_review')) }}
+            </button>
+          </div>
+        </div>
+        
+        <!-- Thông báo cần mua hàng: Chỉ hiện khi chưa mua hàng VÀ chưa có đánh giá -->
+        <div v-else-if="authStore.isLoggedIn && !eligibleOrderId && !userReview" 
+             class="backdrop-blur-md border rounded-[2rem] p-8 mb-10 text-center shadow-sm"
+             :class="hasPendingOrder ? 'bg-blue-50/60 border-blue-200' : 'bg-orange-50/60 border-orange-200'">
+          <div class="text-4xl mb-3">{{ hasPendingOrder ? '🚚' : '🛍️' }}</div>
+          <p :class="hasPendingOrder ? 'text-blue-800' : 'text-orange-800'" class="font-bold mb-2">
+            {{ hasPendingOrder ? (i18n.locale === 'vi' ? 'Đơn hàng của bạn đang được xử lý' : 'Your order is being processed') : i18n.t('product.must_purchase') }}
+          </p>
+          <p class="text-sm font-medium" :class="hasPendingOrder ? 'text-blue-600' : 'text-orange-600'">
+            {{ hasPendingOrder 
+                ? (i18n.locale === 'vi' ? 'Hãy đợi đơn hàng được chuyển sang trạng thái "Hoàn tất" để chia sẻ cảm nhận của bạn nhé!' : 'Please wait for your order to be marked as "Completed" before sharing your feedback!')
+                : (i18n.locale === 'vi' ? 'Hãy mua sản phẩm và đợi đơn hàng được duyệt để chia sẻ cảm nhận của bạn nhé!' : 'Please purchase the product and wait for order approval to share your thoughts!') 
+            }}
+          </p>
+        </div>
+
         <!-- Reviews List -->
         <div v-if="product.reviews?.length" class="space-y-6">
           <div v-for="review in product.reviews" :key="review.id" class="backdrop-blur-2xl bg-white/50 rounded-[2.5rem] p-6 md:p-10 border border-white shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
@@ -148,9 +198,24 @@
                   </div>
                 </div>
               </div>
-              <span class="text-[11px] font-bold text-slate-400 bg-white/60 px-4 py-2 rounded-xl border border-white shadow-sm uppercase tracking-widest">
-                {{ fmtDate(review.created_at) }}
-              </span>
+              <div class="flex items-center gap-4">
+                <span class="text-[11px] font-bold text-slate-400 bg-white/60 px-4 py-2 rounded-xl border border-white shadow-sm uppercase tracking-widest">
+                  {{ fmtDate(review.created_at) }}
+                </span>
+                <div v-if="authStore.isLoggedIn && (authStore.user?.id === review.user_id || authStore.user?.role === 'admin')" class="flex gap-2">
+                  <button v-if="authStore.user?.id === review.user_id"
+                          @click="editReview(review)" 
+                          class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all shadow-sm active:scale-90"
+                          title="Sửa đánh giá">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  </button>
+                  <button @click="deleteReview(review)" 
+                          class="w-10 h-10 flex items-center justify-center bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all shadow-sm active:scale-90"
+                          title="Xóa đánh giá">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="relative pl-6">
               <div class="absolute left-0 top-0 w-1 h-full bg-blue-500/20 rounded-full"></div>
@@ -169,14 +234,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { productsApi } from '../api'
+import api from '../services/api'
 import { useCartStore } from '../stores/cart'
 import { useAuthStore } from '../stores/auth'
 import { useI18nStore } from '../stores/i18n'
 import { useToast } from '../composables/useToast'
 import { useUtils } from '../composables/useUtils'
+import Swal from 'sweetalert2'
 
 const { fmtPrice, fmtDate, getImageUrl } = useUtils()
 const route = useRoute()
@@ -193,17 +260,63 @@ const qty = ref(1)
 const adding = ref(false)
 const buying = ref(false)
 
+const reviewForm = ref({ rating: 0, comment: '', order_id_input: null })
+const submittingReview = ref(false)
+const reviewError = ref('')
+const eligibleOrderId = ref(null)
+const editingReviewId = ref(null)
+const hasPendingOrder = ref(false)
+
+const userReview = computed(() => {
+  if (!product.value || !authStore.user) return null
+  return product.value.reviews?.find(r => r.user_id === authStore.user.id)
+})
+
 onMounted(async () => {
   try {
     const res = await productsApi.show(route.params.id)
     product.value = res.data
     activeImage.value = res.data.hinh_anh
+    if (authStore.isLoggedIn) {
+      await findEligibleOrder()
+    }
   } catch {
     product.value = null
   } finally {
     loading.value = false
   }
 })
+
+async function findEligibleOrder() {
+  try {
+    const res = await api.get('/orders', { 
+      params: { status: 'completed', product_id: product.value?.id } 
+    })
+    const orders = res.data.data || []
+    const completedOrder = orders.find(o => o.status === 'completed')
+    if (completedOrder) {
+      eligibleOrderId.value = completedOrder.id
+      return
+    }
+
+    const resAll = await api.get('/orders', { 
+      params: { product_id: product.value?.id } 
+    })
+    const allOrders = resAll.data.data || []
+    hasPendingOrder.value = allOrders.length > 0
+  } catch {}
+}
+
+function ratingLabel(r) {
+  const labels = {
+    1: i18n.t('product.rating_1'),
+    2: i18n.t('product.rating_2'),
+    3: i18n.t('product.rating_3'),
+    4: i18n.t('product.rating_4'),
+    5: i18n.t('product.rating_5')
+  }
+  return labels[r] || ''
+}
 
 async function addToCart() {
   adding.value = true
@@ -224,6 +337,80 @@ async function buyNow() {
   const res = await cartStore.addToCart(product.value.id, qty.value)
   buying.value = false
   if (res.success) router.push('/cart')
+}
+
+async function submitReview() {
+  reviewError.value = ''
+  if (!reviewForm.value.rating) { reviewError.value = i18n.t('product.select_rating_error') || 'Vui lòng chọn số sao!'; return }
+  const orderId = eligibleOrderId.value || reviewForm.value.order_id_input
+  if (!orderId) { reviewError.value = i18n.t('product.enter_order_id_error') || 'Vui lòng nhập Order ID!'; return }
+
+  submittingReview.value = true
+  try {
+    if (editingReviewId.value) {
+      const res = await api.put(`/reviews/${editingReviewId.value}`, {
+        rating: reviewForm.value.rating,
+        comment: reviewForm.value.comment,
+      })
+      const idx = product.value.reviews.findIndex(r => r.id === editingReviewId.value)
+      if (idx !== -1) product.value.reviews[idx] = res.data.review
+      product.value.avg_rating = res.data.avg_rating
+      toast.success(i18n.t('common.review_update_success'))
+      cancelEdit()
+    } else {
+      const res = await api.post(`/products/${product.value.id}/reviews`, {
+        order_id: orderId,
+        rating: reviewForm.value.rating,
+        comment: reviewForm.value.comment,
+      })
+      product.value.reviews.unshift(res.data.review)
+      product.value.avg_rating = res.data.avg_rating
+      reviewForm.value = { rating: 0, comment: '', order_id_input: null }
+      toast.success(i18n.t('common.review_success'))
+    }
+  } catch (e) {
+    reviewError.value = e.response?.data?.message || i18n.t('common.error')
+    toast.error(reviewError.value)
+  } finally {
+    submittingReview.value = false
+  }
+}
+
+function editReview(review) {
+  editingReviewId.value = review.id
+  reviewForm.value = { rating: review.rating, comment: review.comment, order_id_input: review.order_id }
+  const target = document.getElementById('reviews')
+  if (target) {
+    window.scrollTo({ top: target.offsetTop - 80, behavior: 'smooth' })
+  }
+}
+
+function cancelEdit() {
+  editingReviewId.value = null
+  reviewForm.value = { rating: 0, comment: '', order_id_input: null }
+}
+
+async function deleteReview(review) {
+  const result = await Swal.fire({
+    title: i18n.locale === 'vi' ? 'Xóa đánh giá?' : 'Delete review?',
+    text: i18n.locale === 'vi' ? 'Bạn có chắc chắn muốn xóa đánh giá này?' : 'Are you sure you want to delete this review?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#e11d48',
+    cancelButtonColor: '#94a3b8',
+    confirmButtonText: 'Xóa ngay',
+    cancelButtonText: 'Hủy'
+  })
+
+  if (!result.isConfirmed) return
+
+  try {
+    await api.delete(`/reviews/${review.id}`)
+    product.value.reviews = product.value.reviews.filter(r => r.id !== review.id)
+    toast.success(i18n.t('common.review_delete_success'))
+  } catch (e) {
+    toast.error(e.response?.data?.message || 'Error!')
+  }
 }
 
 function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }

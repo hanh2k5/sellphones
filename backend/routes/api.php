@@ -10,6 +10,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\ReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +29,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/products', [ProductController::class, 'index']);
 // Báo cáo 4.3.9: Hiển thị chi tiết sản phẩm (Eager Loading & Multimedia)
 Route::get('/products/{product}', [ProductController::class, 'show']);
+Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
 
 // --- DANH MỤC (Đặng Văn Hà) ---
 // Báo cáo 4.3.4: Hiển thị danh sách danh mục (Cấu trúc cây)
@@ -80,6 +82,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Upload file chung & Check update
         Route::post('/upload', [ProductController::class, 'uploadFile']);
         Route::get('/products/{id}/check-updated', [ProductController::class, 'checkUpdated']);
+
+        // QUẢN LÝ ĐÁNH GIÁ (Admin)
+        Route::get('/reviews', [ReviewController::class, 'adminIndex']);
+        Route::put('/reviews/{review}/moderate', [ReviewController::class, 'moderate']);
+        Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
     });
 
     // --- GIỎ HÀNG (Phan Đình Hạnh) ---
@@ -112,4 +119,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/ai/chats', [ChatController::class, 'index']);
     Route::post('/ai/chats', [ChatController::class, 'send']);
     Route::delete('/ai/chats', [ChatController::class, 'clear']);
+
+    // ĐÁNH GIÁ SẢN PHẨM (User)
+    Route::post('/products/{product}/reviews', [ReviewController::class, 'store']);
+    Route::put('/reviews/{review}', [ReviewController::class, 'update']);
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 });
