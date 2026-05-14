@@ -183,7 +183,7 @@
 
         <!-- Reviews List -->
         <div v-if="product.reviews?.length" class="space-y-6">
-          <div v-for="review in product.reviews" :key="review.id" class="backdrop-blur-2xl bg-white/50 rounded-[2.5rem] p-6 md:p-10 border border-white shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 relative overflow-hidden group">
+          <div v-for="review in product.reviews" :key="review.id" class="break-words backdrop-blur-2xl bg-white/50 rounded-3xl md:rounded-[2.5rem] p-5 md:p-10 border border-white shadow-xl hover:shadow-2xl transition-all duration-500 md:hover:-translate-y-1 relative overflow-hidden group">
             <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
             
             <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -381,7 +381,9 @@ function editReview(review) {
   reviewForm.value = { rating: review.rating, comment: review.comment, order_id_input: review.order_id }
   const target = document.getElementById('reviews')
   if (target) {
-    window.scrollTo({ top: target.offsetTop - 80, behavior: 'smooth' })
+    // Increase offset to account for taller mobile header
+    const offset = window.innerWidth <= 768 ? 160 : 80;
+    window.scrollTo({ top: target.offsetTop - offset, behavior: 'smooth' })
   }
 }
 
@@ -559,7 +561,8 @@ function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }
 }
 
 @media (max-width: 768px) {
-  .product-detail-container { padding: 0 0 100px; }
+  /* Increase padding to ensure reviews aren't hidden under the 85px sticky footer */
+  .product-detail-container { padding: 0 0 140px; overflow-x: hidden; }
   .top-actions { padding: 15px 20px 5px; }
   .btn-back-modern {
     padding: 8px 16px; border-radius: 12px;
@@ -574,7 +577,7 @@ function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }
   
   .sticky-mobile-bar {
     display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.9);
-    backdrop-filter: blur(20px); padding: 16px 20px; gap: 15px; align-items: center; z-index: 1000;
+    backdrop-filter: blur(20px); padding: 16px 20px; gap: 15px; align-items: center; z-index: 999;
     box-shadow: 0 -10px 40px rgba(0,0,0,0.08); border-top: 1px solid rgba(255,255,255,0.5);
   }
   .qty-selector-sm {
@@ -586,8 +589,10 @@ function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }
   .btn-cart-sm { width: 52px; height: 52px; border-radius: 16px; border: 2px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: center; color: #1e293b; }
   .btn-buy-sm { flex: 1; height: 52px; border-radius: 16px; background: #1e293b; color: #fff; font-weight: 800; font-size: 15px; border: none; }
   
-  .reviews-section { padding: 25px 20px; }
-  .review-card { padding: 25px; border-radius: 28px; }
+  /* Give reviews more margin from edges for premium feel */
+  .reviews-section { padding: 25px 15px; }
+  /* Make sure the review blocks don't overflow on small screens */
+  .review-card { padding: 20px; border-radius: 24px; overflow-wrap: break-word; word-break: break-word; }
   .thumb-btn { width: 55px; height: 55px; border-radius: 14px; }
 }
 
