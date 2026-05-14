@@ -54,6 +54,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/orders/{order}/complete', [OrderController::class, 'completeOrder']);
         // Báo cáo 4.1.10: Xóa vĩnh viễn đơn hàng
         Route::delete('/orders/{order}', [OrderController::class, 'destroy']);
+
+        // QUẢN LÝ DANH MỤC (Đặng Văn Hà)
+        // Báo cáo 4.3.1: Thêm mới danh mục sản phẩm (Categories)
+        Route::post('/categories', [CategoryController::class, 'store']);
+        // Báo cáo 4.3.2: Cập nhật danh mục sản phẩm
+        Route::put('/categories/{category}', [CategoryController::class, 'update']);
+        // Báo cáo 4.3.3: Xóa danh mục sản phẩm
+        Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
     });
 
     // --- GIỎ HÀNG (Phan Đình Hạnh) ---
