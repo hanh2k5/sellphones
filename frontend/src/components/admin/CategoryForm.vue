@@ -20,7 +20,7 @@
       <div class="form-group">
         <label class="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" v-model="form.is_active" />
-          <span class="text-sm font-bold text-slate-700">{{ i18n.t('common.active') }}</span>
+          <span class="text-sm font-bold text-slate-700">{{ i18n.locale === 'vi' ? 'Kích hoạt' : 'Is Active' }}</span>
         </label>
       </div>
       <div v-if="error" class="text-danger fw-bold small" style="background: #fef2f2; padding: 10px; border-radius: 8px;">
