@@ -1,19 +1,19 @@
 <template>
-  <div class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[9999] font-sans">
+  <div class="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-[9999] font-sans">
     <!-- Bubble Button -->
     <button 
       @click="toggleChat" 
-      class="w-14 h-14 md:w-16 md:h-16 bg-blue-600 text-white rounded-full shadow-[0_8px_25px_rgba(37,99,235,0.4)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
+      class="w-12 h-12 md:w-16 md:h-16 bg-blue-600 text-white rounded-full shadow-[0_8px_25px_rgba(37,99,235,0.4)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
     >
-      <svg v-if="!isOpen" class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
-      <svg v-else class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      <svg v-if="!isOpen" class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+      <svg v-else class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
     </button>
 
     <!-- Chat Window -->
     <transition name="chat-slide">
       <div 
         v-if="isOpen" 
-        class="absolute bottom-16 right-0 md:bottom-20 md:right-[-8px] w-[calc(100vw-32px)] sm:w-[380px] h-[550px] max-h-[calc(100vh-120px)] bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-slate-100 flex flex-col overflow-hidden origin-bottom-right"
+        class="absolute bottom-14 right-0 md:bottom-20 md:right-[-8px] w-[calc(100vw-32px)] sm:w-[380px] h-[450px] md:h-[550px] max-h-[calc(100vh-160px)] bg-white rounded-[1.5rem] md:rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-slate-100 flex flex-col overflow-hidden origin-bottom-right"
       >
         
         <!-- Header: Light Blue Style -->
@@ -56,7 +56,7 @@
               :class="msg.role === 'user' 
                 ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none shadow-md shadow-blue-500/20' 
                 : 'bg-white border border-slate-100 shadow-sm text-slate-800 rounded-2xl rounded-tl-none'" 
-              class="max-w-[90%] md:max-w-[85%] p-3 md:p-4 text-[13px] md:text-sm font-medium leading-relaxed whitespace-pre-wrap"
+              class="max-w-[90%] md:max-w-[85%] p-3 md:p-4 text-[13px] md:text-sm font-medium leading-relaxed whitespace-pre-wrap break-words overflow-hidden"
             >
               {{ msg.message_content }}
             </div>
@@ -102,10 +102,12 @@ import { ref, onMounted, nextTick, watch } from 'vue'
 import { useChatStore } from '../stores/chat'
 import { useAuthStore } from '../stores/auth'
 import { useI18nStore } from '../stores/i18n'
+import { useToast } from '../composables/useToast'
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
 const i18n = useI18nStore()
+const toast = useToast()
 const isOpen = ref(false)
 const inputText = ref('')
 const msgContainer = ref(null)
@@ -120,7 +122,21 @@ const handleSend = async () => {
   if (!inputText.value.trim() || chatStore.loading) return
   const text = inputText.value
   inputText.value = ''
-  await chatStore.sendMessage(text)
+  
+  // Gửi tin và nhận phản hồi
+  const response = await chatStore.sendMessage(text)
+  
+  // Kiểm tra nếu AI đã thực hiện thêm vào giỏ hàng
+  if (response && response.action === 'cart_updated') {
+    // [Best Practice] Dùng Toast chuẩn của hệ thống để đồng bộ giao diện
+    toast.success(i18n.locale === 'vi' 
+      ? 'Ngọc (AI) đã thêm sản phẩm vào giỏ hàng cho bạn!' 
+      : 'Ngọc (AI) added the product to your cart!', {
+      label: i18n.t('product.view_cart'),
+      url: '/cart'
+    })
+  }
+  
   scrollToBottom()
 }
 

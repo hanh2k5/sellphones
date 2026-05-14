@@ -1,5 +1,5 @@
 <template>
-  <main class="container-main mt-4 mb-5">
+  <main class="container-main mt-0 mb-5">
     <!-- Ultra-Minimalist Hero Section -->
     <header class="minimal-hero reveal-item">
       <h1 class="minimal-title">{{ i18n.t('home.hero_title') }}</h1>
@@ -272,13 +272,14 @@ function goPage(page) {
 
 /* Hero Section - Premium Modern */
 .minimal-hero {
-  padding: 60px 20px 40px;
+  padding: 10px 20px 5px;
   text-align: center;
-  background: radial-gradient(circle at top, rgba(37, 99, 235, 0.03) 0%, transparent 70%);
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .minimal-title {
-  font-size: 56px;
+  font-size: 24px;
   font-weight: 900;
   color: #1e293b;
   letter-spacing: -0.05em;
@@ -288,15 +289,15 @@ function goPage(page) {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  display: block;
+  margin-bottom: 2px;
 }
 
 .minimal-subtitle {
-  font-size: 18px;
-  color: #64748b;
-  font-weight: 500;
-  max-width: 600px;
-  margin: 0 auto;
-  line-height: 1.6;
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 600;
+  display: block;
 }
 
 /* Filter Bar - Premium Glass */
@@ -305,9 +306,9 @@ function goPage(page) {
   backdrop-filter: blur(20px);
   border: 1px solid rgba(226, 232, 240, 0.6);
   border-radius: 20px;
-  padding: 12px 20px;
+  padding: 6px 16px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-  margin: 0 auto 30px;
+  margin: 0 auto 10px;
   max-width: 1200px;
   z-index: 80;
 }
@@ -317,7 +318,7 @@ function goPage(page) {
   display: grid;
   gap: 30px;
   grid-template-columns: repeat(4, 1fr);
-  padding: 20px 0 60px;
+  padding: 10px 0 60px;
 }
 
 @media (max-width: 1400px) {
@@ -340,7 +341,7 @@ function goPage(page) {
   }
 
   .minimal-hero {
-    padding: 40px 20px 20px;
+    padding: 20px 20px 10px;
   }
 
   .minimal-title {
