@@ -62,28 +62,30 @@
           </thead>
           <tbody>
             <tr v-for="p in products" :key="p.id">
-              <td class="text-muted">#{{ p.id }}</td>
-              <td>
-                <div style="width:44px;height:44px;background:#f5f5f7;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+              <td class="text-muted" :data-label="i18n.t('admin.id') || 'ID'">#{{ p.id }}</td>
+              <td :data-label="i18n.t('admin.product_image') || 'IMAGE'">
+                <div style="width:44px;height:44px;background:#f5f5f7;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-left:auto;">
                   <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" style="width:100%;height:100%;object-fit:contain;padding:4px;" />
                 </div>
               </td>
-              <td>
+              <td :data-label="i18n.t('admin.product_name') || 'NAME'">
                 <div class="fw-bold" style="font-size:13px;">{{ p.name }}</div>
-                <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 2px;">
                   <span class="text-muted" style="font-size:11px;">ID: {{ p.id }}</span>
                   <span v-if="!p.is_active" class="status-badge badge-danger" style="font-size: 9px; padding: 1px 6px;">HIDDEN</span>
                   <span v-if="p.is_featured" class="status-badge badge-warning" style="font-size: 9px; padding: 1px 6px; background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5;">HOT 🔥</span>
                 </div>
               </td>
-              <td class="hide-mobile">
+              <td class="hide-mobile" :data-label="i18n.t('admin.stat_brands') || 'BRAND'">
                 <span v-if="p.category" style="background:#f5f5f7;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;">{{ p.category.name }}</span>
               </td>
-              <td class="text-right fw-bold text-danger">{{ fmtPrice(p.price) }}</td>
-              <td class="text-center">
-                <input type="number" v-model.number="p.stock" @change="quickUpdateStock(p)" class="form-input text-center" style="width: 70px; padding: 4px; font-size: 13px; border-radius: 6px; display: inline-block; font-weight: 700; color: #1d1d1f;" min="0" />
+              <td class="text-right fw-bold text-danger" :data-label="i18n.t('product.price') || 'PRICE'">{{ fmtPrice(p.price) }}</td>
+              <td class="text-center" :data-label="i18n.t('product.stock') || 'STOCK'">
+                <div style="display:flex;justify-content:flex-end;width:100%;">
+                  <input type="number" v-model.number="p.stock" @change="quickUpdateStock(p)" class="form-input text-center" style="width: 70px; padding: 4px; font-size: 13px; border-radius: 6px; display: inline-block; font-weight: 700; color: #1d1d1f;" min="0" />
+                </div>
               </td>
-              <td>
+              <td :data-label="i18n.t('admin.actions') || 'ACTIONS'">
                 <div class="action-row">
                   <router-link :to="`/admin/products/${p.id}/edit`" class="btn-action info" :title="i18n.t('common.edit')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -273,19 +275,20 @@ async function softDelete(product) {
 .btn-add-premium {
   background: #1d1d1f; color: #fff; border: none; padding: 10px 20px;
   border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer;
-  transition: 0.3s; display: flex; align-items: center; gap: 8px; text-decoration: none;
+  transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none;
 }
 .btn-add-premium:hover { background: #000; transform: scale(1.02); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
 .plus-icon { font-size: 18px; line-height: 1; }
 
 /* Table Styling */
 .admin-card { background: #fff; border-radius: 20px; border: 1px solid rgba(0,0,0,0.05); overflow: hidden; }
-.admin-table { width: 100%; border-collapse: collapse; }
+.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.admin-table { width: 100%; border-collapse: collapse; min-width: 750px; }
 .admin-table th { background: #fafafa; padding: 16px; text-align: left; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #86868b; border-bottom: 1px solid #f2f2f2; }
 .admin-table td { padding: 16px; border-bottom: 1px solid #f2f2f2; vertical-align: middle; }
 .admin-table tr:hover td { background: #fbfbfb; }
 
-.action-row { display: flex; gap: 8px; justify-content: flex-end; }
+.action-row { display: flex; gap: 8px; justify-content: flex-end; flex-direction: row !important; align-items: center; }
 .btn-action { width: 34px; height: 34px; border-radius: 10px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
 .btn-action.info { background: #f5f5f7; color: #0071e3; }
 .btn-action.info:hover { background: #e8f3ff; transform: scale(1.05); }
@@ -294,6 +297,14 @@ async function softDelete(product) {
 
 .table-empty { padding: 60px; text-align: center; color: #86868b; }
 .empty-icon { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
+
+/* Pagination */
+.pagination-wrapper { display: flex; justify-content: center; margin-top: 24px; }
+.pagination-apple-wrapper { background: #fff; border-radius: 50px; padding: 6px 14px; display: inline-block; border: 1px solid #f0f0f0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.pagination-apple { display: flex; align-items: center; gap: 2px; padding: 0; list-style: none; margin: 0; }
+.page-link { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #1d1d1f; font-weight: 600; font-size: 13px; background: transparent; border: none; cursor: pointer; transition: 0.2s; }
+.page-link:hover { background: #f5f5f7; }
+.page-item.active .page-link { background: #1d1d1f; color: #fff; }
 
 /* Responsive */
 @media (max-width: 1024px) {

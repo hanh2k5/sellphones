@@ -35,31 +35,31 @@
           </thead>
           <tbody>
             <tr v-for="r in reviews" :key="r.id">
-              <td>
+              <td :data-label="i18n.t('admin.product_name') || 'PRODUCT'">
                 <div class="fw-bold small">{{ r.product?.name || `#SP-${r.product_id}` }}</div>
               </td>
-              <td>
-                <div class="user-cell">
+              <td :data-label="i18n.t('admin.customer') || 'CUSTOMER'">
+                <div class="user-cell" style="justify-content: flex-end;">
                   <div class="avatar">{{ (r.user?.name || 'K').charAt(0).toUpperCase() }}</div>
                   <span>{{ r.user?.name || i18n.t('admin.anonymous') }}</span>
                 </div>
               </td>
-              <td>
-                <div class="stars">
+              <td :data-label="i18n.t('admin.reviews') || 'RATING'">
+                <div class="stars" style="justify-content: flex-end;">
                   <span v-for="i in 5" :key="i" :class="i <= r.rating ? 'star-filled' : 'star-empty'">★</span>
                   <span class="rating-num">{{ r.rating }}/5</span>
                 </div>
               </td>
-              <td>
-                <p class="review-comment">{{ r.comment || i18n.t('admin.no_comment') }}</p>
+              <td :data-label="i18n.t('admin.comment') || 'COMMENT'">
+                <p class="review-comment" style="text-align: right; max-width: none;">{{ r.comment || i18n.t('admin.no_comment') }}</p>
               </td>
-              <td>
+              <td :data-label="i18n.t('admin.status') || 'STATUS'">
                 <span class="status-badge" :class="r.status === 'approved' ? 'badge-success' : 'badge-warning'">
                   {{ reviewStatusLabel(r.status) }}
                 </span>
               </td>
-              <td class="text-muted">{{ formatDate(r.created_at) }}</td>
-              <td>
+              <td class="text-muted" :data-label="i18n.t('admin.order_date') || 'DATE'">{{ formatDate(r.created_at) }}</td>
+              <td :data-label="i18n.t('admin.actions') || 'ACTIONS'">
                 <div class="action-row">
                   <button v-if="r.status !== 'approved'" @click="moderate(r, 'approved')" class="btn-action success" title="Duyệt">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -206,15 +206,24 @@ function goPage(p) { fetchReviews(p) }
 .fw-bold { font-weight: 700; }
 .small { font-size: 12px; }
 .text-muted { color: #86868b; font-size: 12px; }
-.user-cell { display: flex; align-items: center; gap: 8px; }
+.user-cell { display: flex; align-items: center; gap: 8px; flex-direction: row !important; }
 .avatar { width: 30px; height: 30px; border-radius: 50%; background: #f5f5f7; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #555; flex-shrink: 0; }
-.stars { display: flex; align-items: center; gap: 2px; }
+.stars { display: flex; align-items: center; gap: 2px; flex-direction: row !important; }
 .star-filled { color: #f59e0b; font-size: 14px; }
 .star-empty { color: #e5e7eb; font-size: 14px; }
 .rating-num { font-size: 11px; font-weight: 700; color: #86868b; margin-left: 4px; }
-.review-comment { max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #555; margin: 0; font-size: 13px; }
-.action-row { display: flex; justify-content: flex-end; }
+.review-comment { 
+  max-width: 100%; /* Allow full width on mobile cards */
+  color: #555; margin: 0; font-size: 13px; line-height: 1.5;
+  white-space: pre-wrap; /* Wrap long text */
+  word-break: break-word;
+}
+.action-row { display: flex; gap: 8px; justify-content: flex-end; flex-direction: row !important; align-items: center; }
 .btn-action { width: 32px; height: 32px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+.btn-action.success { background: #dcfce7; color: #166534; }
+.btn-action.success:hover { background: #16a34a; color: #fff; }
+.btn-action.warning { background: #fffbeb; color: #d97706; }
+.btn-action.warning:hover { background: #d97706; color: #fff; }
 .btn-action.danger { background: #fef2f2; color: #dc2626; }
 .btn-action.danger:hover { background: #dc2626; color: #fff; }
 .text-right { text-align: right; }

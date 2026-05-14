@@ -24,19 +24,19 @@
           </thead>
           <tbody>
             <tr v-for="p in trashedProducts" :key="p.id">
-              <td>
-                <div class="product-thumb">
+              <td :data-label="i18n.t('admin.product_image') || 'IMAGE'">
+                <div class="product-thumb" style="margin-left: auto;">
                   <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" />
                 </div>
               </td>
-              <td>
+              <td :data-label="i18n.t('admin.product_name') || 'NAME'">
                 <div class="fw-bold">{{ p.name }}</div>
                 <div class="text-danger fw-bold" style="font-size: 13px;">{{ fmtPrice(p.price) }}</div>
               </td>
-              <td class="hide-mobile">
+              <td class="hide-mobile" :data-label="i18n.t('admin.deleted_at') || 'DELETED'">
                 <span class="text-muted">{{ formatDate(p.deleted_at) }}</span>
               </td>
-              <td>
+              <td :data-label="i18n.t('admin.actions') || 'ACTIONS'">
                 <div class="action-row">
                   <button @click="restoreProduct(p)" class="btn-action info" :title="i18n.t('admin.restore')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -170,7 +170,7 @@ function formatDate(date) {
 .product-thumb { width: 44px; height: 44px; background: #f5f5f7; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 4px; }
 .product-thumb img { width: 100%; height: 100%; object-fit: contain; }
 
-.action-row { display: flex; gap: 8px; justify-content: flex-end; }
+.action-row { display: flex; gap: 8px; justify-content: flex-end; flex-direction: row !important; align-items: center; }
 .btn-action { width: 34px; height: 34px; border-radius: 10px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
 .btn-action.info { background: #f0f9ff; color: #0369a1; }
 .btn-action.info:hover { background: #e0f2fe; transform: scale(1.05); }
