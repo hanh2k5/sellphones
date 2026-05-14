@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { categoriesApi } from '../api'
 import { useToast } from './useToast'
 import { useI18nStore } from '../stores/i18n'
+import Swal from 'sweetalert2'
 
 export function useCategories() {
   const toast = useToast()
@@ -47,10 +48,23 @@ export function useCategories() {
     }
   }
 
-  /** Xóa danh mục — component tự confirm trước khi gọi hàm này */
-  async function deleteCategory(id) {
+  async function deleteCategory(cat) {
+    const result = await Swal.fire({
+      title: i18n.t('common.confirm'),
+      text: `${i18n.t('product.delete')} ${cat.name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: i18n.t('common.delete'),
+      cancelButtonText: i18n.t('common.cancel'),
+      reverseButtons: true
+    })
+
+    if (!result.isConfirmed) return { success: false }
+
     try {
-      await categoriesApi.destroy(id)
+      await categoriesApi.destroy(cat.id)
       toast.success(i18n.t('admin.category_deleted_success'))
       await fetchCategories()
       return { success: true }
