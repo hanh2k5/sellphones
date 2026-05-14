@@ -47,7 +47,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('admin')->prefix('admin')->group(function () {
         // DASHBOARD
         Route::get('/dashboard', [AdminController::class, 'dashboard']);
-
+        // QUẢN LÝ NGƯỜI DÙNG (Nguyễn Duy Khang)
+        Route::get('/users', [AuthController::class, 'index']);
+        Route::post('/users', [AuthController::class, 'storeUser']);
+        Route::put('/users/{user}', [AuthController::class, 'updateUser']);
+        Route::delete('/users/{user}', [AuthController::class, 'destroyUser']);
+        Route::post('/users/{user}/unlock', [AuthController::class, 'unlock']);
+        Route::post('/users/{user}/lock', [AuthController::class, 'lock']);
         // QUẢN LÝ ĐƠN HÀNG (Phan Đình Hạnh)
         Route::get('/orders', [OrderController::class, 'adminIndex']);
         // Báo cáo 4.1.8: Duyệt đơn hàng và Xử lý tranh chấp dữ liệu (Optimistic Locking)

@@ -24,6 +24,8 @@ class UserResource extends JsonResource
             'is_admin'       => $this->isAdmin(),
             'is_active'      => (bool)$this->is_active,
             'is_locked'      => !$this->is_active || ($this->locked_until && $this->locked_until->isFuture()),
+            'orders_count'   => $this->orders_count ?? 0,
+            'total_spent'    => (float)($this->total_spent ?? 0),
             'login_attempts' => $this->login_attempts,
             'locked_until'   => $this->locked_until,
             'updated_at'     => $this->updated_at,
