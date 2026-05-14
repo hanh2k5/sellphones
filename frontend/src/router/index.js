@@ -44,6 +44,8 @@ const router = createRouter({
         // Báo cáo 4.3.1 -> 4.3.4: Quản lý Danh mục - Đặng Văn Hà
         { path: 'categories', name: 'admin-categories', component: () => import('../views/admin/CategoryManageView.vue') },
         { path: 'products', name: 'admin-products', component: () => import('../views/admin/ProductManageView.vue') },
+        { path: 'products/create', name: 'admin-product-create', component: () => import('../views/admin/ProductFormView.vue') },
+        { path: 'products/:id/edit', name: 'admin-product-edit', component: () => import('../views/admin/ProductFormView.vue') },
       ]
     },
 

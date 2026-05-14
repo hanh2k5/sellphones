@@ -62,6 +62,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/categories/{category}', [CategoryController::class, 'update']);
         // Báo cáo 4.3.3: Xóa danh mục sản phẩm
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+
+        // QUẢN LÝ SẢN PHẨM (Đặng Văn Hà)
+        // Báo cáo 4.3.5: Thêm mới sản phẩm
+        Route::post('/products', [ProductController::class, 'store']);
+        // Báo cáo 4.3.6: Cập nhật sản phẩm
+        Route::put('/products/{product}', [ProductController::class, 'update']);
+        // Báo cáo 4.3.7: Xóa mềm sản phẩm
+        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+        // Báo cáo 4.3.14: Thùng rác sản phẩm
+        Route::get('/products/trash', [ProductController::class, 'trash']);
+        Route::post('/products/{id}/restore', [ProductController::class, 'restore']);
+        Route::delete('/products/{id}/force-delete', [ProductController::class, 'forceDelete']);
+        // Báo cáo 4.3.15: Quản lý ảnh (Gallery)
+        Route::post('/products/{product}/images', [ProductController::class, 'uploadImages']);
+        Route::delete('/products/{id}/images/{imageId}', [ProductController::class, 'deleteImage']);
+        // Upload file chung & Check update
+        Route::post('/upload', [ProductController::class, 'uploadFile']);
+        Route::get('/products/{id}/check-updated', [ProductController::class, 'checkUpdated']);
     });
 
     // --- GIỎ HÀNG (Phan Đình Hạnh) ---
