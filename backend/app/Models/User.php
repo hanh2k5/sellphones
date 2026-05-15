@@ -54,7 +54,7 @@ class User extends Authenticatable
     public function getTotalSpentAttribute(): float
     {
         return $this->orders()
-            ->whereIn('status', ['confirmed', 'processing'])
+            ->whereIn('status', ['completed', 'processing', 'shipping'])
             ->sum('total_amount');
     }
 
