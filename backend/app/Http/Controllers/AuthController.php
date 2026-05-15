@@ -121,6 +121,7 @@ class AuthController extends Controller
             'phone'    => 'nullable|string|max:15',
             'address'  => 'nullable|string|max:500',
             'role'     => 'nullable|in:admin,user',
+            'password' => 'nullable|string|min:8',
         ]);
 
         $updatedUser = $this->authService->updateUser($user, $request->all());

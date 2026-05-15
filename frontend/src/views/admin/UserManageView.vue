@@ -39,9 +39,9 @@
           </thead>
           <tbody>
             <tr v-for="u in users" :key="u.id">
-              <td>
+              <td :data-label="i18n.t('admin.customer')">
                 <div class="user-cell">
-                  <div class="avatar" :class="{ locked: u.is_locked }">
+                  <div class="avatar" :class="{ locked: u.is_locked || !u.is_active }">
                     {{ (u.name || 'K').charAt(0).toUpperCase() }}
                   </div>
                   <div>
@@ -50,23 +50,23 @@
                   </div>
                 </div>
               </td>
-              <td class="text-muted">{{ u.email }}</td>
-              <td class="text-center fw-bold">{{ u.orders_count || 0 }}</td>
-              <td><span class="text-danger fw-bold">{{ fmtPrice(u.total_spent || 0) }}</span></td>
-              <td>
-                <span class="status-badge" :class="u.is_locked ? 'badge-danger' : 'badge-success'">
-                  {{ u.is_locked ? (u.is_active ? 'Khóa tạm thời' : i18n.t('admin.locked')) : i18n.t('admin.active') }}
+              <td class="text-muted" :data-label="i18n.t('common.email')">{{ u.email }}</td>
+              <td class="text-center fw-bold" :data-label="i18n.t('admin.user_orders')">{{ u.orders_count || 0 }}</td>
+              <td :data-label="i18n.t('admin.spending')"><span class="text-danger fw-bold">{{ fmtPrice(u.total_spent || 0) }}</span></td>
+              <td :data-label="i18n.t('admin.status')">
+                <span class="status-badge" :class="(u.is_locked || !u.is_active) ? 'badge-danger' : 'badge-success'">
+                  {{ !u.is_active ? i18n.t('admin.locked') : (u.is_locked ? 'Khóa tạm thời' : i18n.t('admin.active')) }}
                 </span>
               </td>
-              <td>
+              <td :data-label="i18n.t('admin.actions')">
                 <div class="action-row">
-                  <!-- Unlock nếu đang bị khóa (Bất kể khóa cứng hay khóa tạm thời) -->
-                  <button v-if="u.is_locked && u.role !== 'admin'" @click="unlockUser(u.id)" class="btn-action success" :title="i18n.t('admin.unlock')">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-                  </button>
-                  <!-- Khóa nếu đang hoạt động bình thường -->
-                  <button v-else-if="!u.is_locked && u.role !== 'admin'" @click="lockUser(u.id)" class="btn-action warning" :title="i18n.t('admin.locked_count')">
+                  <!-- Unlock nếu đang bị khóa (Bất kể khóa cứng hay khóa tạm thời) -> Hiển thị ổ khóa đóng màu vàng -->
+                  <button v-if="(!u.is_active || u.is_locked) && u.role !== 'admin'" @click="unlockUser(u.id)" class="btn-action warning" :title="i18n.t('admin.unlock')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  </button>
+                  <!-- Khóa nếu đang hoạt động bình thường -> Hiển thị ổ khóa mở màu xanh -->
+                  <button v-else-if="u.is_active && !u.is_locked && u.role !== 'admin'" @click="lockUser(u.id)" class="btn-action success" :title="i18n.t('admin.lock') || 'Khóa'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
                   </button>
                   <!-- Chỉnh sửa -->
                   <button @click="openEditModal(u)" class="btn-action info" :title="i18n.t('common.edit')">
@@ -126,8 +126,8 @@
               <input v-model="form.email" type="email" class="form-input" placeholder="email@example.com" :class="{'input-error': errors?.email}" @input="errors && (errors.email = null)" />
               <p v-if="errors?.email" class="form-error-label">{{ errors.email[0] }}</p>
             </div>
-            <div class="form-group" v-if="!editUser">
-              <label>{{ i18n.t('common.password') }}</label>
+            <div class="form-group">
+              <label>{{ i18n.t('common.password') }} <span v-if="editUser" class="text-muted" style="font-weight: normal; font-size: 11px;">(Để trống nếu không đổi)</span></label>
               <input v-model="form.password" type="password" class="form-input" :placeholder="i18n.t('common.password_min_8')" :class="{'input-error': errors?.password}" @input="errors && (errors.password = null)" />
               <p v-if="errors?.password" class="form-error-label">{{ errors.password[0] }}</p>
             </div>
@@ -245,7 +245,7 @@ async function lockUser(id) {
 async function deleteUser(id) {
   const result = await Swal.fire({
     title: i18n.t('admin.delete_user_confirm'),
-    text: 'Hành động này không thể hoàn tác và sẽ xóa tất cả dữ liệu liên quan.',
+    text: i18n.t('admin.delete_user_text'),
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#e11d48',

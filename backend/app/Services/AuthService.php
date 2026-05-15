@@ -136,6 +136,6 @@ class AuthService
         if ($user->role === 'admin') {
             throw new Exception('Không thể xóa tài khoản quản trị viên.', 422);
         }
-        return $user->delete();
+        return $user->forceDelete();
     }
 }
