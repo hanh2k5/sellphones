@@ -11,6 +11,7 @@ use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,6 +43,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Báo cáo 4.2.9: Cập nhật hồ sơ cá nhân
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
+    Route::get('/profile/check-update', [ProfileController::class, 'checkUpdate']);
 
     // Route dành riêng cho Admin (Báo cáo 4.2.8)
     Route::middleware('admin')->prefix('admin')->group(function () {

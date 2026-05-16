@@ -30,7 +30,7 @@ const router = createRouter({
     { path: '/payment/momo', name: 'payment.momo', component: () => import('../views/MomoPaymentView.vue'), meta: { requiresAuth: true } },
 
     // Báo cáo 4.2.9: Cập nhật hồ sơ cá nhân - Nguyễn Duy Khang
-    { path: '/profile', name: 'profile', component: () => import('../views/HomeView.vue'), meta: { requiresAuth: true } },
+    { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue'), meta: { requiresAuth: true } },
 
     // Khu vực Quản trị (Admin)
     {

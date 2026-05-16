@@ -500,7 +500,12 @@
     "current_password": "Mật khẩu hiện tại",
     "new_password": "Mật khẩu mới",
     "confirm_new_password": "Xác nhận mật khẩu mới",
-    "update_password": "Cập nhật mật khẩu"
+    "update_password": "Cập nhật mật khẩu",
+    "update_info": "Cập nhật thông tin",
+    "favorites": "Sản phẩm yêu thích",
+    "no_favorites": "Chưa có sản phẩm yêu thích nào.",
+    "reload_data": "TẢI LẠI DỮ LIỆU",
+    "data_conflict": "Xung đột dữ liệu"
   },
   "chat": {
     "title": "Trợ lý ảo SellPhones",

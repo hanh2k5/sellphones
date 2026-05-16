@@ -500,7 +500,12 @@
     "current_password": "Current Password",
     "new_password": "New Password",
     "confirm_new_password": "Confirm New Password",
-    "update_password": "Update Password"
+    "update_password": "Update Password",
+    "update_info": "Update Profile",
+    "favorites": "Favorite Products",
+    "no_favorites": "No favorite products yet.",
+    "reload_data": "RELOAD DATA",
+    "data_conflict": "Data Conflict"
   },
   "chat": {
     "title": "SellPhones AI Assistant",
