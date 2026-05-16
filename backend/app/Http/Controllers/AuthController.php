@@ -17,6 +17,7 @@ use Exception;
  */
 class AuthController extends Controller
 {
+    /** @var AuthService */
     protected $authService;
 
     public function __construct(AuthService $authService)
@@ -95,5 +96,83 @@ class AuthController extends Controller
     public function me()
     {
         return (new UserResource(Auth::user()))->resolve();
+    }
+
+    /**
+     * [Nguyễn Duy Khang - 4.2.3] Danh sách người dùng (Admin)
+     */
+    public function index(Request $request)
+    {
+        $users = $this->authService->getAllUsers($request->all());
+        return UserResource::collection($users);
+    }
+
+    /**
+     * [Nguyễn Duy Khang - 4.2.1] Thêm mới người dùng (Admin)
+     */
+    public function adminCreate(Request $request)
+    {
+        $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users',
+            'password' => 'required|string|min:8',
+            'role'     => 'required|in:user,admin',
+            'phone'    => 'nullable|string|max:15',
+            'address'  => 'nullable|string|max:255',
+        ]);
+        $user = $this->authService->createUser($request->all());
+        return (new UserResource($user))->additional(['message' => __('messages.user_created')]);
+    }
+
+    /**
+     * [Nguyễn Duy Khang - 4.2.2] Cập nhật người dùng (Admin)
+     */
+    public function adminUpdate(Request $request, User $user)
+    {
+        $request->validate([
+            'name'     => 'sometimes|string|max:255',
+            'email'    => 'sometimes|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:8',
+            'role'     => 'sometimes|in:user,admin',
+            'phone'    => 'nullable|string|max:15',
+            'address'  => 'nullable|string|max:255',
+        ]);
+        $updated = $this->authService->updateUser($user, $request->all());
+        return (new UserResource($updated))->additional(['message' => __('messages.user_updated')]);
+    }
+
+    /**
+     * [Nguyễn Duy Khang - 4.2.4] Xóa người dùng (Admin)
+     */
+    public function adminDelete(User $user)
+    {
+        try {
+            $this->authService->deleteUser($user);
+            return response()->json(['message' => __('messages.user_deleted')]);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * [Nguyễn Duy Khang - 4.2.4] Khóa tài khoản người dùng (Admin)
+     */
+    public function lock(User $user)
+    {
+        try {
+            $updatedUser = $this->authService->lockUser($user);
+            return (new UserResource($updatedUser))->additional(['message' => __('messages.user_locked')]);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * [Nguyễn Duy Khang - 4.2.4] Mở khóa tài khoản người dùng (Admin)
+     */
+    public function unlock(User $user)
+    {
+        $updatedUser = $this->authService->unlockUser($user);
+        return (new UserResource($updatedUser))->additional(['message' => __('messages.user_unlocked')]);
     }
 }
