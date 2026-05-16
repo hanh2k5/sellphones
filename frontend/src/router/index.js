@@ -39,6 +39,8 @@ const router = createRouter({
       meta: { requiresAdmin: true },
       children: [
         { path: '', name: 'admin-dashboard', component: () => import('../views/admin/AdminDashboardView.vue') },
+        // Báo cáo 4.2.x: Quản lý người dùng - Nguyễn Duy Khang
+{ path: 'users', name: 'admin-users', component: () => import('../views/admin/UserManageView.vue') },
         // Báo cáo 4.1.8: Duyệt đơn hàng - Phan Đình Hạnh
         { path: 'orders', name: 'admin-orders', component: () => import('../views/admin/OrderManagementView.vue') },
         // Báo cáo 4.3.1 -> 4.3.4: Quản lý Danh mục - Đặng Văn Hà

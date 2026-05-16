@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -15,40 +16,26 @@ class ResetPasswordMail extends Mailable
     public $token;
     public $user;
 
-    /**
-     * Create a new message instance.
-     */
-    public function __construct($token, $user)
+    public function __construct($token, User $user)
     {
         $this->token = $token;
         $this->user = $user;
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Đặt lại mật khẩu - Sellphones',
+            subject: 'Khôi phục mật khẩu - SELLPHONES',
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.auth.reset_password',
+            view: 'emails.reset-password',
         );
     }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
     public function attachments(): array
     {
         return [];

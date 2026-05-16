@@ -87,6 +87,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reviews', [ReviewController::class, 'adminIndex']);
         Route::put('/reviews/{review}/moderate', [ReviewController::class, 'moderate']);
         Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
+
+        // QUẢN LÝ NGƯỜI DÙNG (Nguyễn Duy Khang - 4.2.1 → 4.2.4)
+        Route::get('/users', [AuthController::class, 'index']);
+        Route::post('/users', [AuthController::class, 'storeUser']);
+        Route::put('/users/{user}', [AuthController::class, 'updateUser']);
+        Route::delete('/users/{user}', [AuthController::class, 'destroyUser']);
+        Route::post('/users/{user}/lock', [AuthController::class, 'lock']);
+        Route::post('/users/{user}/unlock', [AuthController::class, 'unlock']);
     });
 
     // --- GIỎ HÀNG (Phan Đình Hạnh) ---
