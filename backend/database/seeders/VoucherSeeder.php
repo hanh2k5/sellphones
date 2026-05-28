@@ -11,24 +11,24 @@ class VoucherSeeder extends Seeder
     public function run()
     {
         Voucher::create([
-            'code'           => 'GIAM20',
+            'code'           => 'Giam3trieu',
             'discount_type'  => 'percent',
-            'discount_value' => 20,
-            'min_order_value'=> 500000,
-            'max_discount'   => 200000,
+            'discount_value' => 30,
+            'min_order_value'=> 1000000,
+            'max_discount'   => 3000000,
             'expires_at'     => Carbon::now()->addDays(30),
             'usage_limit'    => 100,
             'used_count'     => 0,
         ]);
 
         Voucher::create([
-            'code'           => 'HE100',
+            'code'           => 'Giam5trieu',
             'discount_type'  => 'fixed',
-            'discount_value' => 100000,
+            'discount_value' => 5000000,
             'min_order_value'=> 1000000,
-            'max_discount'   => 100000,
+            'max_discount'   => 5000000,
             'expires_at'     => Carbon::now()->addDays(30),
-            'usage_limit'    => 50,
+            'usage_limit'    => 100,
             'used_count'     => 0,
         ]);
     }

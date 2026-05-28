@@ -17,7 +17,7 @@
     <!-- Product detail -->
     <div v-else class="detail-layout">
       <div class="top-actions">
-        <button @click="$router.back()" class="btn-back-modern">
+        <button @click="$router.push('/')" class="btn-back-modern">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 19l-7-7 7-7"/></svg>
           <span>{{ i18n.t('product.go_back') }}</span>
         </button>
@@ -133,34 +133,38 @@
 
         <!-- Form đánh giá: Hiện khi đang sửa HOẶC (đã mua & chưa đánh giá) -->
         <div v-else-if="authStore.isLoggedIn && (editingReviewId || (eligibleOrderId && !userReview))" 
-             class="backdrop-blur-xl bg-white/60 rounded-[2rem] p-8 mb-10 border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-fade-in">
-          <h3 class="font-bold text-slate-800 mb-5 text-lg">{{ editingReviewId ? i18n.t('common.update_review') : i18n.t('product.write_review') }}</h3>
+             class="bg-white rounded-3xl p-6 md:p-8 mb-10 shadow-sm animate-fade-in border border-slate-100">
+          <h3 class="font-bold text-slate-900 mb-4 text-sm md:text-base">{{ editingReviewId ? i18n.t('product.edit_review') : i18n.t('product.write_review') }}</h3>
           
-          <!-- Tự động liên kết Order ID -->
-          <div class="text-sm font-bold text-emerald-700 bg-emerald-50/80 backdrop-blur-sm border border-emerald-200 rounded-xl px-4 py-3 mb-5 shadow-sm flex items-center gap-2">
+          <!-- Tự động liên kết Order ID (chỉ hiện khi thêm mới để đỡ rối khi sửa) -->
+          <div v-if="!editingReviewId" class="text-sm font-bold text-emerald-700 bg-emerald-50/80 backdrop-blur-sm border border-emerald-200 rounded-xl px-4 py-3 mb-5 shadow-sm flex items-center gap-2">
             <span>✅</span> {{ i18n.t('product.linked_order') }} #{{ eligibleOrderId || reviewForm.order_id_input }}
           </div>
 
           <!-- Chọn sao -->
-          <div class="flex items-center gap-2 mb-5">
-            <div class="flex gap-1">
-              <button v-for="i in 5" :key="i" @click="reviewForm.rating = i" class="text-3xl transition-transform hover:scale-110 active:scale-125 drop-shadow-sm">
-                <span :class="i <= reviewForm.rating ? 'text-yellow-400' : 'text-slate-300'">★</span>
+          <div class="flex items-center gap-2 mb-4">
+            <div class="flex gap-1.5">
+              <button v-for="i in 5" :key="i" @click="reviewForm.rating = i" class="text-3xl md:text-4xl transition-transform hover:scale-110 active:scale-125 focus:outline-none">
+                <span :class="i <= reviewForm.rating ? 'text-amber-500' : 'text-slate-200'">★</span>
               </button>
             </div>
-            <span class="text-[15px] font-bold ml-3 px-3 py-1 bg-white/80 rounded-lg shadow-sm text-slate-600 border border-white">{{ reviewForm.rating > 0 ? ratingLabel(reviewForm.rating) : i18n.t('product.select_rating') }}</span>
           </div>
-          <textarea v-model="reviewForm.comment" rows="3" :placeholder="i18n.t('product.your_comment')" class="w-full bg-white/80 border border-white shadow-inner rounded-2xl px-5 py-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 resize-none mb-5 transition-all text-slate-800 placeholder-slate-400"></textarea>
+          
+          <textarea v-model="reviewForm.comment" rows="3" :placeholder="i18n.t('product.your_comment')" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 resize-none mb-4 transition-all text-slate-800 placeholder-slate-400"></textarea>
 
           <div v-if="reviewError" class="text-sm font-bold text-rose-600 mb-4 bg-rose-50/80 p-3 rounded-xl border border-rose-200 flex items-center gap-2">⚠️ {{ reviewError }}</div>
           
-          <div class="flex justify-end gap-3">
-            <button v-if="editingReviewId" @click="cancelEdit" class="px-6 py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider text-slate-500 hover:text-slate-700 transition-all active:scale-95">
-              {{ i18n.t('common.cancel') }}
-            </button>
-            <button @click="submitReview" :disabled="!reviewForm.rating || submittingReview" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-3.5 rounded-2xl font-bold text-sm uppercase tracking-wider disabled:opacity-50 disabled:grayscale transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2">
+          <div class="flex items-center gap-3">
+            <button @click="submitReview" :disabled="!reviewForm.rating || submittingReview" class="bg-[#0b65ff] hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-bold text-sm disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2">
               <span v-if="submittingReview" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              {{ submittingReview ? i18n.t('common.saving') : (editingReviewId ? i18n.t('common.update_review') : i18n.t('common.submit_review')) }}
+              {{ submittingReview ? i18n.t('common.saving') : (editingReviewId ? i18n.t('common.update') : i18n.t('common.submit_review')) }}
+            </button>
+            
+            <button v-if="editingReviewId" @click="deleteReview({ id: editingReviewId })" class="bg-white border border-rose-400 text-rose-500 hover:bg-rose-50 px-6 py-2.5 rounded-full font-bold text-sm transition-colors shadow-sm">
+              {{ i18n.t('common.delete') }}
+            </button>
+            <button v-if="editingReviewId" @click="cancelEdit" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-2.5 rounded-full font-bold text-sm transition-colors shadow-sm">
+              {{ i18n.t('common.cancel') }}
             </button>
           </div>
         </div>
@@ -183,43 +187,43 @@
 
         <!-- Reviews List -->
         <div v-if="product.reviews?.length" class="space-y-6">
-          <div v-for="review in product.reviews" :key="review.id" class="break-words backdrop-blur-2xl bg-white/50 rounded-3xl md:rounded-[2.5rem] p-5 md:p-10 border border-white shadow-xl hover:shadow-2xl transition-all duration-500 md:hover:-translate-y-1 relative overflow-hidden group">
-            <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+          <div v-for="review in product.reviews" :key="review.id" class="break-words">
             
-            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-              <div class="flex items-center gap-5">
-                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+            <div class="flex justify-between items-start mb-2 gap-4">
+              <div class="flex gap-3">
+                <div class="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center text-slate-600 font-bold text-sm shrink-0">
                   {{ review.user?.name?.charAt(0)?.toUpperCase() || '?' }}
                 </div>
                 <div>
-                  <h4 class="font-bold text-slate-800 text-lg tracking-tight">{{ review.user?.name || 'Anonymous' }}</h4>
-                  <div class="flex mt-1 text-sm">
-                    <span v-for="i in 5" :key="i" :class="i <= review.rating ? 'text-amber-400' : 'text-slate-200'">★</span>
+                  <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    {{ review.user?.name || 'Anonymous' }}
+                    <button v-if="authStore.isLoggedIn && authStore.user?.id === review.user_id && !editingReviewId" 
+                            @click="editReview(review)" 
+                            class="text-blue-500 hover:text-blue-700" title="Sửa đánh giá">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    </button>
+                  </h4>
+                  <div class="flex mt-0.5 text-xs">
+                    <span v-for="i in 5" :key="i" :class="i <= review.rating ? 'text-amber-500' : 'text-slate-200'">★</span>
                   </div>
                 </div>
               </div>
-              <div class="flex items-center gap-4">
-                <span class="text-[11px] font-bold text-slate-400 bg-white/60 px-4 py-2 rounded-xl border border-white shadow-sm uppercase tracking-widest">
-                  {{ fmtDate(review.created_at) }}
-                </span>
-                <div v-if="authStore.isLoggedIn && (authStore.user?.id === review.user_id || authStore.user?.role === 'admin')" class="flex gap-2">
-                  <button v-if="authStore.user?.id === review.user_id"
-                          @click="editReview(review)" 
-                          class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all shadow-sm active:scale-90"
-                          title="Sửa đánh giá">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  </button>
-                  <button @click="deleteReview(review)" 
-                          class="w-10 h-10 flex items-center justify-center bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all shadow-sm active:scale-90"
-                          title="Xóa đánh giá">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                  </button>
-                </div>
-              </div>
+              <span class="text-[12px] text-slate-500 font-medium">
+                {{ fmtDate(review.created_at) }}
+              </span>
             </div>
-            <div class="relative pl-6">
-              <div class="absolute left-0 top-0 w-1 h-full bg-blue-500/20 rounded-full"></div>
-              <p class="text-base text-slate-600 font-medium leading-relaxed">{{ review.comment }}</p>
+            
+            <div class="pl-13 mt-1">
+              <p class="text-sm text-slate-700 font-medium whitespace-pre-line">{{ review.comment }}</p>
+              
+              <!-- Admin Reply Box (If exists or mock) -->
+              <div v-if="review.admin_reply" class="mt-4 border-l-[3px] border-slate-700 pl-4 py-1.5 ml-1">
+                <p class="font-bold text-[11px] text-slate-900 mb-1 flex items-center gap-1.5 uppercase tracking-wide">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.19-2.05.8-3.06.8-1.25 0-2.35-.49-3.26-.8-1.63-.56-2.58-.8-3.92.51-1.39 1.35-2.22 3.19-2.22 4.96 0 2.27 1.48 4.3 3.32 5.56 1.44.97 3.01 1.48 4.54 1.48 1.45 0 3.03-.49 4.38-1.4 1.63-1.12 3.02-3.07 3.56-5.22-.05-.03-3.18-1.2-3.18-4.78 0-3 2.45-4.42 2.53-4.46-1.42-2.08-3.55-2.33-4.23-2.33-1.57-.04-3.15.82-3.92.82-.76 0-2.04-.77-3.32-.77-1.8 0-3.48.87-4.43 2.37-1.92 3.04-.49 7.55 1.38 10.26.92 1.34 2 2.85 3.44 2.8 1.38-.05 1.9-.89 3.57-.89 1.65 0 2.12.89 3.57.87 1.49-.03 2.43-1.4 3.34-2.72 1.05-1.53 1.48-3.03 1.5-3.11-.03-.01-2.91-1.12-2.91-4.46zM15.11 3.25c.78-.95 1.3-2.27 1.15-3.58-1.13.05-2.52.76-3.32 1.73-.72.87-1.32 2.22-1.15 3.5 1.25.1 2.55-.7 3.32-1.65z" transform="scale(0.85) translate(2, -2)"/></svg>
+                  {{ i18n.t('product.admin_reply') }}
+                </p>
+                <p class="text-[13px] text-slate-600">{{ review.admin_reply }}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -327,8 +331,11 @@ async function addToCart() {
       label: i18n.t('product.view_cart'),
       url: '/cart'
     })
-    product.value.stock -= qty.value // Deduct stock locally for immediate feedback
+    // Deduct stock locally for immediate feedback, but clamp to 0 to avoid negative display
+    product.value.stock = Math.max(0, product.value.stock - qty.value)
     qty.value = 1 // Reset quantity after successful addition
+  } else {
+    toast.error(res.message || i18n.t('common.error'))
   }
 }
 
@@ -398,20 +405,37 @@ async function deleteReview(review) {
     text: i18n.locale === 'vi' ? 'Bạn có chắc chắn muốn xóa đánh giá này?' : 'Are you sure you want to delete this review?',
     icon: 'warning',
     showCancelButton: true,
+    reverseButtons: true,
     confirmButtonColor: '#e11d48',
     cancelButtonColor: '#94a3b8',
-    confirmButtonText: 'Xóa ngay',
+    confirmButtonText: i18n.t('common.delete_now') || 'Xóa ngay',
     cancelButtonText: 'Hủy'
   })
 
   if (!result.isConfirmed) return
 
   try {
-    await api.delete(`/reviews/${review.id}`)
+    const res = await api.delete(`/reviews/${review.id}`)
     product.value.reviews = product.value.reviews.filter(r => r.id !== review.id)
-    toast.success(i18n.t('common.review_delete_success'))
+    
+    // Update avg_rating if the backend returns it
+    if (res.data && res.data.avg_rating !== undefined) {
+      product.value.avg_rating = res.data.avg_rating
+    }
+    
+    // Reset edit form if the deleted review was currently being edited
+    if (editingReviewId.value === review.id) {
+      cancelEdit()
+    }
+    
+    // Re-evaluate if the user is eligible to write a new review
+    findEligibleOrder()
+    
+    toast.success(i18n.t('common.review_delete_success') || 'Xóa đánh giá thành công')
   } catch (e) {
-    toast.error(e.response?.data?.message || 'Error!')
+    console.error('Delete review error:', e)
+    const msg = e.response?.data?.message || e.message || 'Lỗi không xác định!'
+    toast.error(typeof msg === 'string' ? msg : 'Lỗi không xác định!')
   }
 }
 
@@ -501,15 +525,15 @@ function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }
 .qty-selector span { width: 35px; text-align: center; font-weight: 800; color: #1e293b; font-size: 16px; }
 
 .btn-primary { 
-  background: #1e293b; color: #fff; flex: 1.5; 
-  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+  background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; border: none; font-weight: 800; font-size: 16px; padding: 0 40px; border-radius: 20px; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3); flex: 1.5; display: flex; align-items: center; justify-content: center; height: 52px;
 }
 .btn-secondary { 
-  background: #fff; border: 2px solid #e2e8f0; color: #1e293b; flex: 1;
-  white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #fff; border: 2px solid #e2e8f0; color: #1e293b; flex: 1; height: 52px;
+  white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 20px;
 }
-.btn-primary:hover { background: #0f172a; transform: translateY(-3px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
-.btn-secondary:hover { border-color: #1e293b; transform: translateY(-2px); }
+.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(37, 99, 235, 0.4); filter: brightness(1.1); }
+.btn-secondary:hover { border-color: #2563eb; color: #2563eb; transform: translateY(-2px); }
 
 /* Description */
 .desc-title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
@@ -586,8 +610,9 @@ function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }
   .qty-selector-sm button { width: 36px; height: 36px; border: none; background: none; font-size: 20px; font-weight: 700; }
   .qty-selector-sm span { font-weight: 800; width: 25px; text-align: center; font-size: 15px; }
   .mobile-btns { display: flex; gap: 10px; flex: 1; }
-  .btn-cart-sm { width: 52px; height: 52px; border-radius: 16px; border: 2px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: center; color: #1e293b; }
-  .btn-buy-sm { flex: 1; height: 52px; border-radius: 16px; background: #1e293b; color: #fff; font-weight: 800; font-size: 15px; border: none; }
+  .btn-cart-sm { width: 52px; height: 52px; border-radius: 16px; border: 2px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: center; color: #2563eb; transition: all 0.3s; }
+  .btn-cart-sm:active { background: #eff6ff; border-color: #2563eb; }
+  .btn-buy-sm { flex: 1; height: 52px; border-radius: 16px; background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; font-weight: 800; font-size: 15px; border: none; box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25); }
   
   /* Give reviews more margin from edges for premium feel */
   .reviews-section { padding: 25px 15px; }

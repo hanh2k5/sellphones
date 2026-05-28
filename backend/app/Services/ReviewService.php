@@ -69,11 +69,16 @@ class ReviewService
     /**
      * Lấy tất cả đánh giá cho Admin
      */
-    public function getAllAdmin()
+    public function getAllAdmin($rating = null)
     {
-        return Review::with(['user:id,name', 'product:id,name'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $query = Review::with(['user:id,name', 'product:id,name'])
+            ->orderBy('created_at', 'desc');
+            
+        if ($rating) {
+            $query->where('rating', $rating);
+        }
+            
+        return $query->paginate(10);
     }
 
     /**

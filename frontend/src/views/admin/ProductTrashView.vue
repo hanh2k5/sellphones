@@ -16,22 +16,26 @@
         <table class="admin-table">
           <thead>
             <tr>
-              <th>{{ i18n.t('admin.product_image') }}</th>
+              <th style="width: 1%; white-space: nowrap; text-align: center;">{{ i18n.t('admin.product_image') }}</th>
               <th>{{ i18n.t('admin.product_name') }}</th>
               <th class="hide-mobile">{{ i18n.t('admin.deleted_at') }}</th>
-              <th class="text-right">{{ i18n.t('admin.actions') }}</th>
+              <th class="text-right" style="width: 1%; white-space: nowrap;">{{ i18n.t('admin.actions') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="p in trashedProducts" :key="p.id">
               <td :data-label="i18n.t('admin.product_image') || 'IMAGE'">
-                <div class="product-thumb" style="margin-left: auto;">
-                  <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" />
+                <div class="image-wrapper" style="display: flex; justify-content: center;">
+                  <div class="product-thumb">
+                    <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" />
+                  </div>
                 </div>
               </td>
               <td :data-label="i18n.t('admin.product_name') || 'NAME'">
-                <div class="fw-bold">{{ p.name }}</div>
-                <div class="text-danger fw-bold" style="font-size: 13px;">{{ fmtPrice(p.price) }}</div>
+                <div class="product-info-cell">
+                  <div class="fw-bold">{{ p.name }}</div>
+                  <div class="text-danger fw-bold" style="font-size: 13px;">{{ fmtPrice(p.price) }}</div>
+                </div>
               </td>
               <td class="hide-mobile" :data-label="i18n.t('admin.deleted_at') || 'DELETED'">
                 <span class="text-muted">{{ formatDate(p.deleted_at) }}</span>

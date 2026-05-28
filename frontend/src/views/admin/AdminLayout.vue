@@ -189,7 +189,6 @@ onUnmounted(() => clearInterval(timer))
 .admin-page-content {
   flex: 1;
   padding: 24px 24px 60px; /* Thêm padding bottom để nội dung không bị dính footer */
-  overflow-x: hidden;
 }
 
 /* ===== ADMIN FOOTER OVERRIDE (Compact Dark Mode) ===== */

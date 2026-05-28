@@ -25,12 +25,12 @@
           <thead>
             <tr>
               <th>{{ i18n.t('admin.product_name') }}</th>
-              <th>{{ i18n.t('admin.customer') }}</th>
-              <th>{{ i18n.t('admin.reviews') }}</th>
-              <th>{{ i18n.t('admin.comment') }}</th>
-              <th>{{ i18n.t('admin.status') }}</th>
-              <th>{{ i18n.t('admin.order_date') }}</th>
-              <th class="text-right">{{ i18n.t('admin.actions') }}</th>
+              <th style="text-align: center;">{{ i18n.t('admin.customer') }}</th>
+              <th style="text-align: center;">{{ i18n.t('admin.reviews') }}</th>
+              <th style="text-align: center;">{{ i18n.t('admin.comment') }}</th>
+              <th style="text-align: center;">{{ i18n.t('admin.status') }}</th>
+              <th style="text-align: center;">NGÀY ĐÁNH GIÁ</th>
+              <th style="text-align: center;">{{ i18n.t('admin.actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -38,28 +38,28 @@
               <td :data-label="i18n.t('admin.product_name') || 'PRODUCT'">
                 <div class="fw-bold small">{{ r.product?.name || `#SP-${r.product_id}` }}</div>
               </td>
-              <td :data-label="i18n.t('admin.customer') || 'CUSTOMER'">
-                <div class="user-cell" style="justify-content: flex-end;">
+              <td class="text-center" :data-label="i18n.t('admin.customer') || 'CUSTOMER'">
+                <div class="user-cell">
                   <div class="avatar">{{ (r.user?.name || 'K').charAt(0).toUpperCase() }}</div>
                   <span>{{ r.user?.name || i18n.t('admin.anonymous') }}</span>
                 </div>
               </td>
-              <td :data-label="i18n.t('admin.reviews') || 'RATING'">
-                <div class="stars" style="justify-content: flex-end;">
+              <td class="text-center" :data-label="i18n.t('admin.reviews') || 'RATING'">
+                <div class="stars">
                   <span v-for="i in 5" :key="i" :class="i <= r.rating ? 'star-filled' : 'star-empty'">★</span>
-                  <span class="rating-num">{{ r.rating }}/5</span>
+                  <span class="rating-num" style="margin-left: 4px;">{{ r.rating }}/5</span>
                 </div>
               </td>
-              <td :data-label="i18n.t('admin.comment') || 'COMMENT'">
-                <p class="review-comment" style="text-align: right; max-width: none;">{{ r.comment || i18n.t('admin.no_comment') }}</p>
+              <td class="text-center" :data-label="i18n.t('admin.comment') || 'COMMENT'">
+                <p class="review-comment">{{ r.comment || i18n.t('admin.no_comment') }}</p>
               </td>
-              <td :data-label="i18n.t('admin.status') || 'STATUS'">
+              <td class="text-center" :data-label="i18n.t('admin.status') || 'STATUS'">
                 <span class="status-badge" :class="r.status === 'approved' ? 'badge-success' : 'badge-warning'">
                   {{ reviewStatusLabel(r.status) }}
                 </span>
               </td>
-              <td class="text-muted" :data-label="i18n.t('admin.order_date') || 'DATE'">{{ formatDate(r.created_at) }}</td>
-              <td :data-label="i18n.t('admin.actions') || 'ACTIONS'">
+              <td class="text-center text-muted" data-label="NGÀY ĐÁNH GIÁ">{{ formatDate(r.created_at) }}</td>
+              <td class="text-center" :data-label="i18n.t('admin.actions') || 'ACTIONS'">
                 <div class="action-row">
                   <button v-if="r.status !== 'approved'" @click="moderate(r, 'approved')" class="btn-action success" title="Duyệt">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -77,7 +77,7 @@
         </table>
       </div>
     </div>
-
+    
     <!-- Pagination -->
     <div v-if="pagination.last_page > 1" class="pagination-wrapper">
       <div class="pagination-apple-wrapper">
@@ -130,10 +130,12 @@ async function fetchReviews(page = 1) {
     reviews.value = res.data.data || []
     if (res.data.meta) pagination.value = res.data.meta
     else if (res.data.last_page) pagination.value = res.data
-  } catch (e) {
-    console.warn('Backend endpoint /admin/reviews error or missing')
-    reviews.value = []
-  } finally { loading.value = false }
+  } catch (error) {
+    console.error('Fetch reviews error:', error)
+    toast.error(i18n.t('common.error_occurred'))
+  } finally {
+    loading.value = false
+  }
 }
 
 async function moderate(r, status) {
@@ -153,6 +155,7 @@ async function deleteReview(id) {
     text: i18n.t('admin.confirm_action'),
     icon: 'warning',
     showCancelButton: true,
+    reverseButtons: true,
     confirmButtonColor: '#e11d48',
     cancelButtonColor: '#94a3b8',
     confirmButtonText: i18n.t('common.delete'),
@@ -183,6 +186,31 @@ function reviewStatusLabel(status) {
 
 function goPage(p) { fetchReviews(p) }
 </script>
+
+<style scoped>
+@media (min-width: 769px) {
+  .user-cell, .stars, .action-row {
+    justify-content: center !important;
+  }
+  .review-comment {
+    text-align: center !important;
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0 auto;
+  }
+}
+@media (max-width: 768px) {
+  .user-cell, .stars, .action-row {
+    justify-content: flex-end !important;
+  }
+  .review-comment {
+    text-align: right !important;
+    margin: 0;
+  }
+}
+</style>
 
 <style scoped>
 .admin-page { display: flex; flex-direction: column; gap: 20px; }

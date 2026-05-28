@@ -21,16 +21,17 @@ const router = createRouter({
     
     // Báo cáo 4.1.4: Thanh toán đơn hàng (Checkout) - Phan Đình Hạnh
     { path: '/checkout', name: 'checkout', component: () => import('../views/CheckoutView.vue'), meta: { requiresAuth: true } },
+    { path: '/checkout/success', name: 'checkout-success', component: () => import('../views/CheckoutSuccessView.vue'), meta: { requiresAuth: true } },
     
     // Báo cáo 4.1.6 & 4.1.7: Lịch sử và Chi tiết Đơn hàng - Phan Đình Hạnh
-    { path: '/orders', name: 'orders', component: () => import('../views/OrderListView.vue'), meta: { requiresAuth: true } },
+    // { path: '/orders', name: 'orders', component: () => import('../views/OrderListView.vue'), meta: { requiresAuth: true } },
     { path: '/orders/:id', name: 'order-detail', component: () => import('../views/OrderDetailView.vue'), meta: { requiresAuth: true } },
     
     // Báo cáo 4.1.14: Thanh toán qua cổng ví điện tử (Fake MoMo UI) - Phan Đình Hạnh
     { path: '/payment/momo', name: 'payment.momo', component: () => import('../views/MomoPaymentView.vue'), meta: { requiresAuth: true } },
 
     // Báo cáo 4.2.9: Cập nhật hồ sơ cá nhân - Nguyễn Duy Khang
-    { path: '/profile', name: 'profile', component: () => import('../views/HomeView.vue'), meta: { requiresAuth: true } },
+    { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue'), meta: { requiresAuth: true } },
 
     // Khu vực Quản trị (Admin)
     {

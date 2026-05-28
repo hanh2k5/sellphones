@@ -215,12 +215,18 @@ function initReveal() {
   }
 }
 
+let isMounted = false
+
 onMounted(() => {
-  doFetch()
+  doFetch(route.query.page || 1)
   fetchCategories()
+  isMounted = true
 })
 
-watch(() => route.query, () => { doFetch(route.query.page || 1) }, { deep: true })
+watch(() => route.query, () => {
+  if (!isMounted) return
+  doFetch(route.query.page || 1)
+}, { deep: true })
 
 function setPriceRange(range) {
   currentRangeVal.value = range.val;

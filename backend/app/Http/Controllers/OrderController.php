@@ -100,6 +100,7 @@ class OrderController extends Controller
         }
 
         // Chống lặp lại thanh toán (Idempotency)
+        if ($order->status === 'cancelled') { return response()->json(['message' => 'Cancelled'], 422); }
         if ($order->payment_status === 'paid') {
             return response()->json(['message' => __('messages.already_paid')], 422);
         }
@@ -223,6 +224,7 @@ class OrderController extends Controller
      */
     public function cancel(Request $request, Order $order)
     {
+        $request->validate(['updated_at' => 'required|string']);
         try {
             $updatedOrder = $this->orderService->cancelOrder($order, $request->user(), $request->updated_at);
             return response()->json([

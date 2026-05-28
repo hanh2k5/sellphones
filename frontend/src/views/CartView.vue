@@ -90,6 +90,46 @@
             </ul>
           </div>
         </div>
+
+        <!-- NEW VOUCHER SECTION -->
+        <div class="bg-white rounded-[1.5rem] md:rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-sm mt-8">
+          <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12.94 1.61a2 2 0 00-2.83 0l-8.5 8.5a2 2 0 000 2.83l7.07 7.07a2 2 0 002.83 0l8.5-8.5a2 2 0 00.59-1.41V4.5a2 2 0 00-2-2h-5.66zM16 10a2 2 0 110-4 2 2 0 010 4z"/></svg>
+            Ưu đãi dành riêng cho bạn
+          </h3>
+
+          <!-- Applied Voucher Indicator -->
+          <div v-if="cartStore.appliedVoucher" class="bg-[#d1e7dd] border border-[#badbcc] rounded-xl p-4 flex justify-between items-center mb-6">
+            <div class="flex items-center gap-2 text-[#0f5132] text-sm font-bold">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+              <span>Mã <strong class="uppercase">{{ cartStore.appliedVoucher.code }}</strong> đã sẵn sàng ({{ cartStore.appliedVoucher.discount_type === 'percent' ? '-' + cartStore.appliedVoucher.discount_value + '%' : '-' + fmt(cartStore.appliedVoucher.discount_value) }})</span>
+            </div>
+            <button @click="removeVoucher" class="text-[#842029] text-sm font-bold hover:underline">Gỡ bỏ</button>
+          </div>
+
+          <!-- Voucher Grid -->
+          <div v-if="availableVouchers.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div v-for="v in availableVouchers" :key="v.id" 
+              class="border-2 border-dashed border-[#86b7fe] bg-[#f8fbff] rounded-2xl p-5 flex flex-col justify-between transition-all hover:shadow-md">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h4 class="text-blue-600 font-black text-lg tracking-wider uppercase">{{ v.code }}</h4>
+                  <p class="text-[12px] text-slate-500 font-medium mt-1">Cho đơn từ {{ fmt(v.min_order_value) }}</p>
+                </div>
+                <div class="bg-blue-600 text-white text-xs font-black px-2 py-1 rounded">
+                  {{ v.discount_type === 'percent' ? '-' + v.discount_value + '%' : '-' + fmt(v.discount_value) }}
+                </div>
+              </div>
+              <button 
+                @click="!cartStore.appliedVoucher && selectVoucher(v.code)"
+                :disabled="cartStore.appliedVoucher"
+                class="w-full bg-[#1e293b] text-white font-bold py-2.5 rounded-xl text-sm transition-all hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed">
+                Dùng ngay
+              </button>
+            </div>
+          </div>
+          <p v-else class="text-sm text-slate-400 font-bold italic">{{ i18n.t('cart.no_vouchers') }}</p>
+        </div>
       </div>
 
       <!-- Order Summary Card -->
@@ -111,60 +151,6 @@
               <span class="text-[#28a745] font-bold">{{ i18n.t('cart.free') }}</span>
             </div>
             <div class="h-px bg-slate-100 my-2"></div>
-            
-            <!-- Voucher Selection List -->
-            <div class="py-4 space-y-4">
-              <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{{ i18n.t('cart.select_voucher') }}</label>
-              
-              <div v-if="availableVouchers.length > 0" class="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                <div v-for="v in availableVouchers" :key="v.id" 
-                  @click="!cartStore.appliedVoucher && selectVoucher(v.code)"
-                  class="p-3 md:p-4 rounded-xl md:rounded-2xl border-2 transition-all cursor-pointer flex justify-between items-center group"
-                  :class="[
-                    cartStore.appliedVoucher?.code === v.code 
-                      ? 'border-blue-600 bg-blue-50' 
-                      : 'border-slate-100 bg-slate-50 hover:border-blue-200'
-                  ]"
-                >
-                  <div>
-                    <p class="font-black text-slate-900 text-sm tracking-tighter">{{ v.code }}</p>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase mt-0.5">
-                      {{ v.discount_type === 'percent' 
-                        ? i18n.t('cart.off_percent', { val: v.discount_value }) 
-                        : i18n.t('cart.off_amount', { val: fmt(v.discount_value) }) 
-                      }}
-                    </p>
-                  </div>
-                  <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
-                    :class="cartStore.appliedVoucher?.code === v.code ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 group-hover:border-blue-300'">
-                    <svg v-if="cartStore.appliedVoucher?.code === v.code" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                  </div>
-                </div>
-              </div>
-              <p v-else class="text-[10px] text-slate-400 font-bold italic">{{ i18n.t('cart.no_vouchers') }}</p>
-              
-              <!-- Manual Input (Optional fallback, kept small) -->
-              <div v-if="!cartStore.appliedVoucher" class="pt-2">
-                <button @click="showManualInput = !showManualInput" class="text-[10px] font-bold text-blue-600 hover:underline">
-                  {{ showManualInput ? i18n.t('common.close') : i18n.t('cart.enter_code') }}
-                </button>
-                <div v-if="showManualInput" class="flex gap-2 mt-2 animate-fade-in">
-                  <input v-model="manualCode" class="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold uppercase" placeholder="CODE..." />
-                  <button @click="selectVoucher(manualCode)" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-bold">OK</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Applied Voucher Indicator -->
-            <div v-if="cartStore.appliedVoucher" class="bg-emerald-50 border border-emerald-100 rounded-xl md:rounded-2xl p-3 md:p-4 flex justify-between items-center animate-fade-in mb-4">
-              <div class="flex items-center gap-2 text-emerald-700 text-sm font-bold">
-                <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span>{{ i18n.t('cart.voucher_applied') }}: {{ cartStore.appliedVoucher.code }}</span>
-              </div>
-              <button @click="removeVoucher" class="text-rose-500 text-xs font-bold hover:underline">{{ i18n.t('cart.remove') }}</button>
-            </div>
-
-            <div class="h-px bg-slate-100 my-4"></div>
 
             <div class="flex justify-between items-center py-2 w-full gap-4">
               <span class="text-base md:text-lg font-bold text-slate-900 whitespace-nowrap">{{ i18n.t('cart.total') }}</span>

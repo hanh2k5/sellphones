@@ -75,6 +75,7 @@ class Product extends Model
             $query->where('is_featured', true);
         }
         $query->when($filters['search'] ?? null, function ($q, $search) {
+            if (is_array($search)) { $search = implode(' ', $search); }
             $q->where(function ($sub) use ($search) {
                 $sub->where('name', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");

@@ -51,6 +51,14 @@ class OrderService
                 if (!$product || $product->stock < $item->quantity) {
                     throw new Exception(__('messages.stock_insufficient', ['name' => $item->product->name]), 422);
                 }
+
+                if ($item->quantity <= 0) {
+                    throw new Exception('Số lượng sản phẩm không hợp lệ.', 422);
+                }
+
+                if (!$product->is_active) {
+                    throw new Exception("Sản phẩm {$product->name} đã ngừng kinh doanh.", 422);
+                }
                 
                 $product->decrement('stock', $item->quantity);
                 $totalAmount += $product->price * $item->quantity;
@@ -63,6 +71,16 @@ class OrderService
                 // Lock voucher để tránh tranh chấp lượt dùng (Concurrency)
                 $voucher = Voucher::where('code', $data['voucher_code'])->lockForUpdate()->first();
                 if ($voucher && $voucher->isValid()) {
+                    // Phòng ngừa người dùng cố tình lạm dụng mã giảm giá nhiều lần
+                    $alreadyUsed = Order::where('user_id', $user->id)
+                        ->where('voucher_id', $voucher->id)
+                        ->where('status', '!=', 'cancelled')
+                        ->exists();
+
+                    if ($alreadyUsed) {
+                        throw new Exception('Bạn đã sử dụng mã giảm giá này cho một đơn hàng khác.', 422);
+                    }
+
                     $discount = $voucher->calculateDiscount($totalAmount);
                     $voucherId = $voucher->id;
                     $voucher->increment('used_count');
@@ -109,14 +127,14 @@ class OrderService
             throw new Exception(__('messages.unauthorized'), 403);
         }
 
-        // 2. LOGIC TRANH CHẤP (Optimistic Locking)
-        if ($clientUpdatedAt && $order->updated_at->toIso8601String() !== $clientUpdatedAt) {
-            throw new Exception(__('messages.order_conflict'), 409);
-        }
-
         // 3. Kiểm tra trạng thái hợp lệ để hủy
         if (in_array($order->status, ['completed', 'cancelled'])) {
             throw new Exception('Không thể hủy đơn hàng đã hoàn thành hoặc đã bị hủy trước đó.', 422);
+        }
+
+        // 2. LOGIC TRANH CHẤP (Optimistic Locking)
+        if ($clientUpdatedAt && $order->updated_at->toIso8601String() !== $clientUpdatedAt) {
+            throw new Exception(__('messages.order_conflict'), 409);
         }
 
         // 4. Thực hiện Hủy & Hoàn kho trong Transaction

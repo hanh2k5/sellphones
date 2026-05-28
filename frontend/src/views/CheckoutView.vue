@@ -170,13 +170,15 @@ async function handleCheckout() {
       if (form.value.payment_method === 'momo') {
         router.push({ name: 'payment.momo', query: { order_id: res.order.id, amount: res.order.total_amount } })
       } else {
-        router.push({ name: 'orders' })
+        router.push({ name: 'checkout-success', query: { order_code: res.order.order_code } })
       }
     } else {
+      console.error("API Checkout Errors:", res.errors, res.message)
       if (res.errors) errors.value = res.errors
       else toast.error(res.message)
     }
   } catch (e) {
+    console.error("API Error Checkout:", e.response?.data)
     toast.error(i18n.t('common.error'))
   } finally {
     loading.value = false
