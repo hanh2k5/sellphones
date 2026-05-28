@@ -51,29 +51,33 @@
         <table class="admin-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>{{ i18n.t('admin.product_image') }}</th>
+              <th style="width: 1%; white-space: nowrap;">#</th>
+              <th style="width: 1%; white-space: nowrap; text-align: center;">{{ i18n.t('admin.product_image') }}</th>
               <th>{{ i18n.t('admin.product_name') }}</th>
               <th class="hide-mobile">{{ i18n.t('admin.stat_brands') }}</th>
               <th class="text-right">{{ i18n.t('product.price') }} ({{ i18n.locale === 'vi' ? 'VNĐ' : 'USD' }})</th>
               <th class="text-center" style="width: 100px;">{{ i18n.t('product.stock') }}</th>
-              <th class="text-right">{{ i18n.t('admin.actions') }}</th>
+              <th class="text-right" style="width: 1%; white-space: nowrap;">{{ i18n.t('admin.actions') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="p in products" :key="p.id">
               <td class="text-muted" :data-label="i18n.t('admin.id') || 'ID'">#{{ p.id }}</td>
               <td :data-label="i18n.t('admin.product_image') || 'IMAGE'">
-                <div style="width:44px;height:44px;background:#f5f5f7;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-left:auto;">
-                  <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" style="width:100%;height:100%;object-fit:contain;padding:4px;" />
+                <div class="image-wrapper" style="display: flex; justify-content: center;">
+                  <div style="width:44px;height:44px;background:#f5f5f7;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+                    <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" style="width:100%;height:100%;object-fit:contain;padding:4px;" />
+                  </div>
                 </div>
               </td>
               <td :data-label="i18n.t('admin.product_name') || 'NAME'">
-                <div class="fw-bold" style="font-size:13px;">{{ p.name }}</div>
-                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 2px;">
-                  <span class="text-muted" style="font-size:11px;">ID: {{ p.id }}</span>
-                  <span v-if="!p.is_active" class="status-badge badge-danger" style="font-size: 9px; padding: 1px 6px;">HIDDEN</span>
-                  <span v-if="p.is_featured" class="status-badge badge-warning" style="font-size: 9px; padding: 1px 6px; background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5;">HOT 🔥</span>
+                <div class="product-info-cell">
+                  <div class="fw-bold" style="font-size:13px; line-height: 1.4;">{{ p.name }}</div>
+                  <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                    <span class="text-muted" style="font-size:11px;">ID: {{ p.id }}</span>
+                    <span v-if="!p.is_active" class="status-badge badge-danger" style="font-size: 9px; padding: 1px 6px;">HIDDEN</span>
+                    <span v-if="p.is_featured" class="status-badge badge-warning" style="font-size: 9px; padding: 1px 6px; background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5;">HOT 🔥</span>
+                  </div>
                 </div>
               </td>
               <td class="hide-mobile" :data-label="i18n.t('admin.stat_brands') || 'BRAND'">
@@ -207,6 +211,7 @@ async function softDelete(product) {
     text: 'Sản phẩm sẽ được chuyển vào thùng rác.',
     icon: 'warning',
     showCancelButton: true,
+    reverseButtons: true,
     confirmButtonColor: '#e11d48',
     cancelButtonColor: '#94a3b8',
     confirmButtonText: 'Đưa vào thùng rác',

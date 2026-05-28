@@ -206,6 +206,7 @@ async function unlockUser(id) {
     title: i18n.t('admin.unlock_confirm'),
     icon: 'question',
     showCancelButton: true,
+    reverseButtons: true,
     confirmButtonColor: '#10b981',
     cancelButtonColor: '#94a3b8',
     confirmButtonText: i18n.t('admin.unlock'),
@@ -224,12 +225,13 @@ async function unlockUser(id) {
 async function lockUser(id) {
   const result = await Swal.fire({
     title: i18n.t('admin.lock_confirm'),
-    text: i18n.t('admin.lock_confirm_text'),
+    text: 'Tài khoản này sẽ không thể đăng nhập.',
     icon: 'warning',
     showCancelButton: true,
+    reverseButtons: true,
     confirmButtonColor: '#f59e0b',
     cancelButtonColor: '#94a3b8',
-    confirmButtonText: i18n.t('admin.lock_now'),
+    confirmButtonText: 'Khóa ngay',
     cancelButtonText: i18n.t('common.cancel')
   })
 
@@ -248,6 +250,7 @@ async function deleteUser(id) {
     text: i18n.t('admin.delete_user_text'),
     icon: 'warning',
     showCancelButton: true,
+    reverseButtons: true,
     confirmButtonColor: '#e11d48',
     cancelButtonColor: '#94a3b8',
     confirmButtonText: i18n.t('common.delete'),

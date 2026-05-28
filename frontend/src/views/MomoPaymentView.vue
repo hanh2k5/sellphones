@@ -122,7 +122,7 @@ let timer = null
 onMounted(async () => {
   if (!orderId.value) {
     toast.error(i18n.t('checkout.momo_order_not_found'))
-    router.push('/orders')
+    router.push({ name: 'profile', query: { tab: 'orders' } })
     return
   }
 
@@ -151,14 +151,14 @@ async function fetchOrderDetails() {
     // Chặn nếu đơn hàng đã được thanh toán
     if (res.data.payment_status === 'paid') {
       toast.success(i18n.t('checkout.momo_already_paid'))
-      router.push('/orders')
+      router.push({ name: 'profile', query: { tab: 'orders' } })
       return
     }
     orderCode.value = res.data.order_code
     amount.value = res.data.total_amount
   } catch (e) {
     toast.error(i18n.t('checkout.momo_access_denied'))
-    router.push('/orders')
+    router.push({ name: 'profile', query: { tab: 'orders' } })
   }
 }
 
@@ -168,12 +168,20 @@ async function confirmPayment() {
     const res = await ordersApi.confirmPayment(orderId.value)
     if (res.data.success) {
       await Swal.fire({
-        title: i18n.t('common.success'),
+        title: i18n.t('common.success') || 'Thành công',
         text: i18n.t('checkout.momo_success_alert'),
         icon: 'success',
-        confirmButtonColor: '#ae146d',
+        showConfirmButton: true,
+        confirmButtonText: 'HOÀN TẤT',
+        buttonsStyling: false,
+        customClass: {
+          popup: '!rounded-[2rem] !p-8 !shadow-2xl !border-0 !bg-white',
+          title: '!text-2xl !font-black !text-slate-800 !mt-2',
+          htmlContainer: '!text-[15px] !font-medium !text-slate-500 !mb-8',
+          confirmButton: '!bg-gradient-to-r !from-emerald-500 !to-teal-500 hover:!from-emerald-600 hover:!to-teal-600 !text-white !font-bold !px-12 !py-4 !rounded-2xl !transition-all active:!scale-95 !w-full !text-[14px] !tracking-widest !uppercase !border-0 !outline-none !shadow-xl !shadow-emerald-500/25'
+        }
       })
-      router.push('/orders')
+      router.push({ name: 'checkout-success', query: { order_code: orderCode.value } })
     }
   } catch (e) {
     toast.error(e.response?.data?.message || i18n.t('common.error'))
@@ -189,25 +197,37 @@ async function cancelPayment() {
     icon: 'warning',
     showCancelButton: true,
     reverseButtons: true,
-    confirmButtonColor: '#ae146d',
-    cancelButtonColor: '#94a3b8',
     confirmButtonText: i18n.t('common.confirm'),
-    cancelButtonText: i18n.t('common.cancel')
+    cancelButtonText: i18n.t('common.cancel'),
+    buttonsStyling: false,
+    customClass: {
+      popup: '!rounded-[2rem] !p-8 !shadow-2xl !border-0 !bg-white',
+      title: '!text-2xl !font-black !text-slate-800 !mt-2',
+      htmlContainer: '!text-[15px] !font-medium !text-slate-500 !mb-8',
+      actions: '!flex !gap-4 !w-full !mt-2',
+      confirmButton: '!flex-1 !bg-rose-500 hover:!bg-rose-600 !text-white !font-bold !py-4 !rounded-2xl !transition-all active:!scale-95 !text-[13px] !tracking-widest !uppercase !border-0 !outline-none !shadow-xl !shadow-rose-500/25',
+      cancelButton: '!flex-1 !bg-slate-100 hover:!bg-slate-200 !text-slate-600 !font-bold !py-4 !rounded-2xl !transition-all active:!scale-95 !text-[13px] !tracking-widest !uppercase !border-0 !outline-none'
+    }
   })
 
   if (result.isConfirmed) {
-    router.push('/orders')
+    router.push({ name: 'profile', query: { tab: 'orders' } })
   }
 }
 
 function handleTimeout() {
+  // Clear timer immediately to prevent repeated calls
+  if (timer) {
+    clearInterval(timer)
+    timer = null
+  }
   Swal.fire({
     title: i18n.t('checkout.momo_timeout_title'),
     text: i18n.t('checkout.momo_timeout_text'),
     icon: 'error',
     confirmButtonColor: '#ae146d',
   }).then(() => {
-    router.push('/orders')
+    router.push({ name: 'profile', query: { tab: 'orders' } })
   })
 }
 

@@ -39,6 +39,11 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        if (!$product->is_active && (!Auth::check() || !$user->isAdmin())) {
+            abort(404);
+        }
         $product->load(['category', 'images', 'reviews' => function($query) {
             $query->where('status', 'approved')->with('user:id,name');
         }]);

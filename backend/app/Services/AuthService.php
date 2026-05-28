@@ -119,7 +119,7 @@ class AuthService
     public function lockUser(User $user)
     {
         if ($user->role === 'admin') {
-            throw new Exception(__('messages.admin_lock_error'), 422);
+            throw new Exception('Không thể khóa tài khoản quản trị viên.', 422);
         }
         $user->update(['is_active' => false]);
         // Xóa toàn bộ Sanctum Token → User bị kick ra ngay lập tức

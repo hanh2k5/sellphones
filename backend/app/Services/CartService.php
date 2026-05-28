@@ -16,7 +16,8 @@ class CartService
      */
     public function addToCart($userId, $productId, $quantity)
     {
-        $product = Product::findOrFail($productId);
+        $quantity = max(1, (int)$quantity); // Đảm bảo số lượng luôn >= 1 để chống hack số âm qua chatbot
+        $product = Product::where('is_active', true)->findOrFail($productId); // Chỉ cho phép mua sản phẩm đang kinh doanh
         
         $item = CartItem::where('user_id', $userId)->where('product_id', $productId)->first();
 

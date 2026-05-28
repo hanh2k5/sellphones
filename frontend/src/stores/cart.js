@@ -82,11 +82,11 @@ export const useCartStore = defineStore('cart', () => {
     items.value = []
     tongTien.value = 0
     soLuong.value = 0
+    pagination.value = null
     appliedVoucher.value = null
     tienGiam.value = 0
     localStorage.removeItem('cart_voucher')
     localStorage.removeItem('cart_discount')
-    await fetchCart() // Force sync
   }
 
   async function applyVoucher(code) {

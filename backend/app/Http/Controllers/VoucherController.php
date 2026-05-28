@@ -31,8 +31,20 @@ class VoucherController extends Controller
         try {
             $voucher = $this->voucherService->validateCode($request->code);
             
-            // Tính toán tổng tiền giỏ hàng hiện tại để kiểm tra min_order_value
             $user = $request->user();
+            
+            // Validate if user has already used it
+            if ($user) {
+                $alreadyUsed = \App\Models\Order::where('user_id', $user->id)
+                    ->where('voucher_id', $voucher->id)
+                    ->where('status', '!=', 'cancelled')
+                    ->exists();
+                if ($alreadyUsed) {
+                    return response()->json(['message' => 'Bạn đã sử dụng mã giảm giá này cho một đơn hàng khác.'], 422);
+                }
+            }
+
+            // Tính toán tổng tiền giỏ hàng hiện tại để kiểm tra min_order_value
             $cartItems = CartItem::where('user_id', $user->id)->with('product')->get();
             $totalAmount = $cartItems->sum(fn($item) => $item->product->price * $item->quantity);
 
@@ -57,9 +69,23 @@ class VoucherController extends Controller
     /**
      * Lấy danh sách voucher công khai
      */
-    public function index()
+    public function index(Request $request)
     {
         $vouchers = $this->voucherService->getActiveVouchers();
+        $user = $request->user('sanctum');
+
+        if ($user) {
+            $usedVoucherIds = \App\Models\Order::where('user_id', $user->id)
+                ->where('status', '!=', 'cancelled')
+                ->whereNotNull('voucher_id')
+                ->pluck('voucher_id')
+                ->toArray();
+                
+            $vouchers = $vouchers->filter(function($voucher) use ($usedVoucherIds) {
+                return !in_array($voucher->id, $usedVoucherIds);
+            });
+        }
+
         return VoucherResource::collection($vouchers);
     }
 }

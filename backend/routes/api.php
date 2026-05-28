@@ -11,6 +11,7 @@ use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,9 +21,9 @@ use App\Http\Controllers\ReviewController;
 
 // --- AUTHENTICATION (Nguyễn Duy Khang) ---
 // Báo cáo 4.2.5: Đăng ký tài khoản (Register)
-Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
 // Báo cáo 4.2.6 & 4.2.7: Đăng nhập hệ thống & Giới hạn đăng nhập sai
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
 
 // --- SẢN PHẨM (Đặng Văn Hà) ---
 // Báo cáo 4.3.8: Hiển thị danh sách sản phẩm (Phân trang và Tìm kiếm)
@@ -43,11 +44,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
+    Route::get('/profile/check-update', [ProfileController::class, 'checkUpdate']);
+
     // Route dành riêng cho Admin (Báo cáo 4.2.8)
     Route::middleware('admin')->prefix('admin')->group(function () {
         // DASHBOARD
         Route::get('/dashboard', [AdminController::class, 'dashboard']);
-
+        // QUẢN LÝ NGƯỜI DÙNG (Nguyễn Duy Khang)
+        Route::get('/users', [AuthController::class, 'index']);
+        Route::post('/users', [AuthController::class, 'storeUser']);
+        Route::put('/users/{user}', [AuthController::class, 'updateUser']);
+        Route::delete('/users/{user}', [AuthController::class, 'destroyUser']);
+        Route::post('/users/{user}/unlock', [AuthController::class, 'unlock']);
+        Route::post('/users/{user}/lock', [AuthController::class, 'lock']);
         // QUẢN LÝ ĐƠN HÀNG (Phan Đình Hạnh)
         Route::get('/orders', [OrderController::class, 'adminIndex']);
         // Báo cáo 4.1.8: Duyệt đơn hàng và Xử lý tranh chấp dữ liệu (Optimistic Locking)
@@ -110,7 +122,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Báo cáo 4.1.6: Hiển thị danh sách đơn hàng
     Route::get('/orders', [OrderController::class, 'index']);
     // Báo cáo 4.1.5: Tạo đơn hàng mới (Order Creation & Transaction)
-    Route::post('/orders', [OrderController::class, 'store']);
+    Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:orders');
     // Báo cáo 4.1.7: Hiển thị chi tiết đơn hàng
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     // Báo cáo 4.1.14: Thanh toán qua cổng ví điện tử (Fake MoMo UI)

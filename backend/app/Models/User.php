@@ -21,7 +21,7 @@ class User extends Authenticatable
 
     protected $hidden = ['password', 'remember_token'];
 
-    protected $appends = ['is_locked', 'orders_count', 'total_spent'];
+    protected $appends = ['is_locked'];
 
     protected function casts(): array
     {
@@ -44,19 +44,6 @@ class User extends Authenticatable
         return $this->locked_until && $this->locked_until->isFuture();
     }
 
-    // Accessor: số đơn hàng
-    public function getOrdersCountAttribute(): int
-    {
-        return $this->orders()->count();
-    }
-
-    // Accessor: tổng chi tiêu
-    public function getTotalSpentAttribute(): float
-    {
-        return $this->orders()
-            ->whereIn('status', ['completed', 'processing', 'shipping'])
-            ->sum('total_amount');
-    }
 
     public function cartItems()
     {

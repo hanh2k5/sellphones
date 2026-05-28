@@ -7,13 +7,15 @@ use App\Services\AuthService;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Carbon\Carbon;
 use Exception;
 
 /**
  * SV THỰC HIỆN: NGUYỄN DUY KHANG
- * MỤC: 4.2.1 -> 4.2.7 (XÁC THỰC & BẢO MẬT)
+ * MỤC: 4.2.1 -> 4.2.8 (XÁC THỰC, BẢO MẬT & QUẢN LÝ USER)
  */
 class AuthController extends Controller
 {
@@ -26,33 +28,35 @@ class AuthController extends Controller
     }
 
     /**
-     * [Nguyễn Duy Khang - 4.2.5] Đăng ký tài khoản
+     * [Nguyễn Duy Khang - 4.2.5] Đăng ký tài khoản + Validate
      */
     public function register(Request $request)
     {
         $request->validate([
             'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'address'  => 'nullable|string|max:255',
-            'phone'    => 'nullable|string|max:15',
+            'email'    => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|max:255|confirmed',
         ]);
 
         $user = $this->authService->register($request->all());
-        
-        return (new UserResource($user))
-            ->additional(['message' => 'Đăng ký thành công!']);
+        return response()->json([
+            'data' => [
+                'user' => (new UserResource($user))->resolve(),
+                'token' => $user->createToken('auth_token')->plainTextToken,
+            ],
+            'message' => 'Đăng ký thành công!'
+        ], 201);
     }
 
     /**
      * [Nguyễn Duy Khang - 4.2.6] Đăng nhập hệ thống
-     * [Nguyễn Duy Khang - 4.2.7] CHỐNG BRUTE-FORCE (GIỚI HẠN ĐĂNG NHẬP)
+     * [Nguyễn Duy Khang - 4.2.7] Giới hạn đăng nhập sai (Brute Force)
      */
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required',
+            'email'    => 'required|email|max:255',
+            'password' => 'required|string|max:255',
         ]);
 
         try {
@@ -64,20 +68,7 @@ class AuthController extends Controller
                 'message' => 'Đăng nhập thành công!'
             ]);
         } catch (ValidationException $e) {
-            $user = User::where('email', $request->email)->first();
-            $retryAfter = null;
-
-            if ($user?->locked_until && Carbon::now()->lessThan($user->locked_until)) {
-                $retryAfter = Carbon::now()->diffInSeconds($user->locked_until);
-            }
-
-            return response()->json([
-                'message' => $e->getMessage(),
-                'errors' => $e->errors(),
-                'attempts_left' => $user ? max(0, 5 - (int) $user->login_attempts) : null,
-                'locked' => (bool) $retryAfter,
-                'retry_after' => $retryAfter,
-            ], 422);
+            return response()->json(['message' => $e->getMessage(), 'errors' => $e->errors()], 422);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 401);
         }
@@ -103,6 +94,7 @@ class AuthController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorizeAdmin();
         $users = $this->authService->getAllUsers($request->all());
         return UserResource::collection($users);
     }
@@ -110,48 +102,39 @@ class AuthController extends Controller
     /**
      * [Nguyễn Duy Khang - 4.2.1] Thêm mới người dùng (Admin)
      */
-    public function adminCreate(Request $request)
+    public function storeUser(Request $request)
     {
+        $this->authorizeAdmin();
         $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users',
-            'password' => 'required|string|min:8',
-            'role'     => 'required|in:user,admin',
+            'password' => 'required|min:8',
             'phone'    => 'nullable|string|max:15',
-            'address'  => 'nullable|string|max:255',
+            'address'  => 'nullable|string|max:500',
+            'role'     => 'required|in:admin,user',
         ]);
+
         $user = $this->authService->createUser($request->all());
-        return (new UserResource($user))->additional(['message' => __('messages.user_created')]);
+        return response()->json(['message' => 'Tạo người dùng thành công!', 'user' => $user], 201);
     }
 
     /**
      * [Nguyễn Duy Khang - 4.2.2] Cập nhật người dùng (Admin)
      */
-    public function adminUpdate(Request $request, User $user)
+    public function updateUser(Request $request, User $user)
     {
+        $this->authorizeAdmin();
         $request->validate([
-            'name'     => 'sometimes|string|max:255',
-            'email'    => 'sometimes|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:8',
-            'role'     => 'sometimes|in:user,admin',
+            'name'     => 'nullable|string|max:255',
+            'email'    => 'nullable|email|unique:users,email,' . $user->id,
             'phone'    => 'nullable|string|max:15',
-            'address'  => 'nullable|string|max:255',
+            'address'  => 'nullable|string|max:500',
+            'role'     => 'nullable|in:admin,user',
+            'password' => 'nullable|string|min:8',
         ]);
-        $updated = $this->authService->updateUser($user, $request->all());
-        return (new UserResource($updated))->additional(['message' => __('messages.user_updated')]);
-    }
 
-    /**
-     * [Nguyễn Duy Khang - 4.2.4] Xóa người dùng (Admin)
-     */
-    public function adminDelete(User $user)
-    {
-        try {
-            $this->authService->deleteUser($user);
-            return response()->json(['message' => __('messages.user_deleted')]);
-        } catch (Exception $e) {
-            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 422);
-        }
+        $updatedUser = $this->authService->updateUser($user, $request->all());
+        return response()->json(['message' => 'Cập nhật thành công!', 'user' => $updatedUser]);
     }
 
     /**
@@ -159,11 +142,12 @@ class AuthController extends Controller
      */
     public function lock(User $user)
     {
+        $this->authorizeAdmin();
         try {
             $updatedUser = $this->authService->lockUser($user);
-            return (new UserResource($updatedUser))->additional(['message' => __('messages.user_locked')]);
+            return response()->json(['message' => 'Đã khóa tài khoản.', 'user' => $updatedUser]);
         } catch (Exception $e) {
-            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 422);
+            return response()->json(['message' => $e->getMessage()], 422);
         }
     }
 
@@ -172,7 +156,33 @@ class AuthController extends Controller
      */
     public function unlock(User $user)
     {
+        $this->authorizeAdmin();
         $updatedUser = $this->authService->unlockUser($user);
-        return (new UserResource($updatedUser))->additional(['message' => __('messages.user_unlocked')]);
+        return response()->json(['message' => 'Đã mở khóa tài khoản.', 'user' => $updatedUser]);
+    }
+
+    /**
+     * [Nguyễn Duy Khang - 4.2.4] Xóa người dùng (Admin)
+     */
+    public function destroyUser(User $user)
+    {
+        $this->authorizeAdmin();
+        try {
+            $this->authService->deleteUser($user);
+            return response()->json(['message' => 'Đã xóa người dùng.']);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+
+
+    private function authorizeAdmin()
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        if (!$user || !$user->isAdmin()) {
+            abort(403, 'Yêu cầu quyền quản trị.');
+        }
     }
 }

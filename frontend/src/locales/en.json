@@ -6,7 +6,7 @@
     "logout": "Logout",
     "profile": "Profile",
     "orders": "Orders",
-    "my_orders": "My Orders",
+    "my_orders": "My 0rders",
     "admin": "Admin",
     "cart": "Cart"
   },
@@ -59,7 +59,9 @@
     "remove_success": "Removed from cart",
     "remove_error": "Error removing item",
     "console_stop": "STOP!",
-    "console_warning": "This is a browser feature intended for developers. If someone told you to copy-paste something here to 'hack' someone's account, it is a scam and will give them access to your account."
+    "console_warning": "This is a browser feature intended for developers. If someone told you to copy-paste something here to 'hack' someone's account, it is a scam and will give them access to your account.",
+    "delete_now": "Delete Now",
+    "update": "Update"
   },
   "auth": {
     "login": "Login",
@@ -155,7 +157,15 @@
     "status_completed": "Completed",
     "status_cancelled": "Cancelled",
     "payment_paid": "Paid",
-    "payment_pending": "Payment Pending"
+    "payment_pending": "Payment Pending",
+    "items_purchased": "Items Purchased",
+    "quantity": "Quantity",
+    "item_unit": "item",
+    "total_payment": "Total Payment",
+    "step_placed": "Order Placed",
+    "step_shipping": "Shipping",
+    "step_completed": "Completed",
+    "cod_short": "Cash on Delivery"
   },
   "checkout": {
     "title": "Checkout",
@@ -273,7 +283,9 @@
     "enter_order_id_error": "Please enter Order ID!",
     "order_processing": "Your order is being processed",
     "wait_for_completion": "Wait for order to be 'Completed' to review!",
-    "view_cart": "View Cart"
+    "view_cart": "View Cart",
+    "edit_review": "Edit Review",
+    "admin_reply": "SellPhones Reply"
   },
   "admin": {
     "total_vouchers": "Total Vouchers",
@@ -502,7 +514,12 @@
     "current_password": "Current Password",
     "new_password": "New Password",
     "confirm_new_password": "Confirm New Password",
-    "update_password": "Update Password"
+    "update_password": "Update Password",
+    "update_info": "Update Profile",
+    "favorites": "Favorite Products",
+    "no_favorites": "No favorite products yet.",
+    "reload_data": "RELOAD DATA",
+    "data_conflict": "Data Conflict"
   },
   "chat": {
     "title": "SellPhones AI Assistant",

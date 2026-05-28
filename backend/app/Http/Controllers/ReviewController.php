@@ -50,7 +50,7 @@ class ReviewController extends Controller
             }
             
             // Hợp nhất product_id từ URL vào dữ liệu
-            $data = $request->all();
+            $data = $request->only(['order_id', 'rating', 'comment']);
             $data['product_id'] = $product->id;
 
             $review = $this->reviewService->createReview($user->id, $data);
@@ -75,14 +75,21 @@ class ReviewController extends Controller
             'comment' => 'required|string|max:1000',
         ]);
 
-        $review->update($request->all());
-        return response()->json(['message' => 'Đã cập nhật đánh giá.', 'review' => $review]);
+        $review->update($request->only(['rating', 'comment']));
+        $review->load('user:id,name');
+        $product = $review->product;
+        return response()->json([
+            'message'    => 'Đã cập nhật đánh giá.',
+            'review'     => $review,
+            'avg_rating' => $product ? $product->refresh()->avg_rating : null,
+        ]);
     }
 
-    public function adminIndex()
+    public function adminIndex(Request $request)
     {
         $this->authorizeAdmin();
-        return response()->json($this->reviewService->getAllAdmin());
+        $rating = $request->query('rating');
+        return response()->json($this->reviewService->getAllAdmin($rating));
     }
 
     public function moderate(Request $request, Review $review)
@@ -102,15 +109,16 @@ class ReviewController extends Controller
         try {
             $this->reviewService->deleteReview($review, Auth::user());
             return response()->json(['message' => 'Đã xóa đánh giá thành công.']);
-        } catch (Exception $e) {
-            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 500);
+        } catch (\Exception $e) {
+            $code = is_numeric($e->getCode()) && $e->getCode() >= 100 && $e->getCode() <= 599 ? $e->getCode() : 500;
+            return response()->json(['message' => $e->getMessage()], $code);
         }
     }
 
     private function authorizeAdmin()
     {
         $user = Auth::user();
-        if (!$user || !$user->isAdmin()) {
+        if (!$user || $user->role !== 'admin') {
             abort(403, 'Yêu cầu quyền quản trị.');
         }
     }
