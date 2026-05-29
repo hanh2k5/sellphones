@@ -8,7 +8,9 @@ use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
-
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Exception;
@@ -175,7 +177,82 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     * [Nguyễn Duy Khang - 4.2.11] Quên mật khẩu (Logic Fake)
+     */
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+        $user = User::where('email', $request->email)->first();
 
+        if (!$user) {
+            return response()->json(['message' => 'Email không tồn tại trong hệ thống.'], 404);
+        }
+
+        // Tạo token ngẫu nhiên
+        $token = Str::random(64);
+
+        // Lưu vào database password_reset_tokens
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $request->email],
+            [
+                'token' => $token,
+                'created_at' => Carbon::now()
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Mã khôi phục mật khẩu đã được tạo thành công (Chế độ giả lập).',
+            'reset_token' => $token
+        ]);
+    }
+
+    /**
+     * [Nguyễn Duy Khang - 4.2.11] Đặt lại mật khẩu (Logic Fake)
+     */
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email'    => 'required|email',
+            'token'    => 'required',
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.min' => 'Mật khẩu mới phải có ít nhất 8 ký tự.',
+            'password.confirmed' => 'Mật khẩu xác nhận không khớp.',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json(['message' => 'Email không tồn tại trong hệ thống.'], 404);
+        }
+
+        // Kiểm tra token
+        $record = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->where('token', $request->token)
+            ->first();
+
+        if (!$record) {
+            return response()->json(['message' => 'Liên kết đặt lại mật khẩu không hợp lệ.'], 422);
+        }
+
+        // Kiểm tra thời hạn token (15 phút)
+        $createdAt = Carbon::parse($record->created_at);
+        if ($createdAt->addMinutes(15)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            return response()->json(['message' => 'Liên kết đặt lại mật khẩu đã hết hạn.'], 422);
+        }
+
+        // Cập nhật mật khẩu mới và băm mật khẩu
+        $user->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        // Vô hiệu hóa token sau khi dùng
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return response()->json(['message' => 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.']);
+    }
 
     private function authorizeAdmin()
     {

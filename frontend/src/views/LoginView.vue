@@ -59,7 +59,8 @@
         </button>
       </form>
 
-      <div class="mt-12 flex justify-end items-center text-[13px] font-bold uppercase tracking-widest relative z-10 auth-links">
+      <div class="mt-12 flex justify-between items-center text-[13px] font-bold uppercase tracking-widest relative z-10 auth-links">
+        <router-link to="/forgot-password" class="hover:text-blue-600 transition-all">Quên mật khẩu?</router-link>
         <router-link to="/register" class="hover:text-blue-600 transition-all">{{ i18nStore.t('auth.create_account') }}</router-link>
       </div>
     </div>
