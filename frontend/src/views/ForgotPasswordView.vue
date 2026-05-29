@@ -16,17 +16,17 @@
         <h1 class="text-4xl font-bold tracking-tight text-slate-800">
           <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Sell</span>phones
         </h1>
-        <p class="text-slate-500 mt-2 font-medium">Quên mật khẩu</p>
+        <p class="text-slate-500 mt-2 font-medium">{{ t('auth.forgot_page_title') }}</p>
       </div>
 
       <!-- BƯỚC 1: Nhập email -->
       <div v-if="step === 1" class="relative z-10">
         <p class="text-[14px] text-slate-500 mb-6 text-center font-semibold">
-          Nhập email tài khoản để nhận mã OTP xác thực
+          {{ t('auth.forgot_subtitle') }}
         </p>
         <form @submit.prevent="handleSendOtp" novalidate class="space-y-6">
           <div>
-            <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">Email khôi phục</label>
+            <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ t('auth.forgot_email_label') }}</label>
             <input v-model="email" type="email" placeholder="email@example.com"
               @input="errors && (errors.email = null)"
               class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
@@ -35,7 +35,7 @@
           </div>
           <button type="submit" :disabled="loading" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:grayscale text-white font-bold py-5 rounded-2xl transition-all duration-300 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-95 text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2">
             <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            {{ loading ? 'Đang gửi mã...' : 'Gửi mã OTP ➔' }}
+            {{ loading ? t('auth.forgot_sending') : t('auth.forgot_send_otp') }}
           </button>
         </form>
       </div>
@@ -47,13 +47,13 @@
           <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
           </svg>
-          <span class="text-[13px] text-blue-700 font-semibold truncate">Đã gửi mã OTP đến <strong>{{ email }}</strong></span>
+          <span class="text-[13px] text-blue-700 font-semibold truncate">{{ t('auth.forgot_otp_sent') }} <strong>{{ email }}</strong></span>
         </div>
 
         <form @submit.prevent="handleResetPassword" novalidate class="space-y-5">
           <!-- OTP 6 ô -->
           <div>
-            <label class="block text-[11px] font-bold text-slate-500 mb-3 uppercase tracking-[0.2em]">Mã OTP (6 chữ số)</label>
+            <label class="block text-[11px] font-bold text-slate-500 mb-3 uppercase tracking-[0.2em]">{{ t('auth.forgot_otp_label') }}</label>
             <div class="flex gap-2 justify-center" @paste.prevent="handlePaste">
               <input
                 v-for="(_, idx) in otpDigits"
@@ -74,9 +74,11 @@
 
           <!-- Mật khẩu mới -->
           <div>
-            <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">Mật khẩu mới</label>
+            <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ t('auth.forgot_new_password') }}</label>
             <div class="relative">
               <input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="••••••••"
+                @keydown="blockSpace"
+                @paste="handlePasswordPaste($event, 'password')"
                 @input="errors && (errors.password = null)"
                 class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 pr-12 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
                 :class="{'input-error': errors?.password}" />
@@ -90,8 +92,10 @@
 
           <!-- Xác nhận mật khẩu -->
           <div>
-            <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">Xác nhận mật khẩu mới</label>
+            <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ t('auth.forgot_confirm_password') }}</label>
             <input v-model="passwordConfirmation" :type="showPassword ? 'text' : 'password'" placeholder="••••••••"
+              @keydown="blockSpace"
+              @paste="handlePasswordPaste($event, 'passwordConfirmation')"
               @input="errors && (errors.passwordConfirmation = null)"
               class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
               :class="{'input-error': errors?.passwordConfirmation}" />
@@ -101,19 +105,19 @@
           <!-- Countdown + Resend -->
           <div class="flex items-center justify-between text-[12px]">
             <span v-if="countdown > 0" class="text-slate-400 font-medium">
-              ⏱ Gửi lại sau <span class="text-blue-600 font-bold">{{ countdown }}s</span>
+              ⏱ {{ t('auth.forgot_resend_after') }} <span class="text-blue-600 font-bold">{{ countdown }}s</span>
             </span>
             <button v-else type="button" @click="handleSendOtp" :disabled="resendLoading" class="text-blue-600 hover:text-blue-700 font-bold underline underline-offset-2 disabled:opacity-50">
-              {{ resendLoading ? 'Đang gửi...' : '↺ Gửi lại mã OTP' }}
+              {{ resendLoading ? t('auth.forgot_resending') : t('auth.forgot_resend_btn') }}
             </button>
             <button type="button" @click="step = 1" class="text-slate-400 hover:text-slate-600 font-semibold">
-              ← Đổi email
+              {{ t('auth.forgot_change_email') }}
             </button>
           </div>
 
           <button type="submit" :disabled="loading" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:grayscale text-white font-bold py-5 rounded-2xl transition-all duration-300 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-95 text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2">
             <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            {{ loading ? 'Đang xử lý...' : 'Đặt lại mật khẩu ➔' }}
+            {{ loading ? t('common.processing') : t('auth.forgot_submit') }}
           </button>
         </form>
       </div>
@@ -121,17 +125,17 @@
       <!-- BƯỚC 3: Thành công -->
       <div v-else class="text-center py-6 relative z-10">
         <div class="w-20 h-20 bg-emerald-100/80 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner border border-emerald-200/50">✅</div>
-        <h3 class="font-bold text-slate-800 text-xl mb-3">Đặt lại mật khẩu thành công!</h3>
+        <h3 class="font-bold text-slate-800 text-xl mb-3">{{ t('auth.forgot_success_title') }}</h3>
         <p class="text-slate-500 text-[14px] mb-8 leading-relaxed font-semibold">
-          Mật khẩu của bạn đã được cập nhật. Hãy đăng nhập với mật khẩu mới.
+          {{ t('auth.forgot_success_desc') }}
         </p>
         <router-link to="/login" class="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 px-8 rounded-xl shadow-lg shadow-blue-500/20 transition-all text-xs uppercase tracking-wider">
-          Đăng nhập ngay
+          {{ t('auth.forgot_login_now') }}
         </router-link>
       </div>
 
       <p v-if="step === 1" class="text-center text-xs font-bold mt-8 relative z-10 uppercase tracking-widest">
-        <router-link to="/login" class="text-slate-500 hover:text-blue-600 transition-colors">← Quay lại đăng nhập</router-link>
+        <router-link to="/login" class="text-slate-500 hover:text-blue-600 transition-colors">{{ t('auth.forgot_back_login') }}</router-link>
       </p>
     </div>
   </div>
@@ -140,12 +144,15 @@
 <script setup>
 import { ref, reactive, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18nStore } from '../stores/i18n'
 import api from '../services/api'
 
 const router = useRouter()
+const i18nStore = useI18nStore()
+const t = (key) => i18nStore.t(key)
 
 // --- State ---
-const step = ref(1)       // 1: nhập email, 2: nhập OTP + mật khẩu, 3: thành công
+const step = ref(1)
 const email = ref('')
 const password = ref('')
 const passwordConfirmation = ref('')
@@ -166,12 +173,12 @@ async function handleSendOtp() {
   errors.value = {}
 
   if (!email.value?.trim()) {
-    errors.value.email = ['Vui lòng nhập email']
+    errors.value.email = [t('auth.forgot_email_required')]
     return
   }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(email.value.trim())) {
-    errors.value.email = ['Vui lòng nhập email đúng định dạng']
+    errors.value.email = [t('auth.forgot_email_invalid')]
     return
   }
 
@@ -182,11 +189,10 @@ async function handleSendOtp() {
     await api.post('/forgot-password', { email: email.value.trim() })
     step.value = 2
     startCountdown(60)
-    // Focus ô OTP đầu tiên
     await nextTick()
     otpInputs.value[0]?.focus()
   } catch (e) {
-    const msg = e.response?.data?.message || 'Email không tồn tại trong hệ thống.'
+    const msg = e.response?.data?.message || t('auth.forgot_email_invalid')
     errors.value.email = [msg]
     if (step.value === 2) step.value = 1
   } finally {
@@ -195,7 +201,7 @@ async function handleSendOtp() {
   }
 }
 
-// --- Điều hướng OTP input ---
+// --- OTP input handlers ---
 function handleOtpInput(event, idx) {
   const val = event.target.value.replace(/\D/g, '')
   otpDigits[idx] = val.slice(-1)
@@ -224,6 +230,18 @@ function handlePaste(event) {
   nextTick(() => otpInputs.value[Math.min(text.length, 5)]?.focus())
 }
 
+// --- Chặn khoảng trắng trong ô mật khẩu ---
+function blockSpace(event) {
+  if (event.key === ' ') event.preventDefault()
+}
+
+function handlePasswordPaste(event, field) {
+  event.preventDefault()
+  const text = (event.clipboardData || window.clipboardData).getData('text').replace(/\s/g, '')
+  if (field === 'password') password.value = text
+  else passwordConfirmation.value = text
+}
+
 // --- Đặt lại mật khẩu ---
 async function handleResetPassword() {
   errors.value = {}
@@ -231,21 +249,24 @@ async function handleResetPassword() {
 
   let hasError = false
   if (otp.length !== 6) {
-    errors.value.otp = ['Vui lòng nhập đủ 6 chữ số']
+    errors.value.otp = [t('auth.forgot_otp_required')]
     hasError = true
   }
   if (!password.value) {
-    errors.value.password = ['Vui lòng nhập mật khẩu mới']
+    errors.value.password = [t('auth.new_password_required')]
+    hasError = true
+  } else if (/\s/.test(password.value)) {
+    errors.value.password = [t('auth.forgot_password_no_space')]
     hasError = true
   } else if (password.value.length < 8) {
-    errors.value.password = ['Mật khẩu mới phải có ít nhất 8 ký tự']
+    errors.value.password = [t('auth.forgot_password_min')]
     hasError = true
   }
   if (!passwordConfirmation.value) {
-    errors.value.passwordConfirmation = ['Vui lòng xác nhận mật khẩu mới']
+    errors.value.passwordConfirmation = [t('auth.forgot_confirm_required')]
     hasError = true
   } else if (password.value !== passwordConfirmation.value) {
-    errors.value.passwordConfirmation = ['Mật khẩu xác nhận không khớp']
+    errors.value.passwordConfirmation = [t('auth.forgot_confirm_mismatch')]
     hasError = true
   }
   if (hasError) return
@@ -261,7 +282,7 @@ async function handleResetPassword() {
     clearCountdown()
     step.value = 3
   } catch (e) {
-    const msg = e.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.'
+    const msg = e.response?.data?.message || t('common.error')
     if (e.response?.data?.errors) {
       errors.value = e.response.data.errors
     } else {

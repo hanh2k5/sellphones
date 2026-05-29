@@ -37,7 +37,9 @@ class AuthController extends Controller
         $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|max:255|confirmed',
+            'password' => 'required|string|min:8|max:255|confirmed|not_regex:/\s/',
+        ], [
+            'password.not_regex' => 'Mật khẩu không được chứa khoảng trắng.',
         ]);
 
         $user = $this->authService->register($request->all());
@@ -240,12 +242,13 @@ class AuthController extends Controller
         $request->validate([
             'email'    => 'required|email',
             'otp'      => 'required|string|size:6',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8|confirmed|not_regex:/\s/',
         ], [
-            'otp.required'       => 'Vui lòng nhập mã OTP.',
-            'otp.size'           => 'Mã OTP phải có đúng 6 chữ số.',
-            'password.min'       => 'Mật khẩu mới phải có ít nhất 8 ký tự.',
-            'password.confirmed' => 'Mật khẩu xác nhận không khớp.',
+            'otp.required'            => 'Vui lòng nhập mã OTP.',
+            'otp.size'                => 'Mã OTP phải có đúng 6 chữ số.',
+            'password.min'            => 'Mật khẩu mới phải có ít nhất 8 ký tự.',
+            'password.not_regex'      => 'Mật khẩu không được chứa khoảng trắng.',
+            'password.confirmed'      => 'Mật khẩu xác nhận không khớp.',
         ]);
 
         $user = User::where('email', $request->email)->first();
