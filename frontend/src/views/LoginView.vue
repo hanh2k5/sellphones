@@ -27,6 +27,8 @@
           <label class="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.password') }}</label>
           <div class="relative">
             <input v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" placeholder="••••••••"
+              @keydown="blockSpace"
+              @paste="handlePasswordPaste"
               @input="errors && (errors.password = null)"
               class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[15px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400 pr-14"
               :class="{'input-error': errors?.password}" />
@@ -59,7 +61,8 @@
         </button>
       </form>
 
-      <div class="mt-12 flex justify-end items-center text-[13px] font-bold uppercase tracking-widest relative z-10 auth-links">
+      <div class="mt-12 flex justify-between items-center text-[13px] font-bold uppercase tracking-widest relative z-10 auth-links">
+        <router-link to="/forgot-password" class="hover:text-blue-600 transition-all">{{ i18nStore.t('auth.forgot_password') }}</router-link>
         <router-link to="/register" class="hover:text-blue-600 transition-all">{{ i18nStore.t('auth.create_account') }}</router-link>
       </div>
     </div>
@@ -88,6 +91,17 @@ const lockedUntil = ref(false)
 const lockedSeconds = ref(0)
 let lockTimer = null
 
+function blockSpace(event) {
+  if (event.key === ' ') event.preventDefault()
+}
+
+function handlePasswordPaste(event) {
+  event.preventDefault()
+  const text = (event.clipboardData || window.clipboardData).getData('text').replace(/\s/g, '')
+  form.value.password = text
+  if (errors.value) errors.value.password = null
+}
+
 async function handleLogin() {
   errorMsg.value = ''
   errors.value = {}
@@ -95,19 +109,25 @@ async function handleLogin() {
   lockedUntil.value = false
   clearInterval(lockTimer)
 
+  const emailVal = form.value.email?.trim()
+  const passwordVal = form.value.password
+
   // Client-side validation
   let hasError = false
-  if (!form.value.email?.trim()) {
+  if (!emailVal) {
     errors.value.email = [i18nStore.t('auth.email_error')]
     hasError = true
   }
-  if (!form.value.password?.trim()) {
+  if (!passwordVal) {
     errors.value.password = [i18nStore.t('auth.password_error')]
     hasError = true
   }
   if (hasError) return
 
-  const result = await authStore.login(form.value.email, form.value.password)
+  // Update UI form values to trimmed values
+  form.value.email = emailVal
+
+  const result = await authStore.login(emailVal, passwordVal)
   if (result.success) {
     toast.success(i18nStore.t('common.login_success'))
     router.push(route.query.redirect || '/')

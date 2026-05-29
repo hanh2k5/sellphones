@@ -55,6 +55,8 @@
           <div>
             <label class="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.password') }}</label>
             <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="••••"
+              @keydown="blockSpace"
+              @paste="handlePasswordPaste($event, 'password')"
               @input="errors && (errors.password = null)"
               class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[14px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
               :class="{'input-error': errors?.password}" />
@@ -63,6 +65,8 @@
           <div>
             <label class="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-[0.2em]">{{ i18nStore.t('auth.confirm_password') }}</label>
             <input v-model="form.password_confirmation" :type="showPassword ? 'text' : 'password'" placeholder="••••"
+              @keydown="blockSpace"
+              @paste="handlePasswordPaste($event, 'password_confirmation')"
               @input="errors && (errors.password_confirmation = null)"
               class="w-full bg-white/80 border border-slate-200/50 shadow-sm rounded-2xl px-5 py-4 text-[14px] font-semibold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
               :class="{'input-error': errors?.password_confirmation}" />
@@ -100,29 +104,67 @@ const form = ref({ name: '', email: '', phone: '', address: '', password: '', pa
 const errors = ref({})
 const showPassword = ref(false)
 
+function blockSpace(event) {
+  if (event.key === ' ') event.preventDefault()
+}
+
+function handlePasswordPaste(event, field) {
+  event.preventDefault()
+  const text = (event.clipboardData || window.clipboardData).getData('text').replace(/\s/g, '')
+  if (field === 'password') {
+    form.value.password = text
+    if (errors.value) errors.value.password = null
+  } else if (field === 'password_confirmation') {
+    form.value.password_confirmation = text
+    if (errors.value) errors.value.password_confirmation = null
+  }
+}
+
 async function handleRegister() {
   errors.value = {}
   let hasError = false
-  if (!form.value.name?.trim()) { errors.value.name = [i18nStore.t('auth.name_error')]; hasError = true }
-  if (!form.value.email?.trim()) { errors.value.email = [i18nStore.t('auth.email_error')]; hasError = true }
+
+  const nameVal = form.value.name?.trim()
+  const emailVal = form.value.email?.trim()
+  const phoneVal = form.value.phone?.trim()
+  const addressVal = form.value.address?.trim()
+  const passwordVal = form.value.password
+  const passwordConfirmationVal = form.value.password_confirmation
+
+  if (!nameVal) { errors.value.name = [i18nStore.t('auth.name_error')]; hasError = true }
+  if (!emailVal) { errors.value.email = [i18nStore.t('auth.email_error')]; hasError = true }
   
-  if (!form.value.phone?.trim()) { 
+  if (!phoneVal) { 
     errors.value.phone = [i18nStore.t('auth.phone_error') || 'Vui lòng nhập số điện thoại']; 
     hasError = true 
-  } else if (!/^0[0-9]{9}$/.test(form.value.phone.trim())) {
+  } else if (!/^0[0-9]{9}$/.test(phoneVal)) {
     errors.value.phone = [i18nStore.t('auth.phone_error') || 'Vui lòng nhập số điện thoại hợp lệ (10 chữ số)']; 
     hasError = true 
   }
 
-  if (!form.value.address?.trim()) { errors.value.address = [i18nStore.t('auth.address_error')]; hasError = true }
-  if (!form.value.password?.trim()) { errors.value.password = [i18nStore.t('auth.password_error')]; hasError = true }
-  if (form.value.password !== form.value.password_confirmation) {
+  if (!addressVal) { errors.value.address = [i18nStore.t('auth.address_error')]; hasError = true }
+  
+  if (!passwordVal) { 
+    errors.value.password = [i18nStore.t('auth.password_error')]; 
+    hasError = true 
+  } else if (/\s/.test(passwordVal)) {
+    errors.value.password = [i18nStore.t('auth.forgot_password_no_space') || 'Mật khẩu không được chứa khoảng trắng'];
+    hasError = true
+  }
+
+  if (passwordVal !== passwordConfirmationVal) {
     errors.value.password_confirmation = [i18nStore.t('auth.password_confirmation_error')]
     hasError = true
   }
   if (hasError) return
 
-  const result = await authStore.register(form.value.name, form.value.email, form.value.address, form.value.phone, form.value.password, form.value.password_confirmation)
+  // Update UI form values to trimmed values
+  form.value.name = nameVal
+  form.value.email = emailVal
+  form.value.phone = phoneVal
+  form.value.address = addressVal
+
+  const result = await authStore.register(nameVal, emailVal, addressVal, phoneVal, passwordVal, passwordConfirmationVal)
   if (result.success) {
     toast.success(i18nStore.t('auth.register_success'))
     router.push('/login')

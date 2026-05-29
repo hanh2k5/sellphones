@@ -24,6 +24,8 @@ use App\Http\Controllers\ProfileController;
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
 // Báo cáo 4.2.6 & 4.2.7: Đăng nhập hệ thống & Giới hạn đăng nhập sai
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:auth');
 
 // --- SẢN PHẨM (Đặng Văn Hà) ---
 // Báo cáo 4.3.8: Hiển thị danh sách sản phẩm (Phân trang và Tìm kiếm)

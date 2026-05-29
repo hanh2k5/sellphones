@@ -9,6 +9,11 @@ export default defineConfig({
   plugins: [
     vue(),
   ],
+  // ─── THÊM CẤU HÌNH ĐỔI PORT VÀO ĐÂY ────────────────💡
+  server: {
+    port: 5174, // Bạn có thể đổi số này thành 3000, 8080... tùy ý nếu vẫn bị trùng
+  },
+  // ──────────────────────────────────────────────────
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

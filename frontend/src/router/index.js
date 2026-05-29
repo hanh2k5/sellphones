@@ -12,6 +12,8 @@ const router = createRouter({
     // Báo cáo 4.2.6 & 4.2.5: Đăng nhập và Đăng ký hệ thống - Nguyễn Duy Khang
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { guestOnly: true } },
     { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue'), meta: { guestOnly: true } },
+    { path: '/forgot-password', name: 'forgot-password', component: () => import('../views/ForgotPasswordView.vue'), meta: { guestOnly: true } },
+    { path: '/reset-password', name: 'reset-password', component: () => import('../views/ResetPasswordView.vue'), meta: { guestOnly: true } },
     
     // Báo cáo 4.3.9: Hiển thị chi tiết sản phẩm (Eager Loading & Multimedia) - Đặng Văn Hà
     { path: '/products/:id', name: 'product-detail', component: () => import('../views/ProductDetailView.vue') },
