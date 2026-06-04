@@ -120,7 +120,7 @@
 
         <div style="display: flex; gap: 12px; margin-top: 10px;">
           <router-link to="/admin/products" class="btn-secondary" style="flex: 1; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">{{ i18n.t('common.cancel') }}</router-link>
-          <button type="submit" :disabled="saving" class="btn-primary" style="flex: 2; justify-content: center;">
+          <button type="submit" :disabled="saving || isConflictBlocking" class="btn-primary" style="flex: 2; justify-content: center;">
             {{ saving ? i18n.t('admin.saving') : (isEdit ? i18n.t('admin.update') : i18n.t('admin.add')) }}
           </button>
         </div>
@@ -143,6 +143,7 @@ const i18n = useI18nStore()
 const route = useRoute()
 const router = useRouter()
 const isEdit = computed(() => !!route.params.id)
+const isConflictBlocking = computed(() => isEdit.value && !!conflictMsg.value)
 const categories = ref([])
 const saving = ref(false)
 const errorMsg = ref('')
@@ -166,7 +167,6 @@ onMounted(async () => {
     categories.value = cats.data.data || cats.data
     if (isEdit.value) {
       await refreshData()
-      startPolling()
     }
   } catch(e) {}
 })
@@ -186,35 +186,42 @@ async function refreshData() {
       is_featured: !!p.is_featured
     }
     versionKey.value = p.updated_at
+    if (isEdit.value) startPolling()
   } catch (e) { toast.error(i18n.t('common.error')) }
 }
 
 function startPolling() {
+  stopPolling()
   pollingTimer = setInterval(async () => {
     if (!isEdit.value || saving.value || !versionKey.value) return
     try {
-      const res = await api.get(`/admin/products/${route.params.id}/check-updated`)
-      if (res.data.updated || res.data.deleted) {
-        if (res.data.deleted) {
-           conflictMsg.value = i18n.t('admin.product_deleted')
-           stopPolling()
-           return
-        }
+      const res = await api.get(`/admin/products/${route.params.id}/check-updated`, {
+        params: { last_time: versionKey.value }
+      })
+      const remoteUpdatedAt = res.data.updated_at || res.data.product?.updated_at
+      if (res.data.updated && remoteUpdatedAt) {
+        const remoteTime = new Date(remoteUpdatedAt).getTime()
+        const localTime = new Date(versionKey.value).getTime()
 
-        const cachedTime = Math.floor(new Date(res.data.data.updated_at).getTime() / 1000)
-        const localTime = Math.floor(new Date(versionKey.value).getTime() / 1000)
-
-        if (cachedTime > localTime) {
+        if (remoteTime > localTime) {
           conflictMsg.value = i18n.t('admin.data_conflict')
           stopPolling()
         }
       }
-    } catch {}
+    } catch (e) {
+      if (e.response?.status === 404) {
+        conflictMsg.value = i18n.t('admin.product_deleted')
+        stopPolling()
+      }
+    }
   }, 5000)
 }
 
 function stopPolling() {
-  if (pollingTimer) clearInterval(pollingTimer)
+  if (pollingTimer) {
+    clearInterval(pollingTimer)
+    pollingTimer = null
+  }
 }
 
 async function handleFileUpload(e, mode) {
@@ -282,8 +289,10 @@ async function handleSave() {
     let msg = i18n.t('common.error')
 
     if (e.response?.status === 409) {
-      conflictMsg.value = i18n.t('admin.data_conflict')
+      conflictMsg.value = errorData?.message || i18n.t('admin.data_conflict')
       msg = conflictMsg.value
+      stopPolling()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } else if (e.response?.status === 422) {
       errors.value = errorData.errors || errorData
       const firstError = Object.values(errors.value).flat()[0]

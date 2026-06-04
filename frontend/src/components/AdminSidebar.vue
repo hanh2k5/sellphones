@@ -73,7 +73,12 @@ const router = useRouter()
 const authStore = useAuthStore()
 const i18n = useI18nStore()
 
-const isActive = (path) => route.path.startsWith(path)
+const isActive = (path) => {
+  if (path === '/admin/products') {
+    return route.path.startsWith('/admin/products') && !route.path.startsWith('/admin/products/trash')
+  }
+  return route.path.startsWith(path)
+}
 const isExact = (path) => route.path === path
 
 async function handleLogout() {
