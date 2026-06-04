@@ -27,16 +27,16 @@
         <!-- LEFT: Images -->
         <div class="image-gallery">
           <div class="main-image-wrap">
-            <img :src="getImageUrl(activeImage || product.hinh_anh)" :alt="product.name" class="main-img" />
+            <img :src="getImageUrl(activeImage || product.hinh_anh)" :alt="product.name" class="main-img" @error="onImgError" />
           </div>
           <div v-if="product.images?.length" class="thumbnail-list">
             <button @click="activeImage = product.hinh_anh"
               class="thumb-btn" :class="{ active: !activeImage || activeImage === product.hinh_anh }">
-              <img :src="getImageUrl(product.hinh_anh)" />
+              <img :src="getImageUrl(product.hinh_anh)" @error="onImgError" />
             </button>
             <button v-for="img in product.images" :key="img.id" @click="activeImage = img.image_path"
               class="thumb-btn" :class="{ active: activeImage === img.image_path }">
-              <img :src="getImageUrl(img.image_path)" />
+              <img :src="getImageUrl(img.image_path)" @error="onImgError" />
             </button>
           </div>
         </div>
@@ -238,6 +238,14 @@
 </template>
 
 <script setup>
+// =====================================================================
+// [Đặng Văn Hà - 4.3.9] ProductDetailView — Trang chi tiết sản phẩm
+// LUỒNG TỔNG QUÁT:
+//   1. Trang load → gọi GET /products/{id} → ProductController@show → trả SP + reviews
+//   2. User bấm "Thêm vào giỏ" → addToCart() → cartStore → POST /cart → CartController
+//   3. User bấm "Mua ngay" → buyNow() → addToCart() → chuyển sang /cart
+//   4. User gửi đánh giá → submitReview() → POST /products/{id}/reviews → ReviewController
+// =====================================================================
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { productsApi } from '../api'
@@ -250,47 +258,52 @@ import { useUtils } from '../composables/useUtils'
 import Swal from 'sweetalert2'
 
 const { fmtPrice, fmtDate, getImageUrl } = useUtils()
-const route = useRoute()
-const router = useRouter()
-const cartStore = useCartStore()
-const authStore = useAuthStore()
+const route = useRoute()   // Lấy id sản phẩm từ URL (vd: /products/42 → route.params.id = 42)
+const router = useRouter() // Dùng để điều hướng trang (vd: push sang /cart)
+const cartStore = useCartStore()   // Pinia store giỏ hàng — quản lý state items, tổng tiền
+const authStore = useAuthStore()   // Pinia store xác thực — kiểm tra isLoggedIn, user.id
 const i18n = useI18nStore()
 const toast = useToast()
 
-const product = ref(null)
-const loading = ref(true)
-const activeImage = ref(null)
-const qty = ref(1)
-const adding = ref(false)
-const buying = ref(false)
+const product    = ref(null)   // Lưu toàn bộ dữ liệu SP trả về từ API (name, price, stock, reviews,...)
+const loading    = ref(true)   // true khi đang gọi API → hiện skeleton loading
+const activeImage = ref(null)  // Đường dẫn ảnh đang hiển thị to trong gallery
+const qty    = ref(1)          // Số lượng user chọn mua (1 → product.stock)
+const adding = ref(false)      // true khi đang gọi API thêm giỏ → disable nút để chống double-click
+const buying = ref(false)      // true khi đang gọi API mua ngay → disable nút
 
-const reviewForm = ref({ rating: 0, comment: '', order_id_input: null })
-const submittingReview = ref(false)
-const reviewError = ref('')
-const eligibleOrderId = ref(null)
-const editingReviewId = ref(null)
-const hasPendingOrder = ref(false)
+const reviewForm = ref({ rating: 0, comment: '', order_id_input: null }) // Dữ liệu form đánh giá
+const submittingReview = ref(false) // true khi đang gửi đánh giá → disable nút submit
+const reviewError = ref('')         // Thông báo lỗi validation khi gửi đánh giá
+const eligibleOrderId = ref(null)   // ID đơn hàng "completed" của user → đủ điều kiện đánh giá
+const editingReviewId = ref(null)   // ID review đang được sửa (null = đang tạo mới)
+const hasPendingOrder = ref(false)  // true nếu user có đơn đang xử lý nhưng chưa hoàn tất
 
+// Tìm review của user hiện tại trong danh sách reviews của SP (để ẩn/hiện form)
 const userReview = computed(() => {
   if (!product.value || !authStore.user) return null
   return product.value.reviews?.find(r => r.user_id === authStore.user.id)
 })
 
+// BƯỚC 1: Load trang → gọi API lấy chi tiết SP
+// GET /products/{id} → ProductController@show → ProductService (eager load reviews đã duyệt)
 onMounted(async () => {
   try {
-    const res = await productsApi.show(route.params.id)
-    product.value = res.data
-    activeImage.value = res.data.hinh_anh
+    const res = await productsApi.show(route.params.id) // Gọi GET /products/{id}
+    product.value = res.data       // Lưu SP (bao gồm category, images, reviews)
+    activeImage.value = res.data.hinh_anh // Mặc định hiện ảnh đại diện
     if (authStore.isLoggedIn) {
-      await findEligibleOrder()
+      await findEligibleOrder() // Nếu đã đăng nhập → kiểm tra xem có đơn đủ điều kiện đánh giá không
     }
   } catch {
-    product.value = null
+    product.value = null // Lỗi 404 / 500 → hiện màn hình "không tìm thấy SP"
   } finally {
-    loading.value = false
+    loading.value = false // Tắt skeleton loading dù thành công hay thất bại
   }
 })
 
+// Kiểm tra xem user có đơn hàng đã "completed" chứa SP này không → mới được đánh giá
+// GET /orders?status=completed&product_id=X → OrderController@index → lọc theo user_id
 async function findEligibleOrder() {
   try {
     const res = await api.get('/orders', { 
@@ -299,15 +312,12 @@ async function findEligibleOrder() {
     const orders = res.data.data || []
     const completedOrder = orders.find(o => o.status === 'completed')
     if (completedOrder) {
-      eligibleOrderId.value = completedOrder.id
+      eligibleOrderId.value = completedOrder.id // Lưu ID đơn đủ điều kiện → hiện form đánh giá
       return
     }
-
-    const resAll = await api.get('/orders', { 
-      params: { product_id: product.value?.id } 
-    })
-    const allOrders = resAll.data.data || []
-    hasPendingOrder.value = allOrders.length > 0
+    // Không có đơn hoàn tất → kiểm tra xem có đơn đang xử lý không (để hiện thông báo chờ)
+    const resAll = await api.get('/orders', { params: { product_id: product.value?.id } })
+    hasPendingOrder.value = (resAll.data.data || []).length > 0 // true = có đơn nhưng chưa xong
   } catch {}
 }
 
@@ -322,57 +332,62 @@ function ratingLabel(r) {
   return labels[r] || ''
 }
 
+// BƯỚC 2A: User bấm "Thêm vào giỏ hàng"
+// → addToCart() → cartStore.addToCart() → POST /cart → CartController@store → ghi vào bảng cart_items
 async function addToCart() {
   adding.value = true
-  const res = await cartStore.addToCart(product.value.id, qty.value)
+  const res = await cartStore.addToCart(product.value.id, qty.value) // Gọi qua Pinia store
   adding.value = false
   if (res.success) {
-    toast.success(i18n.t('common.add_success'), {
-      label: i18n.t('product.view_cart'),
-      url: '/cart'
-    })
-    // Deduct stock locally for immediate feedback, but clamp to 0 to avoid negative display
-    product.value.stock = Math.max(0, product.value.stock - qty.value)
-    qty.value = 1 // Reset quantity after successful addition
+    toast.success(i18n.t('common.add_success'), { label: i18n.t('product.view_cart'), url: '/cart' })
+    product.value.stock = Math.max(0, product.value.stock - qty.value) // Cập nhật tồn kho UI ngay (optimistic)
+    qty.value = 1 // Reset số lượng về 1 sau khi thêm
   } else {
     toast.error(res.message || i18n.t('common.error'))
   }
 }
 
+// BƯỚC 2B: User bấm "Mua ngay"
+// → buyNow() → addToCart() trước → rồi push sang /cart để checkout
 async function buyNow() {
   buying.value = true
   const res = await cartStore.addToCart(product.value.id, qty.value)
   buying.value = false
-  if (res.success) router.push('/cart')
+  if (res.success) router.push('/cart') // Sau khi thêm giỏ thành công → điều hướng sang giỏ hàng
 }
 
+// BƯỚC 4: User gửi đánh giá (rating + comment)
+// Điều kiện: phải có eligibleOrderId (đơn hàng đã "completed" chứa SP này)
 async function submitReview() {
   reviewError.value = ''
   if (!reviewForm.value.rating) { reviewError.value = i18n.t('product.select_rating_error') || 'Vui lòng chọn số sao!'; return }
-  const orderId = eligibleOrderId.value || reviewForm.value.order_id_input
+  const orderId = eligibleOrderId.value || reviewForm.value.order_id_input // ID đơn để backend xác minh
   if (!orderId) { reviewError.value = i18n.t('product.enter_order_id_error') || 'Vui lòng nhập Order ID!'; return }
 
   submittingReview.value = true
   try {
     if (editingReviewId.value) {
+      // SỬA đánh giá: PUT /reviews/{id} → ReviewController@update
       const res = await api.put(`/reviews/${editingReviewId.value}`, {
         rating: reviewForm.value.rating,
         comment: reviewForm.value.comment,
       })
       const idx = product.value.reviews.findIndex(r => r.id === editingReviewId.value)
-      if (idx !== -1) product.value.reviews[idx] = res.data.review
-      product.value.avg_rating = res.data.avg_rating
+      if (idx !== -1) product.value.reviews[idx] = res.data.review // Cập nhật review trong UI ngay
+      product.value.avg_rating = res.data.avg_rating // Cập nhật điểm trung bình mới
       toast.success(i18n.t('common.review_update_success'))
       cancelEdit()
     } else {
+      // TẠO MỚI đánh giá: POST /products/{id}/reviews → ReviewController@store
+      // Backend kiểm tra: đơn hàng order_id có thuộc user này không, có status=completed không
       const res = await api.post(`/products/${product.value.id}/reviews`, {
         order_id: orderId,
         rating: reviewForm.value.rating,
         comment: reviewForm.value.comment,
       })
-      product.value.reviews.unshift(res.data.review)
-      product.value.avg_rating = res.data.avg_rating
-      reviewForm.value = { rating: 0, comment: '', order_id_input: null }
+      product.value.reviews.unshift(res.data.review) // Thêm review mới lên đầu danh sách
+      product.value.avg_rating = res.data.avg_rating  // Cập nhật điểm trung bình
+      reviewForm.value = { rating: 0, comment: '', order_id_input: null } // Reset form
       toast.success(i18n.t('common.review_success'))
     }
   } catch (e) {
@@ -439,6 +454,7 @@ async function deleteReview(review) {
   }
 }
 
+// [Đặng Văn Hà - 4.3.11] Xử lý hiển thị ảnh mặc định khi ảnh sản phẩm bị lỗi tải (Broken Image)
 function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }
 </script>
 

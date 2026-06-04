@@ -17,5 +17,22 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                $model = class_basename($e->getModel());
+                $friendlyNames = [
+                    'Category' => 'Danh mục',
+                    'Product' => 'Sản phẩm',
+                    'Order' => 'Đơn hàng',
+                    'User' => 'Người dùng',
+                    'Review' => 'Đánh giá',
+                    'Voucher' => 'Voucher',
+                    'CartItem' => 'Sản phẩm trong giỏ hàng'
+                ];
+                $name = $friendlyNames[$model] ?? $model;
+                return response()->json([
+                    'message' => "Không tìm thấy $name hoặc dữ liệu không tồn tại."
+                ], 404);
+            }
+        });
     })->create();

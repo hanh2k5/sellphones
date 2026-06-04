@@ -106,7 +106,7 @@
             <div class="divide-y divide-slate-100 mb-6">
               <div v-for="item in orderStore.current.items" :key="item.id" class="py-4 flex gap-4 items-center">
                 <div class="w-14 h-14 md:w-16 md:h-16 bg-slate-50 rounded-xl p-1.5 shrink-0">
-                  <img :src="getImageUrl(item.product?.hinh_anh)" class="w-full h-full object-contain" />
+                  <img :src="getImageUrl(item.product?.hinh_anh)" class="w-full h-full object-contain" @error="onImgError" />
                 </div>
                 <div class="flex-1 min-w-0">
                   <h4 class="font-bold text-slate-900 text-[13px] md:text-sm truncate">{{ item.product?.name }}</h4>
@@ -146,38 +146,54 @@
         </div>
       </div>
     </div>
+    <div v-else class="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
+      <p class="text-slate-500 font-bold text-lg">Không tìm thấy đơn hàng hoặc đơn hàng không tồn tại.</p>
+    </div>
   </div>
 </template>
 
 <script setup>
+// =====================================================================
+// [Phan Đình Hạnh - 4.1.8] OrderDetailView — Chi tiết đơn hàng
+// LUỒNG:
+//   Trang load (route /orders/:id) → fetchOrder(id) → GET /orders/{id}
+//   → OrderController@show → kiểm tra quyền sở hữu → trả dữ liệu đơn + items + voucher
+//   Hiển thị: timeline tiến độ đơn, thông tin giao hàng, danh sách sản phẩm, tổng tiền
+//   Nếu đơn = 'completed' → hiện nút "Đánh giá" bên cạnh từng sản phẩm
+// =====================================================================
 import { onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useOrderStore } from '../stores/order'
 import { useI18nStore } from '../stores/i18n'
 import { useUtils } from '../composables/useUtils'
 
-const route = useRoute()
-const orderStore = useOrderStore()
+const route      = useRoute()      // Lấy id đơn hàng từ URL (vd: /orders/42 → route.params.id = 42)
+const orderStore = useOrderStore() // Lưu đơn hàng hiện tại vào orderStore.current
 const i18n = useI18nStore()
 const { fmtPrice: fmt, getImageUrl, fmtDate: formatDate } = useUtils()
 
+// BƯỚC 1: Load trang → gọi API lấy chi tiết đơn hàng
+// GET /orders/{id} → OrderController@show → kiểm tra quyền (403 nếu không phải chủ đơn)
 onMounted(async () => {
-  await orderStore.fetchOrder(route.params.id)
+  await orderStore.fetchOrder(route.params.id) // Lưu vào orderStore.current
 })
 
+// Dọn dữ liệu khi rời trang → tránh hiển thị đơn cũ khi vào trang chi tiết đơn khác
 onUnmounted(() => {
   orderStore.current = null
 })
 
+// Tính bước hiện tại trên timeline (1=Đã đặt, 2=Đang giao, 3=Hoàn tất, -1=Đã hủy)
 const stepStatus = computed(() => {
   const status = orderStore.current?.status
   if (['cancelled'].includes(status)) return -1
-  if (['pending', 'confirmed'].includes(status)) return 1
-  if (['processing', 'shipping'].includes(status)) return 2
-  if (['shipped', 'completed'].includes(status)) return 3
+  if (['pending', 'confirmed'].includes(status)) return 1  // Chờ duyệt
+  if (['processing', 'shipping'].includes(status)) return 2 // Đang giao
+  if (['shipped', 'completed'].includes(status)) return 3   // Hoàn tất
   return 0
 })
 
+// Tính % thanh tiến trình (dùng để vẽ thanh progress bar trên timeline)
 const progressWidth = computed(() => {
   if (stepStatus.value <= 1) return '0%'
   if (stepStatus.value === 2) return '50%'
@@ -185,10 +201,13 @@ const progressWidth = computed(() => {
   return '0%'
 })
 
+// Tính tổng tiền hàng (chưa giảm) = Σ(price_at_purchase × quantity)
+// Dùng giá lúc đặt hàng (price_at_purchase), không bị ảnh hưởng bởi thay đổi giá sau này
 function calculateSubtotal() {
   return orderStore.current?.items?.reduce((sum, item) => sum + (item.price_at_purchase * item.quantity), 0) || 0
 }
 
+// Map status key sang tên hiển thị (vi/en tùy ngôn ngữ đã chọn)
 function statusLabel(s) {
   return { 
     pending:    i18n.t('order.status_pending') || 'Chờ duyệt', 
@@ -201,6 +220,7 @@ function statusLabel(s) {
   }[s] || s
 }
 
+// Map status key sang class CSS màu sắc cho badge trạng thái
 function statusClass(s) {
   return {
     pending:    'bg-amber-400 text-slate-900 border-amber-500',
@@ -211,6 +231,10 @@ function statusClass(s) {
     completed:  'bg-emerald-500 text-white border-emerald-600',
     cancelled:  'bg-rose-50 text-rose-600 border-rose-100',
   }[s] || 'bg-slate-50 text-slate-600 border-slate-100'
+}
+
+function onImgError(e) {
+  e.target.src = 'https://via.placeholder.com/400'
 }
 </script>
 

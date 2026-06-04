@@ -28,8 +28,8 @@ export function useUtils() {
     const baseUrl = getApiBaseUrl()
     let cleanUrl = url.startsWith('/') ? url : `/${url}`
     
-    // Nếu là đường dẫn cục bộ (không phải http) và chưa có /storage/, thì thêm vào
-    if (!cleanUrl.startsWith('/storage/') && !cleanUrl.startsWith('http')) {
+    // Nếu là đường dẫn cục bộ (không phải http) và chưa có /storage/ hoặc /uploads/, thì thêm /storage/ vào
+    if (!cleanUrl.startsWith('/storage/') && !cleanUrl.startsWith('/uploads/') && !cleanUrl.startsWith('http')) {
         cleanUrl = `/storage${cleanUrl}`
     }
     

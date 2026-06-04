@@ -73,7 +73,7 @@
           <div class="order-items">
             <div v-for="item in cartStore.items" :key="item.id" class="order-item">
               <div class="item-img-box">
-                <img :src="getImageUrl(item.product?.hinh_anh)" />
+                <img :src="getImageUrl(item.product?.hinh_anh)" @error="onImgError" />
               </div>
               <div class="item-info">
                 <p class="item-name">{{ item.product?.name }}</p>
@@ -116,6 +116,18 @@
 </template>
 
 <script setup>
+// =====================================================================
+// [Phan Đình Hạnh - 4.1.4] CheckoutView — Màn hình thanh toán
+// LUỒNG TỔNG QUÁT:
+//   1. Trang load → fetchCart() lấy giỏ hàng nếu chưa có
+//   2. User điền form (tên, SĐT, địa chỉ) → chọn phương thức thanh toán
+//   3. Bấm "Đặt hàng" → handleCheckout() validate → orderStore.checkout()
+//      → POST /orders → OrderController@store → OrderService.createOrder()
+//      → Lock SP, trừ kho, tạo Order + OrderItems, xóa giỏ hàng (trong Transaction)
+//   4. Thành công:
+//      - COD   → /checkout-success
+//      - MoMo  → /payment/momo (màn hình thanh toán MoMo)
+// =====================================================================
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '../stores/cart'
@@ -126,63 +138,74 @@ import { useToast } from '../composables/useToast'
 import { useUtils } from '../composables/useUtils'
 
 const { fmtPrice: fmt, getImageUrl } = useUtils()
-const cartStore = useCartStore()
-const orderStore = useOrderStore()
-const authStore = useAuthStore()
-const i18n = useI18nStore()
+const cartStore  = useCartStore()  // Lấy danh sách items giỏ hàng, tổng tiền, voucher
+const orderStore = useOrderStore() // Gọi hàm checkout() → gửi API đặt hàng
+const authStore  = useAuthStore()  // Lấy thông tin user để điền sẵn vào form
+const i18n  = useI18nStore()
 const router = useRouter()
-const toast = useToast()
+const toast  = useToast()
 
-const loading = ref(false)
-const errors = ref({})
+const loading = ref(false) // true khi đang gọi API → disable nút đặt hàng (chống double-click)
+const errors  = ref({})   // Lưu lỗi validate từng field {receiver_name: [...], phone: [...], ...}
 
+// Form dữ liệu người nhận — tự điền sẵn từ thông tin tài khoản user
 const form = ref({ 
-  name: authStore.user?.name || '',
-  phone: authStore.user?.phone || '', 
+  name:             authStore.user?.name    || '',
+  phone:            authStore.user?.phone   || '', 
   shipping_address: authStore.user?.address || '',
-  payment_method: 'cod' 
+  payment_method:   'cod'  // Mặc định chọn COD
 })
 
+// Load trang → nếu giỏ hàng rỗng thì gọi API lấy lại
 onMounted(async () => {
   if (cartStore.items.length === 0) await cartStore.fetchCart()
 })
 
+// BƯỚC 3: User bấm "Đặt hàng" → chạy hàm này
 async function handleCheckout() {
   errors.value = {}
   let hasError = false
+  // Validate phía frontend trước khi gửi API
   if (!form.value.name?.trim()) { errors.value.receiver_name = [i18n.t('checkout.name_error')]; hasError = true }
   if (!/^0[0-9]{9}$/.test(form.value.phone)) { errors.value.phone = [i18n.t('checkout.phone_error')]; hasError = true }
   if (!form.value.shipping_address?.trim()) { errors.value.shipping_address = [i18n.t('checkout.address_error')]; hasError = true }
-  if (hasError) return
+  if (hasError) return // Có lỗi → dừng lại, hiển thị lỗi dưới từng field
 
   loading.value = true
   try {
+    // Gọi orderStore.checkout() → ordersApi.store() → POST /orders
+    // → OrderController@store → OrderService.createOrder() (Transaction + Lock)
     const res = await orderStore.checkout({
-      receiver_name: form.value.name,
-      phone: form.value.phone,
+      receiver_name:    form.value.name,
+      phone:            form.value.phone,
       shipping_address: form.value.shipping_address,
-      payment_method: form.value.payment_method,
-      voucher_code: cartStore.appliedVoucher?.code
+      payment_method:   form.value.payment_method,
+      voucher_code:     cartStore.appliedVoucher?.code // Gửi kèm mã voucher nếu đã áp dụng
     })
     if (res.success) {
       toast.success(i18n.t('checkout.success_title'))
-      cartStore.clearCart()
+      cartStore.clearCart() // Xóa giỏ hàng trên frontend sau khi đặt thành công
       if (form.value.payment_method === 'momo') {
+        // MoMo → chuyển sang màn hình thanh toán kèm order_id và số tiền
         router.push({ name: 'payment.momo', query: { order_id: res.order.id, amount: res.order.total_amount } })
       } else {
+        // COD → chuyển sang màn hình thành công kèm mã đơn hàng
         router.push({ name: 'checkout-success', query: { order_code: res.order.order_code } })
       }
     } else {
-      console.error("API Checkout Errors:", res.errors, res.message)
-      if (res.errors) errors.value = res.errors
+      // Backend trả lỗi (422: giỏ rỗng, hết hàng, SP ngừng bán, ...)
+      if (res.errors) errors.value = res.errors // Hiển thị lỗi validate từ backend
       else toast.error(res.message)
     }
   } catch (e) {
-    console.error("API Error Checkout:", e.response?.data)
     toast.error(i18n.t('common.error'))
   } finally {
-    loading.value = false
+    loading.value = false // Tắt loading dù thành công hay thất bại
   }
+}
+
+function onImgError(e) {
+  e.target.src = 'https://via.placeholder.com/400'
 }
 </script>
 

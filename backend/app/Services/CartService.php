@@ -52,7 +52,7 @@ class CartService
      */
     public function removeItem($userId, $cartItemId)
     {
-        return CartItem::where('user_id', $userId)->where('id', $cartItemId)->delete();
+        return CartItem::where('user_id', $userId)->findOrFail($cartItemId)->delete();
     }
 
     /**

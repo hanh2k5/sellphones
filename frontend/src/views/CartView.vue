@@ -38,7 +38,7 @@
           </button>
 
           <div class="w-full md:w-32 h-32 md:h-32 bg-slate-50 rounded-xl md:rounded-2xl p-2 shrink-0 flex items-center justify-center">
-            <img :src="getImageUrl(item.product?.hinh_anh)" :alt="item.product?.name" class="w-full h-full object-contain" />
+            <img :src="getImageUrl(item.product?.hinh_anh)" :alt="item.product?.name" class="w-full h-full object-contain" @error="onImgError" />
           </div>
 
           <div class="flex-1">
@@ -313,6 +313,10 @@ function removeVoucher() {
   localStorage.removeItem('cart_voucher')
   localStorage.removeItem('cart_discount')
   toast.info(i18n.t('common.voucher_removed'))
+}
+
+function onImgError(e) {
+  e.target.src = 'https://via.placeholder.com/400'
 }
 </script>
 
