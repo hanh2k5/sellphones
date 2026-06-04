@@ -68,9 +68,19 @@ class ProductController extends Controller
     /**
      * [Đặng Văn Hà - 4.3.6] Sửa thông tin sản phẩm (Xử lý tranh chấp dữ liệu - Optimistic Locking)
      */
-    public function update(ProductRequest $request, Product $product)
+    public function update(ProductRequest $request, $id)
     {
         $this->authorizeAdmin();
+
+        $product = Product::find($id);
+        if (!$product) {
+            $trashed = Product::onlyTrashed()->find($id);
+            if ($trashed) {
+                return response()->json(['message' => __('messages.data_conflict')], 409);
+            }
+            return response()->json(['message' => 'Sản phẩm không tồn tại.'], 404);
+        }
+
         try {
             // Service kiểm tra updated_at; nếu dữ liệu cũ sẽ trả lỗi 409.
             $updatedProduct = $this->productService->updateProduct($product, $request->validated());
@@ -86,12 +96,29 @@ class ProductController extends Controller
         }
     }
 
-    public function destroy(Product $product)
+    public function destroy(Request $request, $id)
     {
         $this->authorizeAdmin();
-        // Model dùng SoftDeletes nên delete() chỉ đưa sản phẩm vào thùng rác.
-        $this->productService->deleteProduct($product);
-        return response()->json(['message' => 'Đã chuyển vào thùng rác.']);
+
+        $product = Product::find($id);
+        if (!$product) {
+            $trashed = Product::onlyTrashed()->find($id);
+            if ($trashed) {
+                return response()->json(['message' => __('messages.data_conflict')], 409);
+            }
+            return response()->json(['message' => 'Sản phẩm không tồn tại.'], 404);
+        }
+
+        try {
+            $version = $request->input('updated_at');
+            $this->productService->deleteProduct($product, $version);
+            return response()->json(['message' => 'Đã chuyển vào thùng rác.']);
+        } catch (Exception $e) {
+            $code = is_numeric($e->getCode()) && $e->getCode() >= 100 && $e->getCode() <= 599
+                ? $e->getCode()
+                : 500;
+            return response()->json(['message' => $e->getMessage()], $code);
+        }
     }
 
     /**

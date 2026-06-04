@@ -187,7 +187,14 @@ async function refreshData() {
     }
     versionKey.value = p.updated_at
     if (isEdit.value) startPolling()
-  } catch (e) { toast.error(i18n.t('common.error')) }
+  } catch (e) { 
+    if (e.response?.status === 404) {
+      toast.error(i18n.t('admin.product_deleted') || 'Sản phẩm này đã bị xóa ở tab khác!')
+      router.push('/admin/products')
+    } else {
+      toast.error(i18n.t('common.error'))
+    }
+  }
 }
 
 function startPolling() {
