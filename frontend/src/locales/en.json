@@ -391,7 +391,7 @@
     "order_already_deleted": "This order has already been deleted by another user or no longer exists.",
     "low_stock_alert": "Low stock: {count} variants (≤5 units)",
     "out_of_stock_alert": "Out of stock: {count} variants",
-    "product_deleted": "Product deleted in another tab!",
+    "product_deleted": "This product has been deleted by another admin!",
     "create_first": "Create product first before adding secondary images!",
     "back_to_list": "Back to List",
     "data_conflict": "Data changed in another tab!",

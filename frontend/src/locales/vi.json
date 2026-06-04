@@ -391,7 +391,7 @@
     "order_already_deleted": "Đơn hàng này đã được xóa bởi người khác hoặc không còn tồn tại.",
     "low_stock_alert": "Sắp hết hàng: {count} phiên bản (≤5 cái)",
     "out_of_stock_alert": "Hết hàng: {count} phiên bản",
-    "product_deleted": "Sản phẩm này đã bị xóa ở tab khác!",
+    "product_deleted": "Sản phẩm này đã bị xóa bởi một admin khác!",
     "create_first": "Vui lòng tạo sản phẩm trước khi thêm ảnh phụ!",
     "back_to_list": "Quay lại danh sách",
     "data_conflict": "Dữ liệu đã bị thay đổi ở tab khác!",
