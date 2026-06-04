@@ -86,12 +86,19 @@ class ProductController extends Controller
         }
     }
 
-    public function destroy(Product $product)
+    public function destroy(Request $request, Product $product)
     {
         $this->authorizeAdmin();
-        // Model dùng SoftDeletes nên delete() chỉ đưa sản phẩm vào thùng rác.
-        $this->productService->deleteProduct($product);
-        return response()->json(['message' => 'Đã chuyển vào thùng rác.']);
+        try {
+            $version = $request->input('updated_at');
+            $this->productService->deleteProduct($product, $version);
+            return response()->json(['message' => 'Đã chuyển vào thùng rác.']);
+        } catch (Exception $e) {
+            $code = is_numeric($e->getCode()) && $e->getCode() >= 100 && $e->getCode() <= 599
+                ? $e->getCode()
+                : 500;
+            return response()->json(['message' => $e->getMessage()], $code);
+        }
     }
 
     /**

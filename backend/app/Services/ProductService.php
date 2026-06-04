@@ -85,8 +85,13 @@ class ProductService
      */
     public function deleteProduct(Product $product, $version = null)
     {
-        if ($version && $product->updated_at->toIso8601String() !== $version) {
-            throw new Exception(__('messages.data_conflict'), 409);
+        if ($version) {
+            $clientUpdatedAt = Carbon::parse($version)->utc()->format('Y-m-d\TH:i:s.u\Z');
+            $serverUpdatedAt = $product->updated_at->copy()->utc()->format('Y-m-d\TH:i:s.u\Z');
+
+            if ($serverUpdatedAt !== $clientUpdatedAt) {
+                throw new Exception(__('messages.data_conflict'), 409);
+            }
         }
         return $product->delete();
     }
