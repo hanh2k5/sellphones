@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductImage;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Exception;
 
@@ -55,8 +56,15 @@ class ProductService
          * Kiểm tra tranh chấp dữ liệu (Optimistic Locking):
          * Nếu thời gian cập nhật cuối cùng ở Client khác ở Server -> Đã có Admin khác vừa sửa xong.
          */
-        if (isset($data['updated_at']) && $product->updated_at->toIso8601String() !== $data['updated_at']) {
-            throw new Exception(__('messages.data_conflict'), 409);
+        if (isset($data['updated_at'])) {
+            $clientUpdatedAt = Carbon::parse($data['updated_at'])->utc()->format('Y-m-d\TH:i:s.u\Z');
+            $serverUpdatedAt = $product->updated_at->copy()->utc()->format('Y-m-d\TH:i:s.u\Z');
+
+            if ($serverUpdatedAt !== $clientUpdatedAt) {
+                throw new Exception(__('messages.data_conflict'), 409);
+            }
+
+            unset($data['updated_at']);
         }
 
         // Xử lý thay thế ảnh cũ nếu có upload ảnh mới

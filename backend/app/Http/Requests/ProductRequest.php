@@ -30,6 +30,7 @@ class ProductRequest extends FormRequest
             'hinh_anh'      => 'nullable|string',
             'description'   => 'nullable|string',
             'is_active'     => 'nullable|boolean',
+            'updated_at'    => $this->isMethod('put') ? 'required|date' : 'nullable|date',
         ];
     }
 

@@ -67,9 +67,17 @@ class ProductController extends Controller
     public function update(ProductRequest $request, Product $product)
     {
         $this->authorizeAdmin();
-        $updatedProduct = $this->productService->updateProduct($product, $request->validated());
-        return (new ProductResource($updatedProduct))
-            ->additional(['message' => 'Cập nhật thành công!']);
+        try {
+            $updatedProduct = $this->productService->updateProduct($product, $request->validated());
+            return (new ProductResource($updatedProduct))
+                ->additional(['message' => 'Cập nhật thành công!']);
+        } catch (Exception $e) {
+            $code = is_numeric($e->getCode()) && $e->getCode() >= 100 && $e->getCode() <= 599
+                ? $e->getCode()
+                : 500;
+
+            return response()->json(['message' => $e->getMessage()], $code);
+        }
     }
 
     public function destroy(Product $product)
