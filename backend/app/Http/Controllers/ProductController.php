@@ -30,7 +30,8 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-         $products = $this->productService->getAllProducts($request->all());
+        // Nhận query từ UI; service/model sẽ xử lý search, lọc giá và phân trang.
+        $products = $this->productService->getAllProducts($request->all());
         return ProductResource::collection($products);
     }
 
@@ -41,9 +42,11 @@ class ProductController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
+        // Khách không thấy sản phẩm ngừng bán; admin vẫn được xem để quản lý.
         if (!$product->is_active && (!Auth::check() || !$user->isAdmin())) {
             abort(404);
         }
+        // Load sẵn danh mục, ảnh và review đã duyệt để trả chi tiết trong một response.
         $product->load(['category', 'images', 'reviews' => function($query) {
             $query->where('status', 'approved')->with('user:id,name');
         }]);
@@ -56,6 +59,7 @@ class ProductController extends Controller
     public function store(ProductRequest $request)
     {
         $this->authorizeAdmin();
+        // validated() chỉ lấy dữ liệu đã qua rule trong ProductRequest.
         $product = $this->productService->createProduct($request->validated());
         return (new ProductResource($product))
             ->additional(['message' => 'Thêm sản phẩm thành công!']);
@@ -67,14 +71,25 @@ class ProductController extends Controller
     public function update(ProductRequest $request, Product $product)
     {
         $this->authorizeAdmin();
-        $updatedProduct = $this->productService->updateProduct($product, $request->validated());
-        return (new ProductResource($updatedProduct))
-            ->additional(['message' => 'Cập nhật thành công!']);
+        try {
+            // Service kiểm tra updated_at; nếu dữ liệu cũ sẽ trả lỗi 409.
+            $updatedProduct = $this->productService->updateProduct($product, $request->validated());
+            return (new ProductResource($updatedProduct))
+                ->additional(['message' => 'Cập nhật thành công!']);
+        } catch (Exception $e) {
+            // Giữ đúng mã lỗi nghiệp vụ, đặc biệt là 409 Conflict.
+            $code = is_numeric($e->getCode()) && $e->getCode() >= 100 && $e->getCode() <= 599
+                ? $e->getCode()
+                : 500;
+
+            return response()->json(['message' => $e->getMessage()], $code);
+        }
     }
 
     public function destroy(Product $product)
     {
         $this->authorizeAdmin();
+        // Model dùng SoftDeletes nên delete() chỉ đưa sản phẩm vào thùng rác.
         $this->productService->deleteProduct($product);
         return response()->json(['message' => 'Đã chuyển vào thùng rác.']);
     }
@@ -85,12 +100,14 @@ class ProductController extends Controller
     public function trash()
     {
         $this->authorizeAdmin();
+        // Chỉ lấy các sản phẩm đã xóa mềm.
         return response()->json($this->productService->getTrashed());
     }
 
     public function restore($id)
     {
         $this->authorizeAdmin();
+        // Khôi phục sản phẩm từ thùng rác về danh sách chính.
         $product = $this->productService->restoreProduct($id);
         return response()->json(['message' => 'Khôi phục thành công.', 'product' => $product]);
     }
@@ -108,6 +125,7 @@ class ProductController extends Controller
     public function uploadImages(Request $request, Product $product)
     {
         $this->authorizeAdmin();
+        // images[] phải là nhiều file ảnh, mỗi file tối đa 2MB.
         $request->validate([
             'images'   => 'required|array',
             'images.*' => 'image|max:2048'
@@ -143,6 +161,7 @@ class ProductController extends Controller
 
     public function checkUpdated(Request $request, $id)
     {
+        // Frontend polling endpoint này để biết sản phẩm có bị admin khác sửa chưa.
         $lastTime = $request->query('last_time', now()->subMinute());
         return response()->json($this->productService->checkUpdated($id, $lastTime));
     }

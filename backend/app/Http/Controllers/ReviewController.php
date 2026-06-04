@@ -24,6 +24,7 @@ class ReviewController extends Controller
 
     public function index(Product $product)
     {
+        // Public chỉ xem các đánh giá đã được duyệt.
         $reviews = $product->reviews()
             ->where('status', 'approved')
             ->with('user:id,name')
@@ -37,6 +38,7 @@ class ReviewController extends Controller
      */
     public function store(Request $request, Product $product)
     {
+        // Validate dữ liệu người dùng nhập từ form đánh giá.
         $request->validate([
             'order_id'   => 'required|exists:orders,id',
             'rating'     => 'required|integer|min:1|max:5',
@@ -66,6 +68,7 @@ class ReviewController extends Controller
 
     public function update(Request $request, Review $review)
     {
+        // Chỉ chủ đánh giá mới được sửa nội dung của mình.
         if (Auth::id() !== $review->user_id) {
             abort(403, 'Bạn không có quyền sửa đánh giá này.');
         }
@@ -88,6 +91,7 @@ class ReviewController extends Controller
     public function adminIndex(Request $request)
     {
         $this->authorizeAdmin();
+        // Admin có thể lọc danh sách đánh giá theo số sao.
         $rating = $request->query('rating');
         return response()->json($this->reviewService->getAllAdmin($rating));
     }
@@ -107,6 +111,7 @@ class ReviewController extends Controller
     public function destroy(Review $review)
     {
         try {
+            // Service kiểm tra quyền: admin hoặc chính chủ đánh giá.
             $this->reviewService->deleteReview($review, Auth::user());
             return response()->json(['message' => 'Đã xóa đánh giá thành công.']);
         } catch (\Exception $e) {

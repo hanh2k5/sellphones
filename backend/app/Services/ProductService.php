@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductImage;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Exception;
 
@@ -51,12 +52,16 @@ class ProductService
      */
     public function updateProduct(Product $product, array $data)
     {
-        /**
-         * Kiểm tra tranh chấp dữ liệu (Optimistic Locking):
-         * Nếu thời gian cập nhật cuối cùng ở Client khác ở Server -> Đã có Admin khác vừa sửa xong.
-         */
-        if (isset($data['updated_at']) && $product->updated_at->toIso8601String() !== $data['updated_at']) {
-            throw new Exception(__('messages.data_conflict'), 409);
+        if (isset($data['updated_at'])) {
+            // So sánh updated_at của client và DB để phát hiện sửa cùng lúc ở 2 tab.
+            $clientUpdatedAt = Carbon::parse($data['updated_at'])->utc()->format('Y-m-d\TH:i:s.u\Z');
+            $serverUpdatedAt = $product->updated_at->copy()->utc()->format('Y-m-d\TH:i:s.u\Z');
+
+            if ($serverUpdatedAt !== $clientUpdatedAt) {
+                throw new Exception(__('messages.data_conflict'), 409);
+            }
+
+            unset($data['updated_at']);
         }
 
         // Xử lý thay thế ảnh cũ nếu có upload ảnh mới
@@ -91,6 +96,7 @@ class ProductService
      */
     public function getTrashed()
     {
+        // onlyTrashed() chỉ lấy sản phẩm đang nằm trong thùng rác.
         return Product::onlyTrashed()->with('category')->paginate(10);
     }
 
@@ -102,6 +108,7 @@ class ProductService
      */
     public function restoreProduct($id)
     {
+        // Tìm trong thùng rác rồi restore để hiện lại sản phẩm.
         $product = Product::onlyTrashed()->findOrFail($id);
         $product->restore();
         return $product;
@@ -137,6 +144,7 @@ class ProductService
     {
         $images = [];
         foreach ($files as $file) {
+            // Mỗi ảnh được lưu theo thư mục riêng của sản phẩm.
             $path = $file->store("products/{$product->id}", 'public');
             $images[] = ProductImage::create([
                 'product_id' => $product->id,
@@ -171,6 +179,7 @@ class ProductService
     {
         $product = Product::findOrFail($id);
         return [
+            // true nếu DB mới hơn thời điểm frontend đang giữ.
             'updated'    => $product->updated_at->gt($lastTime),
             'product'    => $product,
             'updated_at' => $product->updated_at->toIso8601String(),

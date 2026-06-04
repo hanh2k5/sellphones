@@ -53,6 +53,7 @@ class Product extends Model
     // Tính lại avg_rating và lưu vào cột
     public function recalcAvgRating(): void
     {
+        // Chỉ lấy review approved để tính điểm hiển thị cho khách.
         $avg = $this->reviews()->where('status', 'approved')->avg('rating');
         $this->update(['avg_rating' => $avg ? round($avg, 1) : null]);
     }
@@ -74,6 +75,7 @@ class Product extends Model
         if (isset($filters['is_featured'])) {
             $query->where('is_featured', true);
         }
+        // Tìm theo tên hoặc mô tả sản phẩm.
         $query->when($filters['search'] ?? null, function ($q, $search) {
             if (is_array($search)) { $search = implode(' ', $search); }
             $q->where(function ($sub) use ($search) {
@@ -89,12 +91,14 @@ class Product extends Model
             $q->whereIn('category_id', $allIds);
         });
 
+        // Hỗ trợ cả tên tham số tiếng Anh và tiếng Việt từ frontend.
         $priceFrom = $filters['price_from'] ?? $filters['gia_tu'] ?? null;
         $priceTo   = $filters['price_to'] ?? $filters['gia_den'] ?? null;
 
         if ($priceFrom !== null) $query->where('price', '>=', $priceFrom);
         if ($priceTo !== null)   $query->where('price', '<=', $priceTo);
 
+        // Chỉ cho sort theo các cột an toàn đã định nghĩa.
         $sortBy  = $filters['sort_by'] ?? 'created_at';
         $sortDir = $filters['sort_dir'] ?? 'desc';
         

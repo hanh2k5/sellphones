@@ -23,6 +23,7 @@ class CategoryController extends Controller
 
     public function index()
     {
+        // Trả danh mục dạng cây để UI hiển thị cha - con.
         return response()->json($this->categoryService->getTree());
     }
 
@@ -40,6 +41,7 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $this->authorizeAdmin();
+        // Tên danh mục bắt buộc không được trùng.
         $request->validate(['name' => 'required|string|max:255|unique:categories,name']);
         
         $category = $this->categoryService->create($request->all());
@@ -49,6 +51,7 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category)
     {
         $this->authorizeAdmin();
+        // Khi sửa, cho phép giữ tên cũ của chính danh mục này.
         $request->validate(['name' => 'required|string|max:255|unique:categories,name,' . $category->id]);
         
         $updatedCategory = $this->categoryService->update($category, $request->all());
@@ -62,6 +65,7 @@ class CategoryController extends Controller
     {
         $this->authorizeAdmin();
         try {
+            // Service sẽ chặn nếu danh mục còn chứa sản phẩm.
             $this->categoryService->delete($category);
             return response()->json(['message' => 'Xóa danh mục thành công.']);
         } catch (Exception $e) {

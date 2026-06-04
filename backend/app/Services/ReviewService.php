@@ -13,7 +13,7 @@ class ReviewService
      */
     public function createReview($userId, array $data)
     {
-        // Logic: Chỉ cho phép đánh giá nếu đã mua đơn hàng đó và đơn hàng đã xác nhận/hoàn thành
+        // Đơn phải thuộc user, đã hoàn thành và có chứa sản phẩm này.
         $hasBought = Order::where('id', $data['order_id'])
             ->where('user_id', $userId)
             ->where('status', 'completed')
@@ -24,7 +24,7 @@ class ReviewService
             throw new Exception(__('messages.order_invalid_or_not_purchased'), 403);
         }
 
-        // Kiểm tra xem đã đánh giá chưa (mỗi người 1 lần/sản phẩm)
+        // Mỗi user chỉ được đánh giá một lần cho một sản phẩm.
         $exists = Review::where('user_id', $userId)->where('product_id', $data['product_id'])->exists();
         if ($exists) {
             throw new Exception(__('messages.review_exists'), 422);
@@ -35,7 +35,7 @@ class ReviewService
             'created_at' => now()
         ]));
         
-        // Tự động tính lại điểm sao cho sản phẩm (Theo báo cáo 4.3.16)
+        // Sau khi thêm review, cập nhật lại điểm sao trung bình của sản phẩm.
         $review->product->recalcAvgRating();
 
         return $review;
@@ -46,11 +46,12 @@ class ReviewService
      */
     public function deleteReview(Review $review, $user)
     {
-        // Kiểm tra an toàn người dùng
+        // Bắt buộc đăng nhập trước khi xóa đánh giá.
         if (!$user) {
             throw new Exception(__('messages.login_required'), 401);
         }
 
+        // User thường chỉ xóa review của mình, admin được xóa mọi review.
         if (!$user->isAdmin() && $review->user_id !== $user->id) {
             throw new Exception(__('messages.unauthorized'), 403);
         }
@@ -58,7 +59,7 @@ class ReviewService
         $product = $review->product;
         $review->delete();
 
-        // Tính lại sao sau khi xóa (kiểm tra product tồn tại)
+        // Xóa review xong phải tính lại avg_rating.
         if ($product) {
             $product->recalcAvgRating();
         }
@@ -88,7 +89,7 @@ class ReviewService
     {
         $review->update(['status' => $status]);
         
-        // Tính lại sao sau khi duyệt/ẩn
+        // Ẩn/duyệt review cũng ảnh hưởng điểm sao trung bình.
         $review->product->recalcAvgRating();
 
         return $review;
