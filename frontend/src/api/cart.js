@@ -9,7 +9,7 @@ export const cartApi = {
   get: (params) => api.get('/cart', { params }),
 
   /** Thêm sản phẩm vào giỏ */
-  add: (productId, quantity = 1) => api.post('/cart', { product_id: productId, quantity }),
+  add: (productId, quantity = 1) => api.post('/cart/add', { product_id: productId, quantity }),
 
   /** Cập nhật số lượng */
   update: (cartItemId, quantity) => api.put(`/cart/${cartItemId}`, { quantity }),

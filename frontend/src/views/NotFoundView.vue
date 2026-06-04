@@ -25,7 +25,7 @@
       <div class="pt-8">
         <router-link
           to="/"
-          class="inline-flex items-center justify-center px-8 py-3.5 text-base font-medium text-white bg-slate-900 rounded-full hover:bg-slate-800 focus:ring-4 focus:ring-slate-200 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+          class="inline-flex items-center justify-center px-8 py-3.5 text-base font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 focus:ring-4 focus:ring-blue-100 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
         >
           {{ i18n.t('common.back_home') }}
         </router-link>

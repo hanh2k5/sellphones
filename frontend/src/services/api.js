@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getApiBaseUrl } from '../utils/url';
+import { useToast } from '../composables/useToast';
 
 const api = axios.create({
     baseURL: `${getApiBaseUrl()}/api`,
@@ -36,6 +37,9 @@ api.interceptors.response.use(
             if (window.location.pathname !== '/login') {
                 window.location.href = '/login';
             }
+        } else if (status === 403) {
+            const toast = useToast();
+            toast.error(message || 'Bạn không có quyền truy cập chức năng này.');
         }
         return Promise.reject(error);
     }

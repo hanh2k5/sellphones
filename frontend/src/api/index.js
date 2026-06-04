@@ -12,3 +12,6 @@ export { cartApi }       from './cart'
 export { adminApi }      from './admin'
 export { vouchersApi }   from './vouchers'
 export { chatApi }       from './chat'
+export { reviewsApi }    from './reviews'
+export { profileApi }    from './profile'
+

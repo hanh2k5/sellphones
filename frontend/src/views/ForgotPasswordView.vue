@@ -145,10 +145,12 @@
 import { ref, reactive, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18nStore } from '../stores/i18n'
-import api from '../services/api'
+import { useToast } from '../composables/useToast'
+import { authApi } from '../api'
 
 const router = useRouter()
 const i18nStore = useI18nStore()
+const toast = useToast()
 const t = (key) => i18nStore.t(key)
 
 // --- State ---
@@ -186,7 +188,7 @@ async function handleSendOtp() {
   else resendLoading.value = true
 
   try {
-    await api.post('/forgot-password', { email: email.value.trim() })
+    await authApi.forgotPassword(email.value.trim())
     step.value = 2
     startCountdown(60)
     await nextTick()
@@ -273,14 +275,18 @@ async function handleResetPassword() {
 
   loading.value = true
   try {
-    await api.post('/reset-password', {
+    const res = await authApi.resetPassword({
       email: email.value.trim(),
       otp,
       password: password.value,
       password_confirmation: passwordConfirmation.value
     })
     clearCountdown()
+    toast.success(res.data?.message || 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.')
     step.value = 3
+    setTimeout(() => {
+      router.push('/login')
+    }, 1500)
   } catch (e) {
     const msg = e.response?.data?.message || t('common.error')
     if (e.response?.data?.errors) {

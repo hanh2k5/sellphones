@@ -21,6 +21,8 @@ return [
     'regex' => 'Định dạng :attribute không hợp lệ.',
     'in' => ':attribute được chọn không hợp lệ.',
     'phone_regex' => 'Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).',
+    'receiver_name_error' => 'Vui lòng nhập họ tên (không quá 50 ký tự).',
+    'phone_error' => 'Vui lòng nhập số điện thoại hợp lệ (10 chữ số).',
     
     'attributes' => [
         'name' => 'Họ tên',

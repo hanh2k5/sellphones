@@ -60,7 +60,7 @@ const form = ref({
 const editId = computed(() => props.initialData?.id)
 
 const availableParents = computed(() => {
-  return props.allCategories.filter(c => c.id !== editId.value)
+  return props.allCategories.filter(c => c.id !== editId.value && (!c.parent_id))
 })
 
 watch(() => props.initialData, (newVal) => {
@@ -80,6 +80,12 @@ watch(() => props.initialData, (newVal) => {
 async function handleSubmit() {
   errors.value = {}
   error.value = ''
+  if (!form.value.name || !form.value.name.trim()) {
+    errors.value = {
+      name: [i18n.locale === 'vi' ? 'Tên danh mục không được để trống/bắt buộc' : 'Category name is required']
+    }
+    return
+  }
   emit('save', { id: editId.value, data: form.value })
 }
 

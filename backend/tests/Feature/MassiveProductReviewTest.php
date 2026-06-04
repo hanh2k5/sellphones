@@ -97,6 +97,55 @@ class MassiveProductReviewTest extends TestCase
         $this->getJson("/api/products/{$this->product->id}/reviews")->assertStatus(200)->assertJsonCount(0, 'data');
     }
 
+    public function test_public_reviews_are_paginated_sorted_and_hide_sensitive_user_fields()
+    {
+        Review::factory()->create([
+            'product_id' => $this->product->id,
+            'user_id' => $this->user->id,
+            'status' => 'approved',
+            'rating' => 4,
+            'comment' => 'Old review',
+            'created_at' => Carbon::now()->subDays(2),
+        ]);
+        Review::factory()->create([
+            'product_id' => $this->product->id,
+            'user_id' => $this->user->id,
+            'status' => 'approved',
+            'rating' => 5,
+            'comment' => 'Newest review',
+            'created_at' => Carbon::now(),
+        ]);
+        Review::factory()->create([
+            'product_id' => $this->product->id,
+            'user_id' => $this->user->id,
+            'status' => 'approved',
+            'rating' => 3,
+            'comment' => 'Paged review',
+            'created_at' => Carbon::now()->subDay(),
+        ]);
+        Review::factory()->create([
+            'product_id' => $this->product->id,
+            'user_id' => $this->user->id,
+            'status' => 'hidden',
+            'rating' => 1,
+            'comment' => 'Hidden review',
+            'created_at' => Carbon::now()->addMinute(),
+        ]);
+
+        $res = $this->getJson("/api/products/{$this->product->id}/reviews?per_page=2")
+            ->assertStatus(200)
+            ->assertJsonCount(2, 'data');
+
+        $this->assertSame('Newest review', $res->json('data.0.comment'));
+        $this->assertSame('Paged review', $res->json('data.1.comment'));
+        $this->assertNotNull($res->json('links.next'));
+        $this->assertArrayNotHasKey('order_id', $res->json('data.0'));
+        $this->assertArrayHasKey('name', $res->json('data.0.user'));
+        $this->assertArrayHasKey('avatar', $res->json('data.0.user'));
+        $this->assertArrayNotHasKey('email', $res->json('data.0.user'));
+        $this->assertArrayNotHasKey('phone', $res->json('data.0.user'));
+    }
+
     public function test_eligible_user_can_submit_review()
     {
         $this->withHeaders(['Authorization' => "Bearer {$this->token}"])
@@ -207,7 +256,26 @@ class MassiveProductReviewTest extends TestCase
         $this->withHeaders(['Authorization' => "Bearer {$token}"])
              ->postJson("/api/products/{$this->product->id}/reviews", [
                  'rating' => 5, 'order_id' => $this->order->id, 'comment' => 'test'
-             ])->assertStatus(403); // Forbidden, hasn't bought
+             ])->assertStatus(403)
+             ->assertJsonPath('message', 'Bạn cần mua sản phẩm này để có thể đánh giá');
+    }
+
+    public function test_user_cannot_submit_review_for_uncompleted_order()
+    {
+        $pendingOrder = Order::factory()->create(['user_id' => $this->user->id, 'status' => 'pending']);
+        $pendingOrder->items()->create([
+            'product_id' => $this->product->id,
+            'quantity' => 1,
+            'price_at_purchase' => 10000,
+        ]);
+
+        $this->withHeaders(['Authorization' => "Bearer {$this->token}"])
+             ->postJson("/api/products/{$this->product->id}/reviews", [
+                 'rating' => 5,
+                 'order_id' => $pendingOrder->id,
+                 'comment' => 'test',
+             ])->assertStatus(403)
+             ->assertJsonPath('message', 'Bạn cần mua sản phẩm này để có thể đánh giá');
     }
 
     public function test_hacker_cannot_submit_review_twice()
@@ -253,13 +321,15 @@ class MassiveProductReviewTest extends TestCase
 
     public function test_hacker_xss_in_review_comment()
     {
-        $this->withHeaders(['Authorization' => "Bearer {$this->token}"])
+        $res = $this->withHeaders(['Authorization' => "Bearer {$this->token}"])
              ->postJson("/api/products/{$this->product->id}/reviews", [
                  'rating' => 5, 'order_id' => $this->order->id,
-                 'comment' => '<script>alert("XSS")</script>'
+                 'comment' => '<script>alert("XSS")</script><b>Máy tốt</b>'
              ])->assertStatus(201);
-        $this->assertDatabaseHas('reviews', ['comment' => '<script>alert("XSS")</script>']);
-        // Frontend must escape this.
+
+        $this->assertSame('Máy tốt', $res->json('review.comment'));
+        $this->assertDatabaseHas('reviews', ['comment' => 'Máy tốt']);
+        $this->assertDatabaseMissing('reviews', ['comment' => '<script>alert("XSS")</script><b>Máy tốt</b>']);
     }
 
     public function test_hacker_sql_injection_in_search()

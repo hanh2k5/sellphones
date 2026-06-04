@@ -1,0 +1,503 @@
+.
+├── .gitignore
+├── .vscode
+│   ├── launch.json
+│   └── settings.json
+├── LICENSE
+├── README.md
+├── backend
+│   ├── .editorconfig
+│   ├── .env
+│   ├── .env.example
+│   ├── .gitattributes
+│   ├── .gitignore
+│   ├── .npmrc
+│   ├── .phpunit.result.cache
+│   ├── README.md
+│   ├── app
+│   │   ├── Exceptions
+│   │   │   └── StockException.php
+│   │   ├── Http
+│   │   │   ├── Controllers
+│   │   │   │   ├── AdminController.php
+│   │   │   │   ├── AuthController.php
+│   │   │   │   ├── CartController.php
+│   │   │   │   ├── CategoryController.php
+│   │   │   │   ├── ChatController.php
+│   │   │   │   ├── Controller.php
+│   │   │   │   ├── OrderController.php
+│   │   │   │   ├── ProductController.php
+│   │   │   │   ├── ProfileController.php
+│   │   │   │   ├── ReviewController.php
+│   │   │   │   └── VoucherController.php
+│   │   │   ├── Middleware
+│   │   │   │   ├── AdminMiddleware.php
+│   │   │   │   └── SetLocaleMiddleware.php
+│   │   │   ├── Requests
+│   │   │   │   ├── AdminStoreUserRequest.php
+│   │   │   │   ├── AdminUpdateUserRequest.php
+│   │   │   │   ├── ApplyVoucherRequest.php
+│   │   │   │   ├── CompleteOrderRequest.php
+│   │   │   │   ├── ConfirmOrderRequest.php
+│   │   │   │   ├── ForgotPasswordRequest.php
+│   │   │   │   ├── LoginRequest.php
+│   │   │   │   ├── ModerateReviewRequest.php
+│   │   │   │   ├── ProductRequest.php
+│   │   │   │   ├── RegisterRequest.php
+│   │   │   │   ├── ResetPasswordRequest.php
+│   │   │   │   ├── SendChatMessageRequest.php
+│   │   │   │   ├── StoreCartItemRequest.php
+│   │   │   │   ├── StoreCategoryRequest.php
+│   │   │   │   ├── StoreOrderRequest.php
+│   │   │   │   ├── StoreReviewRequest.php
+│   │   │   │   ├── UpdateCartItemRequest.php
+│   │   │   │   ├── UpdateCategoryRequest.php
+│   │   │   │   ├── UpdateOrderStatusRequest.php
+│   │   │   │   ├── UpdatePasswordRequest.php
+│   │   │   │   ├── UpdateProfileRequest.php
+│   │   │   │   ├── UpdateReviewRequest.php
+│   │   │   │   ├── UploadFileRequest.php
+│   │   │   │   └── UploadImagesRequest.php
+│   │   │   └── Resources
+│   │   │       ├── AIChatResource.php
+│   │   │       ├── CartItemResource.php
+│   │   │       ├── CategoryResource.php
+│   │   │       ├── OrderItemResource.php
+│   │   │       ├── OrderResource.php
+│   │   │       ├── ProductResource.php
+│   │   │       ├── ReviewResource.php
+│   │   │       ├── UserResource.php
+│   │   │       └── VoucherResource.php
+│   │   ├── Mail
+│   │   │   └── ResetPasswordMail.php
+│   │   ├── Models
+│   │   │   ├── AIChat.php
+│   │   │   ├── CartItem.php
+│   │   │   ├── Category.php
+│   │   │   ├── Order.php
+│   │   │   ├── OrderItem.php
+│   │   │   ├── Product.php
+│   │   │   ├── ProductImage.php
+│   │   │   ├── Review.php
+│   │   │   ├── User.php
+│   │   │   └── Voucher.php
+│   │   ├── Providers
+│   │   │   └── AppServiceProvider.php
+│   │   ├── Repositories
+│   │   └── Services
+│   │       ├── AIService.php
+│   │       ├── AdminService.php
+│   │       ├── AuthService.php
+│   │       ├── CartService.php
+│   │       ├── CategoryService.php
+│   │       ├── ChatService.php
+│   │       ├── OrderService.php
+│   │       ├── ProductService.php
+│   │       ├── ProfileService.php
+│   │       ├── ReviewService.php
+│   │       └── VoucherService.php
+│   ├── artisan
+│   ├── bootstrap
+│   │   ├── app.php
+│   │   ├── cache
+│   │   │   ├── .gitignore
+│   │   │   ├── packages.php
+│   │   │   └── services.php
+│   │   └── providers.php
+│   ├── compose.yaml
+│   ├── composer.json
+│   ├── composer.lock
+│   ├── config
+│   │   ├── app.php
+│   │   ├── auth.php
+│   │   ├── cache.php
+│   │   ├── cors.php
+│   │   ├── database.php
+│   │   ├── filesystems.php
+│   │   ├── logging.php
+│   │   ├── mail.php
+│   │   ├── queue.php
+│   │   ├── sanctum.php
+│   │   ├── services.php
+│   │   └── session.php
+│   ├── database
+│   │   ├── .gitignore
+│   │   ├── database.sqlite
+│   │   ├── factories
+│   │   │   ├── CategoryFactory.php
+│   │   │   ├── OrderFactory.php
+│   │   │   ├── ProductFactory.php
+│   │   │   ├── ReviewFactory.php
+│   │   │   ├── UserFactory.php
+│   │   │   └── VoucherFactory.php
+│   │   ├── migrations
+│   │   │   ├── 2024_01_01_000001_create_users_table.php
+│   │   │   ├── 2024_01_01_000002_create_auth_system_tables.php
+│   │   │   ├── 2024_01_01_000003_create_system_infrastructure_tables.php
+│   │   │   ├── 2024_01_01_000004_create_personal_access_tokens_table.php
+│   │   │   ├── 2024_01_01_000005_create_categories_table.php
+│   │   │   ├── 2024_01_01_000006_create_vouchers_table.php
+│   │   │   ├── 2024_01_01_000007_create_products_table.php
+│   │   │   ├── 2024_01_01_000008_create_product_images_table.php
+│   │   │   ├── 2024_01_01_000009_create_orders_table.php
+│   │   │   ├── 2024_01_01_000010_create_order_items_table.php
+│   │   │   ├── 2024_01_01_000011_create_cart_items_table.php
+│   │   │   ├── 2024_01_01_000012_create_reviews_table.php
+│   │   │   ├── 2024_01_01_000013_create_ai_chats_table.php
+│   │   │   └── 2026_06_09_201829_add_slug_to_products_table.php
+│   │   └── seeders
+│   │       ├── CategorySeeder.php
+│   │       ├── DatabaseSeeder.php
+│   │       ├── HaFeatureDemoSeeder.php
+│   │       ├── ProductSeeder.php
+│   │       ├── SpamOrderSeeder.php
+│   │       ├── UserSeeder.php
+│   │       └── VoucherSeeder.php
+│   ├── lang
+│   │   ├── en
+│   │   │   ├── auth.php
+│   │   │   ├── messages.php
+│   │   │   ├── pagination.php
+│   │   │   ├── passwords.php
+│   │   │   └── validation.php
+│   │   └── vi
+│   │       ├── auth.php
+│   │       ├── messages.php
+│   │       └── validation.php
+│   ├── package.json
+│   ├── phpunit.xml
+│   ├── public
+│   │   ├── .htaccess
+│   │   ├── favicon.ico
+│   │   ├── index.php
+│   │   ├── log_dom.php
+│   │   ├── products
+│   │   ├── robots.txt
+│   │   └── storage -> ../storage/app/public
+│   ├── resources
+│   │   ├── css
+│   │   │   └── app.css
+│   │   ├── js
+│   │   │   └── app.js
+│   │   └── views
+│   │       └── welcome.blade.php
+│   ├── routes
+│   │   ├── api.php
+│   │   ├── console.php
+│   │   └── web.php
+│   ├── storage
+│   │   ├── app
+│   │   │   ├── .gitignore
+│   │   │   ├── private
+│   │   │   │   └── .gitignore
+│   │   │   └── public
+│   │   │       ├── .gitignore
+│   │   │       ├── demo
+│   │   │       │   ├── ha-gallery-1.svg
+│   │   │       │   ├── ha-gallery-2.svg
+│   │   │       │   ├── ha-gallery-3.svg
+│   │   │       │   ├── ha-phone-main.svg
+│   │   │       │   └── ha-trash-product.svg
+│   │   │       ├── iphone15.jpg
+│   │   │       ├── products
+│   │   │       │   └── 26
+│   │   │       │       └── cKJYdtajKTMTohn6ChMyEhPayJaKSIOZVdhPsNOS.jpg
+│   │   │       └── uploads
+│   │   │           ├── 4YdRbqrkY9RStPbPj70gvJM4fwCo8pHYb9eKVaLh.jpg
+│   │   │           ├── 6YfBOKi4U1zz8GRWKbf9w26Czv1pMJ7TDt0lUEK1.jpg
+│   │   │           ├── A2TvBU7YF78KnzskByXyB3xfPyNGsfcMt5reB9b7.jpg
+│   │   │           ├── BJ24n2D92PCZnChO8yrmzdKJSLQ6k99X2kRaKcVg.jpg
+│   │   │           ├── I95gbYdkdJffI2rToC9sSAn2QqVC8gzfBQn4nvOy.jpg
+│   │   │           ├── RBSYbfltfJhSloosFNNxQx7Uhv47pkGFFK7AZ2pX.jpg
+│   │   │           ├── YzQb9rDO6qWIUFQsb0bfORC4rWrxLYZ9AxekNHz1.jpg
+│   │   │           └── cIxWLcWukKZjUG4tpDU3jWzmjkqLIywzUfkTB7V1.jpg
+│   │   ├── framework
+│   │   │   ├── .gitignore
+│   │   │   ├── cache
+│   │   │   │   ├── .gitignore
+│   │   │   │   └── data
+│   │   │   │       └── .gitignore
+│   │   │   ├── sessions
+│   │   │   │   └── .gitignore
+│   │   │   ├── testing
+│   │   │   │   ├── .gitignore
+│   │   │   │   └── disks
+│   │   │   │       └── public
+│   │   │   └── views
+│   │   │       ├── .gitignore
+│   │   │       ├── 09ee47cb6b2ead6fe59c09eda6d900b2.php
+│   │   │       ├── 0abdbbe134d6aaacc9f4ad353aa06bed.php
+│   │   │       ├── 0cd3f42f50837d1c0987bdb8d9888ff2.php
+│   │   │       ├── 0d91cc84ca3ef31e353ece892735402b.php
+│   │   │       ├── 0e81f214ee6a987f9ec7252131e9e3c3.php
+│   │   │       ├── 132b834a0a58f1e712afb341f8622879.php
+│   │   │       ├── 136a7c656d1a0ed4e2d0901fc10aa84a.php
+│   │   │       ├── 19d1ca22cd8db231f88e0685e9c3a20e.php
+│   │   │       ├── 1bbc6102c081b21bf9f2f593a9b0e218.php
+│   │   │       ├── 25559de93bb3f75197f65d31431cc854.php
+│   │   │       ├── 25b0d221b0b3a2f9f0f84bf62ea8d4d3.php
+│   │   │       ├── 26328897c1aa10f79e9e2d0d5329b82e.php
+│   │   │       ├── 269b0fee0189e73c1136e66adf27750b.php
+│   │   │       ├── 275c7c02e2528e6029079c885e2d2418.php
+│   │   │       ├── 2b2bbfedbf970ea903ae7bbc02601896.php
+│   │   │       ├── 2c95682db93a22a754fba6196e4e19ce.php
+│   │   │       ├── 2cc7c3dde110959bdd15cda4c1ee092e.php
+│   │   │       ├── 2cd01824a837fcbad18f4451278dfa3d.php
+│   │   │       ├── 346009eadd77def49d90afa4503e0b2d.php
+│   │   │       ├── 412351749b0065bec17f6c86fb176088.php
+│   │   │       ├── 419551074a50fbe34ef86a0e07ca7190.php
+│   │   │       ├── 508f1950e4e8efe8ee069df2bd0b7937.php
+│   │   │       ├── 52ba118bda10936f7635371a76f3e04e.php
+│   │   │       ├── 5d354b2893d50f9829507cb5db08ec2b.php
+│   │   │       ├── 62641c0e2b24ab5a63c567c9101017e5.php
+│   │   │       ├── 6f7d30915538961ccb48e148b50dff1e.php
+│   │   │       ├── 6f8dc7bde97ea89b8aa5e7e3c794d591.php
+│   │   │       ├── 7057838d85b57012ec34d09fdbe471a6.php
+│   │   │       ├── 71ba364a5c3f286cf60758f7ef845a50.php
+│   │   │       ├── 7ab7d5c4b4b95b090d192a15c186d211.php
+│   │   │       ├── 80206a5900f7d9f27081a913e0b15676.php
+│   │   │       ├── 8200d78d1269662c2e1ba8b7bf12d0c9.php
+│   │   │       ├── 87479d0bfcf2a66ac531745de1d5b72e.php
+│   │   │       ├── 8b77322ea40de4645844c2e3622c3810.php
+│   │   │       ├── 8c2da46ec4c83d4f3a4a8806fe1bffb0.php
+│   │   │       ├── 8d82578c6b7f2296eff92bdd034ec3f8.php
+│   │   │       ├── 8ed08a60ce59be4d17cf80adcb71a374.php
+│   │   │       ├── 92b723efff48ff59a4baed38fab1e075.php
+│   │   │       ├── 95e3164b72bdaa6d9137dfc0a56b4aae.php
+│   │   │       ├── 9745f6a6f3fcc1ddd95648c9a006bc71.php
+│   │   │       ├── ac1378a709a2d367e282a448100ce3e0.php
+│   │   │       ├── ac4c02a786db2cf28ea74e9136b850c9.php
+│   │   │       ├── ae6cdecdf98d9f6fdfad3b2ef4a3b844.php
+│   │   │       ├── b0155605d5aee862d80a6a6bf1600a4d.php
+│   │   │       ├── b0160d9ee887b000436a549b742bcf73.php
+│   │   │       ├── bae129cef9e600352d1c88ca55b5c61c.php
+│   │   │       ├── bff06be78bce3fed83e9c65b8001e4b4.php
+│   │   │       ├── c597eabc01b3b531b9dda87258a1b39e.php
+│   │   │       ├── cacad9aa301188bb671ec61542d90cdf.php
+│   │   │       ├── cfb3b0d08523933b25d0e9e498df3235.php
+│   │   │       ├── d1f36e3de69f0a26360ce06ac4b749a6.php
+│   │   │       ├── d54b4b1eb6bf70ee3b6a52e36ce7e503.php
+│   │   │       ├── d8023e53ca38edd3353749f456935467.php
+│   │   │       ├── dd310000961f2d208873a737c27d849a.php
+│   │   │       ├── ed53e6526bfb3c939b903194d34698dc.php
+│   │   │       ├── ed6d86ec5660851da9f9a0dad3f4f308.php
+│   │   │       ├── f188496d5460aa7137f13bb1da4b2db1.php
+│   │   │       ├── f497199d26d29b5bb4d0007bbb834737.php
+│   │   │       └── f905b6dee768cbfc0ad33952a263d185.php
+│   │   └── logs
+│   │       ├── .gitignore
+│   │       └── laravel.log
+│   ├── tests
+│   │   ├── Feature
+│   │   │   ├── AdminSecurityTest.php
+│   │   │   ├── AuthAndProfileTest.php
+│   │   │   ├── CheckoutSecurityTest.php
+│   │   │   ├── MassiveAdminTest.php
+│   │   │   ├── MassiveAuthTest.php
+│   │   │   ├── MassiveCheckoutTest.php
+│   │   │   ├── MassiveProductReviewTest.php
+│   │   │   ├── MassiveProfileTest.php
+│   │   │   ├── TC_AIChatbotTest.php
+│   │   │   ├── TC_AuthUserTest.php
+│   │   │   ├── TC_CartOrderTest.php
+│   │   │   ├── TC_CategoryTest.php
+│   │   │   ├── TC_ForgotPasswordResetTest.php
+│   │   │   ├── TC_MomoPaymentTest.php
+│   │   │   ├── TC_ProductTest.php
+│   │   │   ├── TC_ProfileTest.php
+│   │   │   ├── TC_ReviewTest.php
+│   │   │   └── TC_VoucherTest.php
+│   │   ├── TestCase.php
+│   │   └── Unit
+│   │       └── ProfileServiceTest.php
+│   └── vite.config.js
+├── caythumuc.txt
+└── frontend
+    ├── .env
+    ├── .gitignore
+    ├── .vscode
+    │   ├── extensions.json
+    │   └── settings.json
+    ├── README.md
+    ├── cypress
+    │   ├── e2e
+    │   │   ├── admin_management.cy.js
+    │   │   ├── auth_profile.cy.js
+    │   │   ├── cart_checkout_orders.cy.js
+    │   │   ├── destructive_paths.cy.js
+    │   │   ├── fourteen_test_cases.cy.js
+    │   │   └── sellphones.cy.js
+    │   ├── fixtures
+    │   │   └── example.json
+    │   ├── screenshots
+    │   │   ├── admin_management.cy.js
+    │   │   │   └── 2. Admin Product & Category E2E Tests (Ha's Module - 14 cases) -- TC1 Delete product already deleted - verify 404 response -- before each hook (failed).png
+    │   │   ├── cart_checkout_orders.cy.js
+    │   │   │   ├── 3. Cart, Checkout, Voucher & Orders E2E Tests (Hanh's Module - 14 cases) -- TC10 Faulty admin orders list query parameter (page=abc) (failed).png
+    │   │   │   └── 3. Cart, Checkout, Voucher & Orders E2E Tests (Hanh's Module - 14 cases) -- TC2 Order approval optimistic locking conflict (failed).png
+    │   │   ├── destructive_paths.cy.js
+    │   │   │   ├── 4. Destructive & Unhappy UI Path E2E Tests -- TC10 Product listings - Invalid URL page param handling (failed).png
+    │   │   │   ├── 4. Destructive & Unhappy UI Path E2E Tests -- TC5 Admin Product Form - Text overload checks (failed).png
+    │   │   │   ├── 4. Destructive & Unhappy UI Path E2E Tests -- TC6 Admin Product Form - Whitespace checks (failed).png
+    │   │   │   └── 4. Destructive & Unhappy UI Path E2E Tests -- TC7 Admin Product Form - Full-width number check (failed).png
+    │   │   ├── fourteen_test_cases.cy.js
+    │   │   │   └── 5. Mở rộng 14 Test Cases cho User, Review, Voucher -- TC2 User update optimistic locking conflict (failed).png
+    │   │   └── sellphones.cy.js
+    │   │       └── Sellphones Integration & E2E Testing -- TC3 Should log in successfully, verify profile, and access Admin dashboard if admin (failed).png
+    │   └── support
+    │       ├── commands.js
+    │       └── e2e.js
+    ├── cypress.config.js
+    ├── dist
+    │   ├── assets
+    │   │   ├── AdminDashboardView-B8c8lhNi.js
+    │   │   ├── AdminDashboardView-hhaFKoQp.css
+    │   │   ├── AdminLayout-Bb1t5heY.js
+    │   │   ├── AdminLayout-DfWTgIGm.css
+    │   │   ├── CartView-B2AlSivZ.css
+    │   │   ├── CartView-Besb9A_b.js
+    │   │   ├── CategoryManageView-B42xOcxi.css
+    │   │   ├── CategoryManageView-WsGUIwqK.js
+    │   │   ├── CheckoutSuccessView-BP5nhSv7.css
+    │   │   ├── CheckoutSuccessView-BbLpnOyb.js
+    │   │   ├── CheckoutView-Alktj14O.js
+    │   │   ├── CheckoutView-B6u9V-r-.css
+    │   │   ├── ForgotPasswordView-DBNut_69.css
+    │   │   ├── ForgotPasswordView-DYinZYFg.js
+    │   │   ├── LoginView-KzpKEsvZ.css
+    │   │   ├── LoginView-wwrUiH_p.js
+    │   │   ├── MomoPaymentView-BekFZR-j.js
+    │   │   ├── MomoPaymentView-Cr5EHxEH.css
+    │   │   ├── NotFoundView-BkT6DVsQ.js
+    │   │   ├── OrderDetailView-CQJDxfFM.js
+    │   │   ├── OrderDetailView-ChHnDmhi.css
+    │   │   ├── OrderManagementView-C6nusSeP.css
+    │   │   ├── OrderManagementView-CZew0N8i.js
+    │   │   ├── ProductDetailView-CGq4gq9Y.css
+    │   │   ├── ProductDetailView-DI_gWBo2.js
+    │   │   ├── ProductFormView-B9WHj4Av.js
+    │   │   ├── ProductFormView-C2aFkq03.css
+    │   │   ├── ProductListView-B8SOmGK_.css
+    │   │   ├── ProductListView-BQWesPE0.js
+    │   │   ├── ProductManageView-B-sIphXs.js
+    │   │   ├── ProductManageView-CVjtg_VR.css
+    │   │   ├── ProductTrashView-BkVYLpV4.css
+    │   │   ├── ProductTrashView-D2s_x0T8.js
+    │   │   ├── ProfileView-D2QsYS6F.js
+    │   │   ├── ProfileView-aIa-EHmT.css
+    │   │   ├── RegisterView-5jZk291P.css
+    │   │   ├── RegisterView-RMJJr7jx.js
+    │   │   ├── ResetPasswordView-BPM94Xea.js
+    │   │   ├── ReviewsManageView-Ba7pAc4y.js
+    │   │   ├── ReviewsManageView-E3x4sI8M.css
+    │   │   ├── UserManageView-CEx6uY2-.css
+    │   │   ├── UserManageView-simQ9Xo-.js
+    │   │   ├── _plugin-vue_export-helper-BOai-rQB.js
+    │   │   ├── api-BorLDOJO.js
+    │   │   ├── api-DQaP7Wte.js
+    │   │   ├── i18n-crx8bN3x.js
+    │   │   ├── index-CWg-h-Qb.js
+    │   │   ├── index-wEAYlNhr.css
+    │   │   ├── order-B8QsCVTK.js
+    │   │   ├── product-DuqyBcLi.js
+    │   │   └── useToast-Ds8gqAqC.js
+    │   ├── favicon.ico
+    │   ├── images
+    │   │   └── no_results.png
+    │   └── index.html
+    ├── index.html
+    ├── jsconfig.json
+    ├── package-lock.json
+    ├── package.json
+    ├── postcss.config.js
+    ├── public
+    │   ├── favicon.ico
+    │   └── images
+    │       └── no_results.png
+    ├── src
+    │   ├── App.vue
+    │   ├── api
+    │   │   ├── admin.js
+    │   │   ├── auth.js
+    │   │   ├── cart.js
+    │   │   ├── categories.js
+    │   │   ├── chat.js
+    │   │   ├── index.js
+    │   │   ├── orders.js
+    │   │   ├── products.js
+    │   │   ├── profile.js
+    │   │   ├── reviews.js
+    │   │   └── vouchers.js
+    │   ├── assets
+    │   │   ├── base.css
+    │   │   └── main.css
+    │   ├── components
+    │   │   ├── AdminSidebar.vue
+    │   │   ├── ChatFloating.vue
+    │   │   ├── ProductCard.vue
+    │   │   ├── ToastManager.vue
+    │   │   ├── admin
+    │   │   │   ├── CategoryForm.vue
+    │   │   │   └── CategoryTree.vue
+    │   │   └── layout
+    │   │       ├── AppBackground.vue
+    │   │       ├── AppFooter.vue
+    │   │       └── AppNavbar.vue
+    │   ├── composables
+    │   │   ├── .gitkeep
+    │   │   ├── useCategories.js
+    │   │   ├── useProtection.js
+    │   │   ├── useToast.js
+    │   │   └── useUtils.js
+    │   ├── locales
+    │   │   ├── .gitkeep
+    │   │   ├── en.json
+    │   │   └── vi.json
+    │   ├── main.js
+    │   ├── router
+    │   │   └── index.js
+    │   ├── services
+    │   │   ├── .gitkeep
+    │   │   └── api.js
+    │   ├── stores
+    │   │   ├── .gitkeep
+    │   │   ├── auth.js
+    │   │   ├── cart.js
+    │   │   ├── category.js
+    │   │   ├── chat.js
+    │   │   ├── i18n.js
+    │   │   ├── order.js
+    │   │   ├── product.js
+    │   │   ├── review.js
+    │   │   └── user.js
+    │   ├── utils
+    │   │   ├── .gitkeep
+    │   │   └── url.js
+    │   └── views
+    │       ├── CartView.vue
+    │       ├── CheckoutSuccessView.vue
+    │       ├── CheckoutView.vue
+    │       ├── ForgotPasswordView.vue
+    │       ├── LoginView.vue
+    │       ├── MomoPaymentView.vue
+    │       ├── NotFoundView.vue
+    │       ├── OrderDetailView.vue
+    │       ├── ProductDetailView.vue
+    │       ├── ProductListView.vue
+    │       ├── ProfileView.vue
+    │       ├── RegisterView.vue
+    │       ├── ResetPasswordView.vue
+    │       └── admin
+    │           ├── AdminDashboardView.vue
+    │           ├── AdminLayout.vue
+    │           ├── CategoryManageView.vue
+    │           ├── OrderManagementView.vue
+    │           ├── ProductFormView.vue
+    │           ├── ProductManageView.vue
+    │           ├── ProductTrashView.vue
+    │           ├── ReviewsManageView.vue
+    │           └── UserManageView.vue
+    ├── tailwind.config.js
+    └── vite.config.js
+
+84 directories, 417 files

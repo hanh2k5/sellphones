@@ -2,84 +2,79 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CartItem;
+use App\Exceptions\StockException;
 use App\Services\CartService;
+use App\Http\Resources\CartItemResource;
+use App\Http\Requests\StoreCartItemRequest;
+use App\Http\Requests\UpdateCartItemRequest;
 use Illuminate\Http\Request;
 
 /**
- * SV THỰC HIỆN: PHAN ĐÌNH HẠNH
- * MỤC: 4.1.1 -> 4.1.3 (GIỎ HÀNG)
+ * [Phan Đình Hạnh - 4.1.1 → 4.1.3] CartController
+ * Thin Controller: không có CartItem::where, Product::find, business logic.
+ * CartService@getCartDetails xử lý toàn bộ query và tính toán giỏ hàng.
+ * StockException mang theo stock hiện tại → Controller không cần query thêm.
  */
 class CartController extends Controller
 {
-    protected $cartService;
+    public function __construct(protected CartService $cartService) {}
 
-    public function __construct(CartService $cartService)
-    {
-        $this->cartService = $cartService;
-    }
-
+    /**
+     * GET /cart → lấy giỏ hàng phân trang kèm tổng tiền và tổng số lượng.
+     */
     public function index(Request $request)
     {
-        $query = CartItem::where('user_id', $request->user()->id)
-            ->with('product');
-            
-        // Tính tổng tiền và tổng số lượng dựa trên TOÀN BỘ giỏ hàng
-        $allItems = (clone $query)->get();
-        $totalAmount = $allItems->sum(fn($item) => $item->product->price * $item->quantity);
-        $totalQuantity = $allItems->sum('quantity');
-
-        // Phân trang danh sách hiển thị
-        $items = $query->paginate(10);
+        $result = $this->cartService->getCartDetails($request->user()->id);
+        $items  = $result['items'];
+        $items->setCollection(CartItemResource::collection($items->getCollection())->collection);
 
         return response()->json([
             'items'          => $items,
-            'total_amount'   => $totalAmount,
-            'total_quantity' => $totalQuantity
+            'total_amount'   => $result['totalAmount'],
+            'total_quantity' => $result['totalQuantity'],
         ]);
     }
 
     /**
-     * [Phan Đình Hạnh - 4.1.1] Thêm sản phẩm vào giỏ hàng
-     * [Phan Đình Hạnh - 4.1.2] Ràng buộc: Kiểm tra tồn kho thực tế
+     * [4.1.1] POST /cart → thêm sản phẩm vào giỏ.
+     * StockException chứa stock hiện tại → không cần Product::find trong catch.
      */
-    public function store(Request $request)
+    public function store(StoreCartItemRequest $request)
     {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity'   => 'required|integer|min:1',
-        ]);
-
-        $item = $this->cartService->addToCart(
-            $request->user()->id, 
-            $request->product_id, 
-            $request->quantity
-        );
-
-        return response()->json([
-            'message' => 'Đã thêm vào giỏ hàng!',
-            'item'    => $item->load('product'),
-        ]);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $request->validate(['quantity' => 'required|integer|min:1']);
-
-        $item = $this->cartService->updateQuantity(
-            $request->user()->id, 
-            $id, 
-            $request->quantity
-        );
-
-        return response()->json([
-            'message' => 'Đã cập nhật số lượng!',
-            'item'    => $item->load('product'),
-        ]);
+        try {
+            $item = $this->cartService->addToCart(
+                $request->user()->id,
+                $request->product_id,
+                $request->quantity
+            );
+            return response()->json([
+                'message' => 'Đã thêm sản phẩm vào giỏ hàng.',
+                'item'    => $item->load('product'),
+            ]);
+        } catch (StockException $e) {
+            return response()->json(['message' => $e->getMessage(), 'stock' => $e->getStock()], 422);
+        }
     }
 
     /**
-     * [Phan Đình Hạnh - 4.1.3] Xóa sản phẩm khỏi giỏ hàng
+     * PUT /cart/{id} → cập nhật số lượng một item.
+     * StockException chứa stock hiện tại → không cần CartItem::find + Product::find trong catch.
+     */
+    public function update(UpdateCartItemRequest $request, $id)
+    {
+        try {
+            $item = $this->cartService->updateQuantity($request->user()->id, $id, $request->quantity);
+            return response()->json([
+                'message' => 'Đã cập nhật số lượng!',
+                'item'    => $item->load('product'),
+            ]);
+        } catch (StockException $e) {
+            return response()->json(['message' => $e->getMessage(), 'stock' => $e->getStock()], 422);
+        }
+    }
+
+    /**
+     * [4.1.3] DELETE /cart/{id} → xóa 1 item khỏi giỏ.
      */
     public function destroy(Request $request, $id)
     {
@@ -87,6 +82,9 @@ class CartController extends Controller
         return response()->json(['message' => 'Đã xóa sản phẩm khỏi giỏ hàng.']);
     }
 
+    /**
+     * DELETE /cart/clear → xóa toàn bộ giỏ hàng.
+     */
     public function clear(Request $request)
     {
         $this->cartService->clearCart($request->user()->id);

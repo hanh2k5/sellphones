@@ -28,11 +28,15 @@ export const ordersApi = {
   adminList: (params) => api.get('/admin/orders', { params }),
 
   /**
-   * Duyệt đơn hàng: pending → shipping
-   * Gửi updated_at để backend kiểm tra Optimistic Locking (4.1.8)
+   * Duyệt đơn hàng: pending → confirmed
+   * Gửi status và updated_at để backend kiểm tra Optimistic Locking (4.1.8)
    */
-  adminConfirm: (id, updatedAt) =>
-    api.post(`/admin/orders/${id}/confirm`, { updated_at: updatedAt }),
+  adminConfirm: (id, status, updatedAt) =>
+    api.post(`/admin/orders/${id}/confirm`, { status, updated_at: updatedAt }),
+
+  /** Cập nhật trạng thái chung (ví dụ confirmed → shipping) */
+  adminUpdateStatus: (id, status, lastUpdatedAt) =>
+    api.put(`/admin/orders/${id}/status`, { status, last_updated_at: lastUpdatedAt }),
 
   /** Hoàn thành đơn: shipping → completed */
   adminComplete: (id, updatedAt) =>

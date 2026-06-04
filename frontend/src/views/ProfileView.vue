@@ -165,14 +165,29 @@
           </section>
 
           <section v-if="activeTab === 'orders'" class="rounded-[2rem] border border-slate-200/80 bg-white/95 p-6 shadow-sm md:p-8">
-            <div class="mb-8 flex items-center gap-4 border-b border-slate-100 pb-5">
-              <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+            <div class="mb-6 flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                  <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                </div>
+                <div>
+                  <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-400">{{ i18n.t('nav.my_orders') }}</p>
+                  <h3 class="text-xl font-bold text-slate-900">{{ i18n.t('order.history') }}</h3>
+                </div>
               </div>
-              <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-400">{{ i18n.t('nav.my_orders') }}</p>
-                <h3 class="text-xl font-bold text-slate-900">{{ i18n.t('order.history') }}</h3>
-              </div>
+              <!-- [Phan Đình Hạnh - 4.1.6 STT 2] Bộ lọc trạng thái đơn hàng -->
+              <select
+                v-model="selectedStatus"
+                id="order-status-filter"
+                class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[13px] font-bold text-slate-700 outline-none transition hover:border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">{{ i18n.locale === 'vi' ? 'Tất cả trạng thái' : 'All statuses' }}</option>
+                <option value="pending">{{ i18n.locale === 'vi' ? 'Chờ xác nhận' : 'Pending' }}</option>
+                <option value="confirmed">{{ i18n.locale === 'vi' ? 'Đã xác nhận' : 'Confirmed' }}</option>
+                <option value="shipping">{{ i18n.locale === 'vi' ? 'Đang giao hàng' : 'Shipping' }}</option>
+                <option value="completed">{{ i18n.locale === 'vi' ? 'Hoàn thành' : 'Completed' }}</option>
+                <option value="cancelled">{{ i18n.locale === 'vi' ? 'Đã hủy' : 'Cancelled' }}</option>
+              </select>
             </div>
 
             <div v-if="loadingOrders" class="space-y-4">
@@ -194,7 +209,7 @@
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div class="flex items-center gap-4 flex-1 min-w-0">
                     <div class="relative flex h-16 w-16 md:h-20 md:w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-white p-2">
-                      <img v-if="order.items?.length > 0 && order.items[0].product?.hinh_anh_url" :src="order.items[0].product.hinh_anh_url" class="h-full w-full object-contain" :alt="order.items[0].product_name" />
+                      <img v-if="order.items?.length > 0 && order.items[0].product?.hinh_anh_url" :src="order.items[0].product.hinh_anh_url" class="h-full w-full object-contain" :alt="order.items[0].product_name" @error="onImgError" />
                       <svg v-else class="h-7 w-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                       <div v-if="order.items?.length > 1" class="absolute bottom-0 right-0 rounded-tl-xl bg-blue-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
                         +{{ order.items.length - 1 }}
@@ -255,30 +270,41 @@
 </template>
 
 <script setup>
+// =====================================================================
+// [Nguyễn Duy Khang - 4.2.9] ProfileView — Trang hồ sơ cá nhân
+// LUỒNG 3 TAB:
+//   Tab "Hồ sơ"   → handleUpdateProfile() → PUT /profile → ProfileController@update
+//              → Optimistic Locking (so sánh updated_at) → 409 nếu xung đột 2 tab
+//   Tab "Mật khẩu" → handleUpdatePassword() → PUT /profile/password → ProfileController@updatePassword
+//   Tab "Đơn hàng" → fetchOrders() → GET /orders → OrderController@index (lọc user_id)
+// POLLING: setInterval gọi GET /profile/check-update mỗi 30s
+//   → phát hiện Admin sửa thông tin user từ tab khác → hiện cảnh báo xung đột
+// =====================================================================
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useI18nStore } from '../stores/i18n'
-import api from '../services/api'
+import { ordersApi, profileApi } from '../api'
 import { useToast } from '../composables/useToast'
 import { useUtils } from '../composables/useUtils'
 
-const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
-const i18n = useI18nStore()
+const route     = useRoute()
+const router    = useRouter()
+const authStore = useAuthStore() // Lấy thông tin user hiện tại + cập nhật sau khi sửa
+const i18n  = useI18nStore()
 const toast = useToast()
 const { fmtPrice, fmtDate } = useUtils()
 
-const tabIds = ['profile', 'password', 'orders']
-const activeTab = ref(normalizeTab(route.query.tab))
-const saving = ref(false)
-const loadingOrders = ref(false)
-const errors = ref({})
-const orders = ref([])
+const tabIds    = ['profile', 'password', 'orders']
+const activeTab = ref(normalizeTab(route.query.tab)) // Tab hiện tại (đồng bộ với URL ?tab=...)
+const saving       = ref(false) // true khi đang gọi API lưu → disable nút submit
+const loadingOrders = ref(false) // true khi đang tải danh sách đơn hàng
+const errors    = ref({}) // Lưu lỗi validate từng field
+const orders    = ref([]) // Danh sách đơn hàng của user (hiển ở tab "Đơn hàng")
 const pagination = ref({ current_page: 1, last_page: 1, total: 0 })
+const selectedStatus = ref('') // Bộ lọc trạng thái đơn hàng ('' = Tất cả)
 
-const isMobileContentVisible = ref(false)
+const isMobileContentVisible = ref(false) // Mobile: ẩn/hiện menu hoặc content
 
 function backToMobileMenu() {
   isMobileContentVisible.value = false
@@ -303,19 +329,21 @@ const visiblePages = computed(() => {
   return pages
 })
 
-const realtimeNotice = ref(null)
-let pollingTimer = null
+const realtimeNotice = ref(null) // Thông báo xung đột Optimistic Locking (null = không có)
+let pollingTimer = null           // Lưu ID timer polling để clearInterval khi rời trang
 
+// Form dữ liệu hồ sơ — tự điền từ thông tin user hiện tại
 const form = ref({
-  name: authStore.user?.name || '',
-  email: authStore.user?.email || '',
+  name:    authStore.user?.name    || '',
+  email:   authStore.user?.email   || '',
   address: authStore.user?.address || '',
-  phone: authStore.user?.phone || ''
+  phone:   authStore.user?.phone   || ''
 })
 
+// Form đổi mật khẩu (3 field: mật khẩu cũ, mới, xác nhận)
 const passwordForm = ref({
-  current_password: '',
-  new_password: '',
+  current_password:         '',
+  new_password:             '',
   new_password_confirmation: ''
 })
 
@@ -359,8 +387,9 @@ watch(activeTab, async (tab, previousTab) => {
     router.replace({ query: nextQuery })
   }
 
-  if (tab === 'orders' && !orders.value.length) {
-    await fetchOrders()
+  if (tab === 'orders') {
+    selectedStatus.value = '' // Reset bộ lọc khi chuyển tab
+    await fetchOrders(1)
   }
 })
 
@@ -400,15 +429,18 @@ function clearFieldError(field) {
   }
 }
 
+// GET /orders?page=N&status=... → OrderController@index → lọc theo user_id và trạng thái
 async function fetchOrders(page = 1) {
   loadingOrders.value = true
   try {
-    const res = await api.get('/orders', { params: { page } })
-    orders.value = res.data.data || res.data
+    const params = { page }
+    if (selectedStatus.value) params.status = selectedStatus.value // Bộ lọc trạng thái nếu có
+    const res = await ordersApi.list(params)
+    orders.value     = res.data.data || res.data // Danh sách đơn hàng của user
     pagination.value = res.data.meta || {
       current_page: res.data.current_page || 1,
-      last_page: res.data.last_page || 1,
-      total: res.data.total || orders.value.length
+      last_page:    res.data.last_page    || 1,
+      total:        res.data.total        || orders.value.length
     }
   } catch {
     orders.value = []
@@ -416,6 +448,11 @@ async function fetchOrders(page = 1) {
     loadingOrders.value = false
   }
 }
+
+// Watch bộ lọc trạng thái → tự động gọi lại API mỗi khi chọn khác
+watch(selectedStatus, () => {
+  fetchOrders(1) // Reset về trang 1 khi đổi bộ lọc
+})
 
 function goPage(page) {
   fetchOrders(page)
@@ -484,6 +521,10 @@ async function refreshProfile() {
   }
 }
 
+// Sửa thông tin hồ sơ cá nhân (có Optimistic Locking)
+// PUT /profile → gửi kèm updated_at (timestamp) → ProfileController@update
+//   → ProfileService so sánh updated_at client vs DB
+//   → 409 Conflict nếu bị cập nhật từ tab khác → hiện realtimeNotice yêu cầu tải lại
 async function handleUpdateProfile() {
   errors.value = {}
 
@@ -496,27 +537,28 @@ async function handleUpdateProfile() {
     errors.value.email = [i18n.t('auth.email_error') || 'Vui lòng nhập email']
     hasError = true
   }
-  if (hasError) return
+  if (hasError) return // Lỗi FE → dừng, hiển thị lỗi dưới field
 
   saving.value = true
   try {
-    const res = await api.put('/profile', {
+    const res = await profileApi.update({
       ...form.value,
-      updated_at: authStore.user.updated_at
+      updated_at: authStore.user.updated_at // Gửi timestamp Optimistic Locking
     })
 
-    authStore.user = res.data.user
-    localStorage.setItem('auth_user', JSON.stringify(res.data.user))
+    authStore.user = res.data.user                                // Cập nhật state Pinia
+    localStorage.setItem('auth_user', JSON.stringify(res.data.user)) // Đồng bộ localStorage
     form.value = {
-      name: res.data.user.name || '',
-      email: res.data.user.email || '',
+      name:    res.data.user.name    || '',
+      email:   res.data.user.email   || '',
       address: res.data.user.address || '',
-      phone: res.data.user.phone || ''
+      phone:   res.data.user.phone   || ''
     }
     toast.success(i18n.t('profile.update_success'))
-    realtimeNotice.value = null
+    realtimeNotice.value = null // Xóa thông báo xung đột nếu có
   } catch (e) {
     if (e.response?.status === 409) {
+      // 409 = Optimistic Locking Conflict: ai đó sửa user này trong khi bạn đang sửa
       realtimeNotice.value = e.response.data.message || 'Hồ sơ đã được cập nhật ở nơi khác. Vui lòng tải lại dữ liệu.'
       return
     }
@@ -537,17 +579,17 @@ async function handleUpdateProfile() {
   }
 }
 
+// Đổi mật khẩu: validate FE trước → PUT /profile/password → ProfileController@updatePassword
+// ProfileService: Hash::check(current) → hash::make(new) → UPDATE users.password
 async function handleUpdatePassword() {
   errors.value = {}
 
   let hasError = false
   if (!passwordForm.value.current_password) {
-    errors.value.current_password = [i18n.t('auth.current_password_required')]
-    hasError = true
+    errors.value.current_password = [i18n.t('auth.current_password_required')]; hasError = true
   }
   if (!passwordForm.value.new_password) {
-    errors.value.new_password = [i18n.t('auth.new_password_required')]
-    hasError = true
+    errors.value.new_password = [i18n.t('auth.new_password_required')]; hasError = true
   }
   if (passwordForm.value.new_password && passwordForm.value.new_password !== passwordForm.value.new_password_confirmation) {
     errors.value.new_password_confirmation = [i18n.locale === 'vi' ? 'Mật khẩu xác nhận không khớp' : 'Password confirmation does not match']
@@ -557,16 +599,16 @@ async function handleUpdatePassword() {
 
   saving.value = true
   try {
-    await api.put('/profile/password', passwordForm.value)
+    await profileApi.updatePassword(passwordForm.value)
     toast.success(i18n.t('profile.password_success'))
-    passwordForm.value = { current_password: '', new_password: '', new_password_confirmation: '' }
+    passwordForm.value = { current_password: '', new_password: '', new_password_confirmation: '' } // Reset form
   } catch (e) {
     const serverMessage = e.response?.data?.message || ''
     if (e.response?.status === 422) {
       const data = e.response.data
       errors.value = data.errors || { current_password: [data.message || 'Lỗi xác thực mật khẩu'] }
     } else if (serverMessage.toLowerCase().includes('current') || serverMessage.toLowerCase().includes('hiện tại')) {
-      errors.value.current_password = [serverMessage]
+      errors.value.current_password = [serverMessage] // Mật khẩu cũ sai
     } else if (serverMessage.toLowerCase().includes('new') || serverMessage.toLowerCase().includes('mới')) {
       errors.value.new_password = [serverMessage]
     } else {
@@ -575,6 +617,10 @@ async function handleUpdatePassword() {
   } finally {
     saving.value = false
   }
+}
+
+function onImgError(e) {
+  e.target.src = 'https://placehold.co/400'
 }
 </script>
 

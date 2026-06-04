@@ -41,6 +41,17 @@
       </div>
     </div>
 
+    <!-- Conflict alert (2-tab error) -->
+    <div v-if="conflictMsg" class="admin-card" style="border: 1px solid #fca5a5; background: #fef2f2; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 32px; height: 32px; background: #ef4444; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold;">!</div>
+        <div>
+          <p class="fw-bold text-danger" style="margin: 0; font-size: 14px;">{{ conflictMsg }}</p>
+        </div>
+      </div>
+      <button @click="doFetch(pagination?.current_page || 1)" class="btn-danger" style="background: #ef4444; color: white; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 700;">{{ i18n.t('common.refresh') }}</button>
+    </div>
+
     <!-- Table -->
     <div class="admin-card">
       <div v-if="loading" class="table-empty"><div class="empty-icon">⏳</div><p>{{ i18n.t('common.loading') }}</p></div>
@@ -66,7 +77,7 @@
               <td :data-label="i18n.t('admin.product_image') || 'IMAGE'">
                 <div class="image-wrapper" style="display: flex; justify-content: center;">
                   <div style="width:44px;height:44px;background:#f5f5f7;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-                    <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" style="width:100%;height:100%;object-fit:contain;padding:4px;" />
+                    <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" style="width:100%;height:100%;object-fit:contain;padding:4px;" @error="onImgError" />
                   </div>
                 </div>
               </td>
@@ -85,8 +96,9 @@
               </td>
               <td class="text-right fw-bold text-danger" :data-label="i18n.t('product.price') || 'PRICE'">{{ fmtPrice(p.price) }}</td>
               <td class="text-center" :data-label="i18n.t('product.stock') || 'STOCK'">
-                <div style="display:flex;justify-content:flex-end;width:100%;">
-                  <input type="number" v-model.number="p.stock" @change="quickUpdateStock(p)" class="form-input text-center" style="width: 70px; padding: 4px; font-size: 13px; border-radius: 6px; display: inline-block; font-weight: 700; color: #1d1d1f;" min="0" />
+                <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:4px;">
+                  <input type="number" v-model.number="p.stock" @change="quickUpdateStock(p)" class="form-input text-center" :style="{ width: '70px', padding: '4px', fontSize: '13px', borderRadius: '6px', display: 'inline-block', fontWeight: '700', color: p.stock < 5 ? '#ef4444' : '#1d1d1f', borderColor: p.stock < 5 ? '#fca5a5' : '' }" min="0" />
+                  <span v-if="p.stock < 5" style="font-size: 10px; color: #ef4444; font-weight: 700; background: #fef2f2; padding: 2px 6px; border-radius: 4px; border: 1px solid #fca5a5; white-space: nowrap;">⚠️ Sắp hết hàng</span>
                 </div>
               </td>
               <td :data-label="i18n.t('admin.actions') || 'ACTIONS'">
@@ -132,16 +144,18 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import api from '../../services/api'
+import { categoriesApi } from '../../api'
 import { useToast } from '../../composables/useToast'
 import { useUtils } from '../../composables/useUtils'
 import { useI18nStore } from '../../stores/i18n'
+import { useProductStore } from '../../stores/product'
 import Swal from 'sweetalert2'
 
 const { fmtPrice, getImageUrl } = useUtils()
 const toast = useToast()
 const i18n = useI18nStore()
-const products = ref([])
+const productStore = useProductStore()
+const products = computed(() => productStore.list)
 const categories = ref([])
 const brands = computed(() => categories.value.filter(c => c.parent_id === null && c.id !== 5))
 const accessories = computed(() => categories.value.filter(c => c.parent_id === 5))
@@ -149,24 +163,26 @@ const search = ref('')
 const categoryFilter = ref('')
 const pagination = ref(null)
 const loading = ref(false)
+const conflictMsg = ref('')
 let searchTimeout = null
 
 onMounted(async () => {
   doFetch(1)
   try {
-    const cats = await api.get('/categories')
-    categories.value = cats.data
+    const cats = await categoriesApi.tree({ all: true })
+    categories.value = cats.data.data || cats.data
   } catch (e) {
+
     console.error('Failed to fetch categories', e)
   }
 })
 
 async function doFetch(page = 1) {
   loading.value = true
+  conflictMsg.value = ''
   try {
-    const res = await api.get('/products', { params: { page, search: search.value || undefined, category_id: categoryFilter.value || undefined, show_all: 1 } })
-    products.value = res.data.data
-    pagination.value = res.data.meta || res.data
+    await productStore.fetchProducts({ page, search: search.value || undefined, category_id: categoryFilter.value || undefined, show_all: 1 })
+    pagination.value = productStore.pagination
   } catch { toast.error(i18n.t('common.error')) } finally { loading.value = false }
 }
 
@@ -186,7 +202,7 @@ async function quickUpdateStock(p) {
       hinh_anh: p.hinh_anh || '',
       updated_at: p.updated_at,
     }
-    await api.put(`/admin/products/${p.id}`, payload)
+    await productStore.updateProduct(p.id, payload)
     toast.success(i18n.t('admin.product_saved_success'))
   } catch(e) {
     console.error('[QuickUpdate Error]', e.response?.data)
@@ -207,8 +223,7 @@ async function quickUpdateStock(p) {
 
 async function softDelete(product) {
   const result = await Swal.fire({
-    title: i18n.t('admin.trash_confirm', { name: product.name }),
-    text: 'Sản phẩm sẽ được chuyển vào thùng rác.',
+    title: 'Bạn có chắc chắn muốn xóa sản phẩm này?',
     icon: 'warning',
     showCancelButton: true,
     reverseButtons: true,
@@ -221,19 +236,26 @@ async function softDelete(product) {
   if (!result.isConfirmed) return
 
   try {
-    await api.delete(`/admin/products/${product.id}`, {
-      data: { updated_at: product.updated_at }
-    })
-    products.value = products.value.filter(p => p.id !== product.id)
-    toast.success(i18n.t('admin.moved_to_trash'))
+    await productStore.deleteProduct(product.id, product.updated_at)
+    toast.success('Đã chuyển sản phẩm vào Thùng rác thành công!')
   } catch(e) { 
-    Swal.fire({
-      icon: 'error',
-      title: 'Lỗi!',
-      text: e.response?.data?.message || i18n.t('common.error'),
-      confirmButtonColor: '#e11d48'
-    })
+    if (e.response?.status === 409) {
+      conflictMsg.value = 'Cảnh báo: Dữ liệu đã thay đổi, vui lòng làm mới!'
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: e.response?.data?.message || i18n.t('common.error'),
+        confirmButtonColor: '#e11d48'
+      })
+    }
   }
+}
+
+// [Đặng Văn Hà - 4.3.8] Xử lý hiển thị ảnh mặc định khi ảnh sản phẩm bị lỗi tải (Broken Image)
+function onImgError(e) {
+  e.target.src = 'https://via.placeholder.com/400'
 }
 </script>
 

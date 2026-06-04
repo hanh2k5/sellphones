@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useToast } from '../composables/useToast'
+import { productsApi } from '../api'
 
 
 const router = createRouter({
@@ -50,7 +52,20 @@ const router = createRouter({
         { path: 'categories', name: 'admin-categories', component: () => import('../views/admin/CategoryManageView.vue') },
         { path: 'products', name: 'admin-products', component: () => import('../views/admin/ProductManageView.vue') },
         { path: 'products/create', name: 'admin-product-create', component: () => import('../views/admin/ProductFormView.vue') },
-        { path: 'products/:id/edit', name: 'admin-product-edit', component: () => import('../views/admin/ProductFormView.vue') },
+        {
+          path: 'products/:id/edit',
+          name: 'admin-product-edit',
+          component: () => import('../views/admin/ProductFormView.vue'),
+          async beforeEnter(to) {
+            // [Đặng Văn Hà] Kiểm tra quyền và sự tồn tại của sản phẩm trước khi chuyển trang
+            try {
+              await productsApi.show(to.params.id)
+              return true
+            } catch (e) {
+              return { name: 'not-found' }
+            }
+          }
+        },
         { path: 'products/trash', name: 'admin-product-trash', component: () => import('../views/admin/ProductTrashView.vue') },
         { path: 'reviews', name: 'admin-reviews', component: () => import('../views/admin/ReviewsManageView.vue') },
       ]
@@ -73,6 +88,8 @@ router.beforeEach(async (to) => {
   }
   
   if (to.meta.requiresAdmin && (!token || user?.role !== 'admin')) {
+    const toast = useToast()
+    toast.error('Bạn không có quyền truy cập chức năng này.')
     return { name: 'home' }
   }
   

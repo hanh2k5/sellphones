@@ -6,6 +6,13 @@
         <span class="count-badge">{{ i18n.t('admin.reviews_count', { count: pagination.total || reviews.length }) }}</span>
       </div>
       <div class="filter-row">
+        <button v-for="status in reviewStatusFilters" :key="status.value"
+          @click="filterStatus = status.value; fetchReviews()"
+          class="filter-tab status-filter" :class="{ active: filterStatus === status.value }">
+          {{ status.label }}
+        </button>
+      </div>
+      <div class="filter-row">
         <button v-for="s in [0,1,2,3,4,5]" :key="s"
           @click="filterRating = s; fetchReviews()"
           class="filter-tab" :class="{ active: filterRating === s }">
@@ -104,45 +111,49 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import api from '../../services/api'
+import { ref, computed, onMounted } from 'vue'
 import { useUtils } from '../../composables/useUtils'
 import { useToast } from '../../composables/useToast'
 import { useI18nStore } from '../../stores/i18n'
+import { useReviewStore } from '../../stores/review'
 import Swal from 'sweetalert2'
 
 const { fmtDate } = useUtils()
 const toast = useToast()
 const i18n = useI18nStore()
-const reviews = ref([])
-const loading = ref(false)
+const reviewStore = useReviewStore()
+
+const reviews = computed(() => reviewStore.list)
+const loading = computed(() => reviewStore.loading)
+const pagination = computed(() => reviewStore.pagination)
+
 const filterRating = ref(0)
-const pagination = ref({ current_page: 1, last_page: 1, total: 0 })
+const filterStatus = ref('')
+const reviewStatusFilters = [
+  { value: '', label: i18n.t('admin.all') || 'Tất cả' },
+  { value: 'approved', label: i18n.t('admin.status_approved') || 'Đã duyệt' },
+  { value: 'hidden', label: i18n.t('admin.status_hidden') || 'Đã ẩn' },
+]
 
 onMounted(fetchReviews)
 
 async function fetchReviews(page = 1) {
-  loading.value = true
   try {
     const params = { page }
     if (filterRating.value > 0) params.rating = filterRating.value
-    const res = await api.get('/admin/reviews', { params })
-    reviews.value = res.data.data || []
-    if (res.data.meta) pagination.value = res.data.meta
-    else if (res.data.last_page) pagination.value = res.data
+    if (filterStatus.value) params.status = filterStatus.value
+    await reviewStore.fetchAdminReviews(params)
   } catch (error) {
     console.error('Fetch reviews error:', error)
     toast.error(i18n.t('common.error_occurred'))
-  } finally {
-    loading.value = false
   }
 }
 
 async function moderate(r, status) {
   try {
-    const res = await api.put(`/admin/reviews/${r.id}/moderate`, { status })
+    const updated = await reviewStore.moderateReview(r.id, status)
     // Cập nhật trực tiếp vào object để Vue reactivity nhận biết ngay lập tức
-    r.status = res.data.review.status
+    r.status = updated.status
     toast.success(i18n.t('admin.review_moderated_success'))
   } catch (e) {
     toast.error(e.response?.data?.message || i18n.t('common.error'))
@@ -165,9 +176,8 @@ async function deleteReview(id) {
   if (!result.isConfirmed) return
 
   try {
-    await api.delete(`/admin/reviews/${id}`)
+    await reviewStore.deleteReviewAdmin(id)
     toast.success(i18n.t('admin.review_deleted'))
-    fetchReviews()
   } catch (e) { 
     toast.error(e.response?.data?.message || i18n.t('common.error')) 
   }

@@ -17,4 +17,10 @@ export const authApi = {
 
   /** Lấy thông tin user hiện tại */
   me: () => api.get('/me'),
+
+  /** Quên mật khẩu */
+  forgotPassword: (email) => api.post('/forgot-password', { email }),
+
+  /** Đặt lại mật khẩu */
+  resetPassword: (data) => api.post('/reset-password', data),
 }

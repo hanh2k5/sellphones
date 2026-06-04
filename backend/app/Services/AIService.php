@@ -27,7 +27,10 @@ class AIService
 
     public function chat($userMessage, $history = [])
     {
-        $products = Product::select('id', 'name', 'price', 'stock')->where('stock', '>', 0)->limit(15)->get();
+        $products = Product::select('id', 'name', 'price', 'stock')
+            ->where('is_active', true)
+            ->where('stock', '>', 0)
+            ->get();
         $productContext = "DANH SÁCH SẢN PHẨM:\n";
         foreach ($products as $p) {
             $productContext .= "- ID: {$p->id} | {$p->name} | Giá: " . number_format($p->price) . "đ | Kho: {$p->stock}\n";
@@ -40,6 +43,10 @@ class AIService
             2. LUÔN trả lời bằng ngôn ngữ người dùng đang hỏi (Việt/Anh).
             3. Dùng 'add_to_cart' khi khách muốn mua.
             4. Không chào hỏi lặp lại.
+            5. Chỉ trả lời dựa trên dữ liệu sản phẩm được cung cấp, tuyệt đối không tự bịa thông tin về giá hoặc tình trạng hàng hóa.
+            6. Chỉ gọi hàm thêm giỏ hàng (add_to_cart) khi khách hàng có lệnh yêu cầu mua hoặc thêm vào giỏ hàng rõ ràng.
+            7. Khách hàng không biết ID hay mã sản phẩm của hệ thống. Tuyệt đối KHÔNG bao giờ yêu cầu khách hàng cung cấp 'mã ID' hoặc 'mã sản phẩm'. Chỉ được hỏi khách hàng xác nhận Tên sản phẩm cụ thể (ví dụ: 'Oppo Find N3 512GB').
+            8. Nếu khách hàng yêu cầu thêm vào giỏ hàng mà không ghi rõ tên sản phẩm, hãy dựa vào ngữ cảnh tin nhắn trước đó để biết khách hàng đang nói về sản phẩm nào và gọi hàm thêm sản phẩm đó (hoặc hỏi lại để xác nhận Tên sản phẩm đó nếu chưa chắc chắn).
             Data: $productContext"]]
         ];
 

@@ -22,7 +22,7 @@ class StoreOrderRequest extends FormRequest
         return [
             'voucher_code'     => 'nullable|string|exists:vouchers,code',
             'payment_method'   => 'required|in:cod,momo',
-            'shipping_address' => 'required|string|max:500',
+            'shipping_address' => 'required|string|max:255',
             'receiver_name'    => 'required|string|max:50',
             'phone'            => 'required|string|regex:/^0[0-9]{9}$/',
         ];
@@ -34,8 +34,12 @@ class StoreOrderRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone.regex' => __('validation.phone_regex'),
-            'receiver_name.max' => __('validation.max.string', ['attribute' => __('validation.attributes.receiver_name'), 'max' => 50]),
+            'receiver_name.required' => __('validation.receiver_name_error'),
+            'receiver_name.string'   => __('validation.receiver_name_error'),
+            'receiver_name.max'      => __('validation.receiver_name_error'),
+            'phone.required'         => __('validation.phone_error'),
+            'phone.string'           => __('validation.phone_error'),
+            'phone.regex'            => __('validation.phone_error'),
         ];
     }
 

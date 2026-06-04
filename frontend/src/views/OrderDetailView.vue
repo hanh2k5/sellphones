@@ -12,6 +12,19 @@
         </router-link>
       </div>
 
+      <!-- Báo cáo 4.1.9: Nhãn cảnh báo tranh chấp dữ liệu (Optimistic Locking) cho Khách hàng (User) -->
+      <div v-if="showConflictAlert"
+        class="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-fade-in">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">⚠️</span>
+          <p class="text-xs font-bold text-red-700 m-0">{{ conflictMessage || 'Lỗi: Đơn hàng đã được xử lý bởi người khác!' }}</p>
+        </div>
+        <button @click="refreshOrder"
+          class="shrink-0 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors">
+          {{ i18n.locale === 'vi' ? 'Tải lại' : 'Refresh' }}
+        </button>
+      </div>
+
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Left Column: Timeline & Shipping Info -->
         <div class="lg:col-span-2 space-y-6">
@@ -26,9 +39,21 @@
                   {{ formatDate(orderStore.current.created_at) }}
                 </p>
               </div>
-              <span class="px-5 py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-sm border" :class="statusClass(orderStore.current.status)">
-                {{ statusLabel(orderStore.current.status) }}
-              </span>
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- Nút hủy đơn hàng cho Khách hàng (User) -->
+                <button v-if="['pending', 'confirmed'].includes(orderStore.current.status)"
+                  @click="handleCancelOrder"
+                  class="px-4 py-2 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white rounded-xl text-xs font-bold transition-all border border-rose-200 shadow-sm active:scale-95 flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                  <span>{{ i18n.locale === 'vi' ? 'Hủy đơn hàng' : 'Cancel Order' }}</span>
+                </button>
+
+                <span class="px-5 py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest shadow-sm border" :class="statusClass(orderStore.current.status)">
+                  {{ statusLabel(orderStore.current.status) }}
+                </span>
+              </div>
             </div>
 
             <!-- Timeline -->
@@ -106,10 +131,10 @@
             <div class="divide-y divide-slate-100 mb-6">
               <div v-for="item in orderStore.current.items" :key="item.id" class="py-4 flex gap-4 items-center">
                 <div class="w-14 h-14 md:w-16 md:h-16 bg-slate-50 rounded-xl p-1.5 shrink-0">
-                  <img :src="getImageUrl(item.product?.hinh_anh)" class="w-full h-full object-contain" />
+                  <img :src="getImageUrl(item.product?.hinh_anh)" class="w-full h-full object-contain" @error="onImgError" />
                 </div>
                 <div class="flex-1 min-w-0">
-                  <h4 class="font-bold text-slate-900 text-[13px] md:text-sm truncate">{{ item.product?.name }}</h4>
+                  <h4 class="font-bold text-slate-900 text-[13px] md:text-sm truncate">{{ item.product_name || item.product?.name }}</h4>
                   <p class="text-slate-500 font-medium text-[10px] md:text-[11px] mt-1">{{ i18n.t('order.quantity') }}: <span class="font-bold text-slate-800">{{ item.quantity }}</span></p>
                 </div>
                 <div class="text-right flex flex-col items-end shrink-0">
@@ -146,38 +171,66 @@
         </div>
       </div>
     </div>
+    <div v-else class="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
+      <p class="text-slate-500 font-bold text-lg">Không tìm thấy đơn hàng hoặc đơn hàng không tồn tại.</p>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, computed } from 'vue'
+// =====================================================================
+// [Phan Đình Hạnh - 4.1.8] OrderDetailView — Chi tiết đơn hàng
+// LUỒNG:
+//   Trang load (route /orders/:id) → fetchOrder(id) → GET /orders/{id}
+//   → OrderController@show → kiểm tra quyền sở hữu → trả dữ liệu đơn + items + voucher
+//   Hiển thị: timeline tiến độ đơn, thông tin giao hàng, danh sách sản phẩm, tổng tiền
+//   Nếu đơn = 'completed' → hiện nút "Đánh giá" bên cạnh từng sản phẩm
+// =====================================================================
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useOrderStore } from '../stores/order'
 import { useI18nStore } from '../stores/i18n'
 import { useUtils } from '../composables/useUtils'
+import { useToast } from '../composables/useToast'
+import Swal from 'sweetalert2'
 
-const route = useRoute()
-const orderStore = useOrderStore()
+const route      = useRoute()      // Lấy id đơn hàng từ URL (vd: /orders/42 → route.params.id = 42)
+const orderStore = useOrderStore() // Lưu đơn hàng hiện tại vào orderStore.current
 const i18n = useI18nStore()
+const toast = useToast()
+
+const showConflictAlert = ref(false)
+const conflictMessage = ref('')
+
+async function refreshOrder() {
+  showConflictAlert.value = false
+  conflictMessage.value = ''
+  await orderStore.fetchOrder(route.params.id)
+}
 const { fmtPrice: fmt, getImageUrl, fmtDate: formatDate } = useUtils()
 
+// BƯỚC 1: Load trang → gọi API lấy chi tiết đơn hàng
+// GET /orders/{id} → OrderController@show → kiểm tra quyền (403 nếu không phải chủ đơn)
 onMounted(async () => {
-  await orderStore.fetchOrder(route.params.id)
+  await orderStore.fetchOrder(route.params.id) // Lưu vào orderStore.current
 })
 
+// Dọn dữ liệu khi rời trang → tránh hiển thị đơn cũ khi vào trang chi tiết đơn khác
 onUnmounted(() => {
   orderStore.current = null
 })
 
+// Tính bước hiện tại trên timeline (1=Đã đặt, 2=Đang giao, 3=Hoàn tất, -1=Đã hủy)
 const stepStatus = computed(() => {
   const status = orderStore.current?.status
   if (['cancelled'].includes(status)) return -1
-  if (['pending', 'confirmed'].includes(status)) return 1
-  if (['processing', 'shipping'].includes(status)) return 2
-  if (['shipped', 'completed'].includes(status)) return 3
+  if (['pending', 'confirmed'].includes(status)) return 1  // Chờ duyệt
+  if (['processing', 'shipping'].includes(status)) return 2 // Đang giao
+  if (['shipped', 'completed'].includes(status)) return 3   // Hoàn tất
   return 0
 })
 
+// Tính % thanh tiến trình (dùng để vẽ thanh progress bar trên timeline)
 const progressWidth = computed(() => {
   if (stepStatus.value <= 1) return '0%'
   if (stepStatus.value === 2) return '50%'
@@ -185,10 +238,13 @@ const progressWidth = computed(() => {
   return '0%'
 })
 
+// Tính tổng tiền hàng (chưa giảm) = Σ(price_at_purchase × quantity)
+// Dùng giá lúc đặt hàng (price_at_purchase), không bị ảnh hưởng bởi thay đổi giá sau này
 function calculateSubtotal() {
   return orderStore.current?.items?.reduce((sum, item) => sum + (item.price_at_purchase * item.quantity), 0) || 0
 }
 
+// Map status key sang tên hiển thị (vi/en tùy ngôn ngữ đã chọn)
 function statusLabel(s) {
   return { 
     pending:    i18n.t('order.status_pending') || 'Chờ duyệt', 
@@ -201,6 +257,7 @@ function statusLabel(s) {
   }[s] || s
 }
 
+// Map status key sang class CSS màu sắc cho badge trạng thái
 function statusClass(s) {
   return {
     pending:    'bg-amber-400 text-slate-900 border-amber-500',
@@ -211,6 +268,50 @@ function statusClass(s) {
     completed:  'bg-emerald-500 text-white border-emerald-600',
     cancelled:  'bg-rose-50 text-rose-600 border-rose-100',
   }[s] || 'bg-slate-50 text-slate-600 border-slate-100'
+}
+
+function onImgError(e) {
+  e.target.src = 'https://placehold.co/400'
+}
+
+async function handleCancelOrder() {
+  const result = await Swal.fire({
+    title: i18n.locale === 'vi' ? 'Xác nhận hủy đơn hàng?' : 'Cancel order?',
+    text: i18n.locale === 'vi' ? 'Bạn có chắc chắn muốn hủy đơn hàng này không?' : 'Are you sure you want to cancel this order?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#e11d48',
+    cancelButtonColor: '#94a3b8',
+    confirmButtonText: i18n.locale === 'vi' ? 'Đồng ý hủy' : 'Yes, cancel it',
+    cancelButtonText: i18n.t('common.cancel') || 'Hủy bỏ',
+    reverseButtons: true,
+    customClass: {
+      popup: 'rounded-2xl border-none',
+      confirmButton: 'rounded-xl px-6 py-2.5 font-bold',
+      cancelButton: 'rounded-xl px-6 py-2.5 font-bold'
+    }
+  })
+
+  if (!result.isConfirmed) return
+
+  try {
+    const order = orderStore.current
+    const res = await orderStore.cancelOrder(order.id, order.updated_at)
+    if (res.success) {
+      toast.success(i18n.locale === 'vi' ? 'Hủy đơn hàng thành công.' : 'Order cancelled successfully.')
+      await orderStore.fetchOrder(order.id)
+    } else {
+      if (res.status === 409) {
+        conflictMessage.value = i18n.locale === 'vi' ? 'Lỗi: Đơn hàng đã được xử lý bởi người khác!' : 'Error: Order processed by someone else!'
+        showConflictAlert.value = true
+        toast.warning(conflictMessage.value)
+      } else {
+        toast.error(res.message || i18n.t('common.error'))
+      }
+    }
+  } catch (e) {
+    toast.error(i18n.t('common.error'))
+  }
 }
 </script>
 

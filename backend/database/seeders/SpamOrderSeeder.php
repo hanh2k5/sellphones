@@ -25,7 +25,7 @@ class SpamOrderSeeder extends Seeder
             return;
         }
 
-        $this->command->info("Tạo 50 đơn hàng chờ duyệt cho tài khoản Hạnh...");
+       
 
         for ($i = 0; $i < 50; $i++) {
             $product = $products->random();
@@ -52,6 +52,6 @@ class SpamOrderSeeder extends Seeder
             ]);
         }
 
-        $this->command->info("Đã tạo thành công 50 đơn hàng chờ duyệt!");
+       
     }
 }

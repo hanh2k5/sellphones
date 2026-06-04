@@ -166,7 +166,7 @@ async function handleRegister() {
 
   const result = await authStore.register(nameVal, emailVal, addressVal, phoneVal, passwordVal, passwordConfirmationVal)
   if (result.success) {
-    toast.success(i18nStore.t('auth.register_success'))
+    toast.success('Đăng ký thành công. Vui lòng đăng nhập để tiếp tục.')
     router.push('/login')
   } else {
     if (result.errors) errors.value = result.errors

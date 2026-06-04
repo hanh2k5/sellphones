@@ -13,6 +13,9 @@ export const productsApi = {
   /** Chi tiết sản phẩm */
   show:           (id)      => api.get(`/products/${id}`),
 
+  /** Đánh giá đã duyệt của sản phẩm */
+  reviews:        (id, params) => api.get(`/products/${id}/reviews`, { params }),
+
   /** Danh sách danh mục (cây) */
   categories:     ()        => api.get('/categories'),
 
@@ -28,14 +31,26 @@ export const productsApi = {
   update:         (id, data)=> api.put(`/admin/products/${id}`, data),
 
   /** Xóa mềm */
-  destroy:        (id)      => api.delete(`/admin/products/${id}`),
+  destroy:        (id, params) => api.delete(`/admin/products/${id}`, { params }),
 
   /** Danh sách thùng rác */
-  trash:          ()        => api.get('/admin/products/trash'),
+  trash:          (params)  => api.get('/admin/products/trash', { params }),
 
   /** Khôi phục sản phẩm */
-  restore:        (id)      => api.post(`/admin/products/${id}/restore`),
+  restore:        (id, data)      => api.post(`/admin/products/${id}/restore`, data),
 
   /** Xóa vĩnh viễn */
   forceDelete:    (id)      => api.delete(`/admin/products/${id}/force-delete`),
+
+  /** Kiểm tra xung đột (Optimistic Locking) */
+  checkUpdated:   (id, lastTime) => api.get(`/admin/products/${id}/check-updated`, { params: { last_time: lastTime } }),
+
+  /** Upload ảnh chính */
+  upload:         (formData) => api.post('/admin/upload', formData),
+
+  /** Upload ảnh phụ */
+  uploadImages:   (id, formData) => api.post(`/admin/products/${id}/images`, formData),
+
+  /** Xóa ảnh phụ */
+  deleteImage:    (id, imageId) => api.delete(`/admin/products/${id}/images/${imageId}`),
 }

@@ -9,9 +9,12 @@
 
     <!-- Not found -->
     <div v-else-if="!product" class="not-found-state">
-      <div class="empty-icon">😢</div>
-      <p>{{ i18n.t('product.not_exist') }}</p>
-      <router-link to="/products" class="btn-back-home">{{ i18n.t('product.go_back') }}</router-link>
+      <div class="not-found-card">
+        <div class="empty-icon">🔎</div>
+        <h1 class="not-found-title">{{ i18n.t('product.not_exist') }}</h1>
+        <p class="not-found-desc">Sản phẩm đã bị xóa hoặc không còn tồn tại trong hệ thống.</p>
+        <router-link to="/products" class="btn-back-home">{{ i18n.t('product.go_back') }}</router-link>
+      </div>
     </div>
 
     <!-- Product detail -->
@@ -27,16 +30,17 @@
         <!-- LEFT: Images -->
         <div class="image-gallery">
           <div class="main-image-wrap">
-            <img :src="getImageUrl(activeImage || product.hinh_anh)" :alt="product.name" class="main-img" />
+            <img :src="getImageUrl(activeImage || product.hinh_anh)" :alt="product.name" class="main-img" @error="onImgError" />
           </div>
           <div v-if="product.images?.length" class="thumbnail-list">
             <button @click="activeImage = product.hinh_anh"
               class="thumb-btn" :class="{ active: !activeImage || activeImage === product.hinh_anh }">
-              <img :src="getImageUrl(product.hinh_anh)" />
+              <img :src="getImageUrl(product.hinh_anh)" loading="lazy" @error="onImgError" />
             </button>
             <button v-for="img in product.images" :key="img.id" @click="activeImage = img.image_path"
               class="thumb-btn" :class="{ active: activeImage === img.image_path }">
-              <img :src="getImageUrl(img.image_path)" />
+              <!-- [Đặng Văn Hà] loading=lazy: chỉ tải ảnh khi vào vùng nhìn, tránh tải thừa -->
+              <img :src="getImageUrl(img.image_path)" loading="lazy" @error="onImgError" />
             </button>
           </div>
         </div>
@@ -46,10 +50,16 @@
           <h1 class="product-title">{{ product.name }}</h1>
           
           <div class="rating-row">
-            <div class="stars">
-              <span v-for="i in 5" :key="i" :class="{ active: i <= Math.round(product.avg_rating || 0) }">★</span>
-            </div>
-            <span class="review-count">{{ product.avg_rating ? Number(product.avg_rating).toFixed(1) : '' }} ({{ product.reviews?.length || 0 }} {{ i18n.t('product.reviews') }})</span>
+            <!-- [Đặng Văn Hà] Nếu chưa có đánh giá → hiện nhãn thay vì 0 sao -->
+            <template v-if="productReviews.length > 0 && product.avg_rating">
+              <div class="stars">
+                <StarIcon v-for="i in 5" :key="i" class="star-icon" :class="{ active: i <= Math.round(product.avg_rating) }" />
+              </div>
+              <span class="review-count">{{ Number(product.avg_rating).toFixed(1) }} ({{ productReviews.length }} {{ i18n.t('product.reviews') }})</span>
+            </template>
+            <template v-else>
+              <span class="review-count" style="color:#94a3b8;font-style:italic;">{{ i18n.t('product.no_reviews') || 'Chưa có đánh giá' }}</span>
+            </template>
           </div>
 
           <div class="price-box">
@@ -63,8 +73,8 @@
             <div class="variant-card active">
               <div class="variant-info">
                 <span class="v-name">{{ i18n.t('product.variant_default') }}</span>
-                <span class="v-stock" :class="{ 'out-of-stock': product.stock <= 0 }">
-                  {{ product.stock > 0 ? i18n.t('product.stock_count', { count: product.stock }) : i18n.t('product.out_of_stock') }}
+                <span class="v-stock" :class="{ 'out-of-stock': availableStock <= 0 }">
+                  {{ availableStock > 0 ? i18n.t('product.stock_count', { count: availableStock }) : (product.stock > 0 ? 'Đã thêm tối đa vào giỏ' : i18n.t('product.out_of_stock')) }}
                 </span>
               </div>
             </div>
@@ -73,20 +83,29 @@
           <!-- Desktop Actions -->
           <div class="action-row desktop-only">
             <div class="qty-selector">
-              <button @click="qty = Math.max(1, qty - 1)">−</button>
-              <span>{{ qty }}</span>
-              <button @click="qty = Math.min(product.stock, qty + 1)" :disabled="qty >= product.stock">+</button>
+              <button @click="handleQtyDecrement" :disabled="availableStock === 0">−</button>
+              <input
+                type="number"
+                v-model.number="qty"
+                @keypress="onQtyKeyPress"
+                @input="onQtyInput"
+                @blur="onQtyBlur"
+                min="1"
+                :disabled="availableStock === 0"
+                class="qty-input"
+              />
+              <button @click="handleQtyIncrement" :disabled="qty >= availableStock">+</button>
             </div>
-            <button @click="addToCart" :disabled="product.stock === 0 || adding || buying" class="btn-secondary">
+            <button @click="addToCart" :disabled="availableStock === 0 || !product.is_active || adding || buying" class="btn-secondary">
               <span v-if="adding" class="spinner"></span>
               <template v-else>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                {{ i18n.t('product.add_to_cart') }}
+                <svg v-if="product.is_active && availableStock > 0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                {{ !product.is_active ? 'Sản phẩm hiện không còn kinh doanh.' : (availableStock === 0 ? 'Đã thêm tối đa số lượng vào giỏ' : i18n.t('product.add_to_cart')) }}
               </template>
             </button>
-            <button @click="buyNow" :disabled="product.stock === 0 || adding || buying" class="btn-primary">
+            <button @click="buyNow" :disabled="availableStock === 0 || !product.is_active || adding || buying" class="btn-primary">
               <span v-if="buying" class="spinner"></span>
-              {{ buying ? i18n.t('common.processing') : i18n.t('product.buy_now') }}
+              {{ buying ? i18n.t('common.processing') : (!product.is_active ? 'Sản phẩm hiện không còn kinh doanh.' : (availableStock === 0 ? 'Đã thêm tối đa số lượng vào giỏ' : i18n.t('product.buy_now'))) }}
             </button>
           </div>
 
@@ -96,7 +115,8 @@
               <span class="title-marker"></span>
               <h3 class="section-label">{{ i18n.t('product.description') }}</h3>
             </div>
-            <p class="desc-text">{{ product.description }}</p>
+            <!-- [Đặng Văn Hà] v-html để render HTML từ trình soạn thảo (bold, list,...). Backend đã sanitize script/event trước khi lưu. -->
+            <div class="desc-text" v-html="product.description"></div>
           </div>
         </div>
       </div>
@@ -104,16 +124,26 @@
       <!-- Sticky Mobile Bar -->
       <div class="sticky-mobile-bar">
         <div class="qty-selector-sm">
-          <button @click="qty = Math.max(1, qty - 1)">−</button>
-          <span>{{ qty }}</span>
-          <button @click="qty = Math.min(product.stock, qty + 1)">+</button>
+          <button @click="handleQtyDecrement" :disabled="availableStock === 0">−</button>
+          <input
+            type="number"
+            v-model.number="qty"
+            @keypress="onQtyKeyPress"
+            @input="onQtyInput"
+            @blur="onQtyBlur"
+            min="1"
+            :disabled="availableStock === 0"
+            class="qty-input-sm"
+          />
+          <button @click="handleQtyIncrement" :disabled="qty >= availableStock">+</button>
         </div>
         <div class="mobile-btns">
-          <button @click="addToCart" :disabled="product.stock === 0 || adding || buying" class="btn-cart-sm">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <button @click="addToCart" :disabled="availableStock === 0 || !product.is_active || adding || buying" class="btn-cart-sm" :title="!product.is_active ? 'Sản phẩm hiện không còn kinh doanh.' : (availableStock === 0 ? 'Đã thêm tối đa số lượng' : i18n.t('product.add_to_cart'))">
+            <svg v-if="product.is_active && availableStock > 0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+            <span v-else class="text-[10px] leading-none text-center">{{ !product.is_active ? 'Ngừng kinh doanh' : 'Đã thêm tối đa' }}</span>
           </button>
-          <button @click="buyNow" :disabled="product.stock === 0 || adding || buying" class="btn-buy-sm">
-            {{ i18n.t('product.buy_now') }}
+          <button @click="buyNow" :disabled="availableStock === 0 || !product.is_active || adding || buying" class="btn-buy-sm">
+            {{ !product.is_active ? 'Ngừng kinh doanh' : (availableStock === 0 ? 'Đã thêm tối đa' : i18n.t('product.buy_now')) }}
           </button>
         </div>
       </div>
@@ -145,7 +175,7 @@
           <div class="flex items-center gap-2 mb-4">
             <div class="flex gap-1.5">
               <button v-for="i in 5" :key="i" @click="reviewForm.rating = i" class="text-3xl md:text-4xl transition-transform hover:scale-110 active:scale-125 focus:outline-none">
-                <span :class="i <= reviewForm.rating ? 'text-amber-500' : 'text-slate-200'">★</span>
+                <StarIcon class="w-9 h-9 md:w-10 md:h-10" :class="i <= reviewForm.rating ? 'text-amber-500' : 'text-slate-200'" />
               </button>
             </div>
           </div>
@@ -155,7 +185,7 @@
           <div v-if="reviewError" class="text-sm font-bold text-rose-600 mb-4 bg-rose-50/80 p-3 rounded-xl border border-rose-200 flex items-center gap-2">⚠️ {{ reviewError }}</div>
           
           <div class="flex items-center gap-3">
-            <button @click="submitReview" :disabled="!reviewForm.rating || submittingReview" class="bg-[#0b65ff] hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-bold text-sm disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2">
+            <button @click="submitReview" :disabled="submittingReview" class="bg-[#0b65ff] hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-bold text-sm disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2">
               <span v-if="submittingReview" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
               {{ submittingReview ? i18n.t('common.saving') : (editingReviewId ? i18n.t('common.update') : i18n.t('common.submit_review')) }}
             </button>
@@ -186,8 +216,8 @@
         </div>
 
         <!-- Reviews List -->
-        <div v-if="product.reviews?.length" class="space-y-6">
-          <div v-for="review in product.reviews" :key="review.id" class="break-words">
+        <div v-if="productReviews.length" class="space-y-6">
+          <div v-for="review in productReviews" :key="review.id" class="break-words">
             
             <div class="flex justify-between items-start mb-2 gap-4">
               <div class="flex gap-3">
@@ -204,12 +234,12 @@
                     </button>
                   </h4>
                   <div class="flex mt-0.5 text-xs">
-                    <span v-for="i in 5" :key="i" :class="i <= review.rating ? 'text-amber-500' : 'text-slate-200'">★</span>
+                    <StarIcon v-for="i in 5" :key="i" class="w-3.5 h-3.5" :class="i <= Number(review.rating) ? 'text-amber-500' : 'text-slate-200'" />
                   </div>
                 </div>
               </div>
               <span class="text-[12px] text-slate-500 font-medium">
-                {{ fmtDate(review.created_at) }}
+                {{ relativeReviewTime(review.created_at) }}
               </span>
             </div>
             
@@ -227,7 +257,13 @@
             </div>
           </div>
         </div>
-        <div v-else class="text-center py-20 backdrop-blur-xl bg-white/40 border border-white rounded-[3rem] shadow-sm">
+        <div v-if="canLoadMoreReviews" class="text-center pt-8">
+          <button @click="loadMoreReviews" :disabled="productStore.reviewsLoading" class="load-more-reviews">
+            {{ productStore.reviewsLoading ? i18n.t('common.loading') : (i18n.locale === 'vi' ? 'Xem thêm đánh giá' : 'Load more reviews') }}
+          </button>
+        </div>
+
+        <div v-else-if="!productReviews.length" class="text-center py-20 backdrop-blur-xl bg-white/40 border border-white rounded-[3rem] shadow-sm">
           <div class="text-6xl mb-4">💬</div>
           <p class="text-xl font-bold text-slate-800">{{ i18n.t('product.no_reviews') || 'Chưa có đánh giá nào.' }}</p>
           <p class="text-slate-500 mt-1 font-medium">{{ i18n.t('product.be_the_first') || 'Hãy là người đầu tiên chia sẻ cảm nhận!' }}</p>
@@ -238,76 +274,131 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+// =====================================================================
+// [Đặng Văn Hà - 4.3.9] ProductDetailView — Trang chi tiết sản phẩm
+// LUỒNG TỔNG QUÁT:
+//   1. Trang load → gọi GET /products/{id} → ProductController@show → trả SP + reviews
+//   2. User bấm "Thêm vào giỏ" → addToCart() → cartStore → POST /cart → CartController
+//   3. User bấm "Mua ngay" → buyNow() → addToCart() → chuyển sang /cart
+//   4. User gửi đánh giá → submitReview() → POST /products/{id}/reviews → ReviewController
+// =====================================================================
+import { ref, computed, onMounted, h, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { productsApi } from '../api'
-import api from '../services/api'
+import { productsApi, ordersApi, reviewsApi } from '../api'
 import { useCartStore } from '../stores/cart'
 import { useAuthStore } from '../stores/auth'
 import { useI18nStore } from '../stores/i18n'
+import { useProductStore } from '../stores/product'
 import { useToast } from '../composables/useToast'
 import { useUtils } from '../composables/useUtils'
 import Swal from 'sweetalert2'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import 'dayjs/locale/vi'
 
-const { fmtPrice, fmtDate, getImageUrl } = useUtils()
-const route = useRoute()
-const router = useRouter()
-const cartStore = useCartStore()
-const authStore = useAuthStore()
+dayjs.extend(relativeTime)
+
+const StarIcon = {
+  inheritAttrs: false,
+  setup(_, { attrs }) {
+    return () => h('svg', {
+      ...attrs,
+      viewBox: '0 0 24 24',
+      'aria-hidden': 'true',
+    }, [
+      h('path', {
+        fill: 'currentColor',
+        d: 'M12 2.5l2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.52l-5.88 3.09 1.12-6.55-4.76-4.64 6.58-.96L12 2.5z',
+      }),
+    ])
+  },
+}
+
+const { fmtPrice, getImageUrl } = useUtils()
+const route = useRoute()   // Lấy id sản phẩm từ URL (vd: /products/42 → route.params.id = 42)
+const router = useRouter() // Dùng để điều hướng trang (vd: push sang /cart)
+const cartStore = useCartStore()   // Pinia store giỏ hàng — quản lý state items, tổng tiền
+const authStore = useAuthStore()   // Pinia store xác thực — kiểm tra isLoggedIn, user.id
 const i18n = useI18nStore()
+const productStore = useProductStore()
 const toast = useToast()
 
-const product = ref(null)
-const loading = ref(true)
-const activeImage = ref(null)
-const qty = ref(1)
-const adding = ref(false)
-const buying = ref(false)
-
-const reviewForm = ref({ rating: 0, comment: '', order_id_input: null })
-const submittingReview = ref(false)
-const reviewError = ref('')
-const eligibleOrderId = ref(null)
-const editingReviewId = ref(null)
-const hasPendingOrder = ref(false)
-
-const userReview = computed(() => {
-  if (!product.value || !authStore.user) return null
-  return product.value.reviews?.find(r => r.user_id === authStore.user.id)
+const product    = ref(null)   // Lưu toàn bộ dữ liệu SP trả về từ API (name, price, stock, reviews,...)
+const loading    = ref(true)   // true khi đang gọi API → hiện skeleton loading
+const activeImage = ref(null)  // Đường dẫn ảnh đang hiển thị to trong gallery
+const qty    = ref(1)          // Số lượng user chọn mua (1 → product.stock)
+const availableStock = computed(() => {
+  if (!product.value) return 0
+  const inCart = authStore.isLoggedIn && cartStore.items
+    ? cartStore.items.find(item => item.product_id === product.value.id)?.quantity || 0
+    : 0
+  return Math.max(0, product.value.stock - inCart)
 })
 
+watch(availableStock, (newVal) => {
+  if (newVal === 0) {
+    qty.value = 0
+  } else if (qty.value > newVal) {
+    qty.value = newVal
+  } else if (qty.value <= 0 && newVal > 0) {
+    qty.value = 1
+  }
+}, { immediate: true })
+
+const adding = ref(false)      // true khi đang gọi API thêm giỏ → disable nút để chống double-click
+const buying = ref(false)      // true khi đang gọi API mua ngay → disable nút
+
+const reviewForm = ref({ rating: 0, comment: '', order_id_input: null }) // Dữ liệu form đánh giá
+const submittingReview = ref(false) // true khi đang gửi đánh giá → disable nút submit
+const reviewError = ref('')         // Thông báo lỗi validation khi gửi đánh giá
+const eligibleOrderId = ref(null)   // ID đơn hàng "completed" của user → đủ điều kiện đánh giá
+const editingReviewId = ref(null)   // ID review đang được sửa (null = đang tạo mới)
+const hasPendingOrder = ref(false)  // true nếu user có đơn đang xử lý nhưng chưa hoàn tất
+const productReviews = computed(() => productStore.reviewList || [])
+const reviewPagination = computed(() => productStore.reviewPagination || {})
+const canLoadMoreReviews = computed(() => Boolean(reviewPagination.value.links?.next))
+
+// Tìm review của user hiện tại trong danh sách reviews của SP (để ẩn/hiện form)
+const userReview = computed(() => {
+  if (!authStore.user) return null
+  return productReviews.value.find(r => r.user_id === authStore.user.id)
+})
+
+// BƯỚC 1: Load trang → gọi API lấy chi tiết SP
+// GET /products/{id} → ProductController@show → ProductService (eager load reviews đã duyệt)
 onMounted(async () => {
   try {
-    const res = await productsApi.show(route.params.id)
-    product.value = res.data
-    activeImage.value = res.data.hinh_anh
+    const res = await productsApi.show(route.params.id) // Gọi GET /products/{id}
+    product.value = { ...res.data, reviews: [] }       // Review được tải riêng bằng API phân trang.
+    productStore.setCurrentProduct(res.data)
+    activeImage.value = res.data.hinh_anh // Mặc định hiện ảnh đại diện
+    await productStore.fetchProductReviews(res.data.id)
     if (authStore.isLoggedIn) {
-      await findEligibleOrder()
+      await findEligibleOrder() // Nếu đã đăng nhập → kiểm tra xem có đơn đủ điều kiện đánh giá không
     }
   } catch {
-    product.value = null
+    product.value = null // Lỗi 404 / 500 → hiện màn hình "không tìm thấy SP"
   } finally {
-    loading.value = false
+    loading.value = false // Tắt skeleton loading dù thành công hay thất bại
   }
 })
 
+// Kiểm tra xem user có đơn hàng đã "completed" chứa SP này không → mới được đánh giá
+// GET /orders?status=completed&product_id=X → OrderController@index → lọc theo user_id
 async function findEligibleOrder() {
   try {
-    const res = await api.get('/orders', { 
-      params: { status: 'completed', product_id: product.value?.id } 
+    const res = await ordersApi.list({ 
+      status: 'completed', product_id: product.value?.id 
     })
     const orders = res.data.data || []
     const completedOrder = orders.find(o => o.status === 'completed')
     if (completedOrder) {
-      eligibleOrderId.value = completedOrder.id
+      eligibleOrderId.value = completedOrder.id // Lưu ID đơn đủ điều kiện → hiện form đánh giá
       return
     }
-
-    const resAll = await api.get('/orders', { 
-      params: { product_id: product.value?.id } 
-    })
-    const allOrders = resAll.data.data || []
-    hasPendingOrder.value = allOrders.length > 0
+    // Không có đơn hoàn tất → kiểm tra xem có đơn đang xử lý không (để hiện thông báo chờ)
+    const resAll = await ordersApi.list({ product_id: product.value?.id })
+    hasPendingOrder.value = (resAll.data.data || []).length > 0 // true = có đơn nhưng chưa xong
   } catch {}
 }
 
@@ -322,57 +413,78 @@ function ratingLabel(r) {
   return labels[r] || ''
 }
 
+function relativeReviewTime(date) {
+  if (!date) return ''
+  const locale = i18n.locale === 'vi' ? 'vi' : 'en'
+  return dayjs(date).locale(locale).fromNow()
+}
+
+// BƯỚC 2A: User bấm "Thêm vào giỏ hàng"
+// → addToCart() → cartStore.addToCart() → POST /cart → CartController@store → ghi vào bảng cart_items
 async function addToCart() {
   adding.value = true
-  const res = await cartStore.addToCart(product.value.id, qty.value)
+  const res = await cartStore.addToCart(product.value.id, qty.value) // Gọi qua Pinia store
   adding.value = false
   if (res.success) {
-    toast.success(i18n.t('common.add_success'), {
-      label: i18n.t('product.view_cart'),
-      url: '/cart'
-    })
-    // Deduct stock locally for immediate feedback, but clamp to 0 to avoid negative display
-    product.value.stock = Math.max(0, product.value.stock - qty.value)
-    qty.value = 1 // Reset quantity after successful addition
+    toast.success(i18n.t('common.add_success'), { label: i18n.t('product.view_cart'), url: '/cart' })
+    qty.value = availableStock.value > 0 ? 1 : 0
   } else {
     toast.error(res.message || i18n.t('common.error'))
+    if (res.stock !== undefined) {
+      product.value.stock = res.stock
+      productStore.setCurrentProduct(product.value)
+    }
   }
 }
 
+// BƯỚC 2B: User bấm "Mua ngay"
+// → buyNow() → addToCart() trước → rồi push sang /cart để checkout
 async function buyNow() {
   buying.value = true
   const res = await cartStore.addToCart(product.value.id, qty.value)
   buying.value = false
-  if (res.success) router.push('/cart')
+  if (res.success) {
+    router.push('/cart') // Sau khi thêm giỏ thành công → điều hướng sang giỏ hàng
+  } else {
+    toast.error(res.message || i18n.t('common.error'))
+    if (res.stock !== undefined) {
+      product.value.stock = res.stock
+      productStore.setCurrentProduct(product.value)
+    }
+  }
 }
 
+// BƯỚC 4: User gửi đánh giá (rating + comment)
+// Điều kiện: phải có eligibleOrderId (đơn hàng đã "completed" chứa SP này)
 async function submitReview() {
   reviewError.value = ''
-  if (!reviewForm.value.rating) { reviewError.value = i18n.t('product.select_rating_error') || 'Vui lòng chọn số sao!'; return }
-  const orderId = eligibleOrderId.value || reviewForm.value.order_id_input
+  if (reviewForm.value.rating < 1) { reviewError.value = i18n.t('product.select_rating_error') || 'Vui lòng chọn số sao'; return }
+  const orderId = eligibleOrderId.value || reviewForm.value.order_id_input // ID đơn để backend xác minh
   if (!orderId) { reviewError.value = i18n.t('product.enter_order_id_error') || 'Vui lòng nhập Order ID!'; return }
 
   submittingReview.value = true
   try {
     if (editingReviewId.value) {
-      const res = await api.put(`/reviews/${editingReviewId.value}`, {
+      // SỬA đánh giá: PUT /reviews/{id} → ReviewController@update
+      const res = await reviewsApi.update(editingReviewId.value, {
         rating: reviewForm.value.rating,
         comment: reviewForm.value.comment,
       })
-      const idx = product.value.reviews.findIndex(r => r.id === editingReviewId.value)
-      if (idx !== -1) product.value.reviews[idx] = res.data.review
-      product.value.avg_rating = res.data.avg_rating
+      productStore.replaceProductReview(product.value.id, res.data.review, res.data.avg_rating)
+      syncReviewSummary(res.data.avg_rating)
       toast.success(i18n.t('common.review_update_success'))
       cancelEdit()
     } else {
-      const res = await api.post(`/products/${product.value.id}/reviews`, {
+      // TẠO MỚI đánh giá: POST /products/{id}/reviews → ReviewController@store
+      // Backend kiểm tra: đơn hàng order_id có thuộc user này không, có status=completed không
+      const res = await reviewsApi.create(product.value.id, {
         order_id: orderId,
         rating: reviewForm.value.rating,
         comment: reviewForm.value.comment,
       })
-      product.value.reviews.unshift(res.data.review)
-      product.value.avg_rating = res.data.avg_rating
-      reviewForm.value = { rating: 0, comment: '', order_id_input: null }
+      productStore.addProductReview(product.value.id, res.data.review, res.data.avg_rating)
+      syncReviewSummary(res.data.avg_rating)
+      reviewForm.value = { rating: 0, comment: '', order_id_input: null } // Reset form
       toast.success(i18n.t('common.review_success'))
     }
   } catch (e) {
@@ -383,9 +495,25 @@ async function submitReview() {
   }
 }
 
+async function loadMoreReviews() {
+  if (!product.value || !canLoadMoreReviews.value || productStore.reviewsLoading) return
+  const currentPage = reviewPagination.value.meta?.current_page || 1
+  await productStore.fetchProductReviews(product.value.id, {
+    page: currentPage + 1,
+    append: true,
+  })
+}
+
+function syncReviewSummary(avgRating) {
+  if (!product.value) return
+  const normalizedAvg = avgRating ?? 0
+  product.value.avg_rating = normalizedAvg
+  productStore.syncProductReviewSummary(product.value.id, normalizedAvg, productReviews.value)
+}
+
 function editReview(review) {
   editingReviewId.value = review.id
-  reviewForm.value = { rating: review.rating, comment: review.comment, order_id_input: review.order_id }
+  reviewForm.value = { rating: review.rating, comment: review.comment, order_id_input: null }
   const target = document.getElementById('reviews')
   if (target) {
     // Increase offset to account for taller mobile header
@@ -415,12 +543,12 @@ async function deleteReview(review) {
   if (!result.isConfirmed) return
 
   try {
-    const res = await api.delete(`/reviews/${review.id}`)
-    product.value.reviews = product.value.reviews.filter(r => r.id !== review.id)
-    
+    const res = await reviewsApi.delete(review.id)
+    productStore.removeProductReview(product.value.id, review.id, res.data?.avg_rating)
+
     // Update avg_rating if the backend returns it
     if (res.data && res.data.avg_rating !== undefined) {
-      product.value.avg_rating = res.data.avg_rating
+      syncReviewSummary(res.data.avg_rating)
     }
     
     // Reset edit form if the deleted review was currently being edited
@@ -439,12 +567,109 @@ async function deleteReview(review) {
   }
 }
 
-function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }
+// [Đặng Văn Hà - 4.3.11] Xử lý hiển thị ảnh mặc định khi ảnh sản phẩm bị lỗi tải (Broken Image)
+function onImgError(e) { e.target.src = 'https://placehold.co/400' }
+
+function handleQtyDecrement() {
+  if (availableStock.value === 0) {
+    qty.value = 0
+    return
+  }
+  qty.value = Math.max(1, qty.value - 1)
+}
+
+function handleQtyIncrement() {
+  if (qty.value < availableStock.value) {
+    qty.value++
+  }
+}
+
+function onQtyKeyPress(e) {
+  if (e.key === '-' || e.key === 'e' || e.key === '.' || e.key === ',' || isNaN(Number(e.key))) {
+    e.preventDefault()
+  }
+}
+
+function onQtyInput() {
+  if (availableStock.value === 0) {
+    qty.value = 0
+    return
+  }
+  if (qty.value !== '' && (isNaN(qty.value) || qty.value < 1)) {
+    qty.value = 1
+    toast.error('Số lượng phải từ 1 trở lên.')
+  }
+  if (qty.value > availableStock.value) {
+    qty.value = Math.max(1, availableStock.value)
+  }
+}
+
+function onQtyBlur() {
+  if (availableStock.value === 0) {
+    qty.value = 0
+    return
+  }
+  if (qty.value === '' || isNaN(qty.value) || qty.value < 1) {
+    qty.value = 1
+    toast.error('Số lượng phải từ 1 trở lên.')
+  }
+  if (qty.value > availableStock.value) {
+    qty.value = Math.max(1, availableStock.value)
+  }
+}
 </script>
 
 <style scoped>
-.product-detail-container { 
-  max-width: 1100px; margin: 0 auto; padding: 20px 20px 100px; position: relative; 
+.product-detail-container {
+  max-width: 1100px; margin: 0 auto; padding: 20px 20px 100px; position: relative;
+}
+.not-found-state {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px 80px;
+}
+.not-found-card {
+  width: min(560px, 100%);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 32px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+  padding: 44px 32px;
+  text-align: center;
+}
+.not-found-title {
+  font-size: 30px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 12px;
+  letter-spacing: -0.03em;
+}
+.not-found-desc {
+  font-size: 15px;
+  line-height: 1.75;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0 0 26px;
+}
+.btn-back-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 22px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.22);
+  transition: all 0.25s ease;
+}
+.btn-back-home:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 34px rgba(37, 99, 235, 0.28);
 }
 .detail-layout { display: flex; flex-direction: column; gap: 20px; }
 
@@ -496,9 +721,29 @@ function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }
 .product-info { padding-top: 10px; }
 .product-title { font-size: 36px; font-weight: 900; color: #1e293b; margin-bottom: 8px; line-height: 1.1; letter-spacing: -0.02em; }
 .rating-row { display: flex; align-items: center; gap: 10px; margin-bottom: 25px; }
-.stars span { color: #e2e8f0; font-size: 18px; text-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.stars span.active { color: #f59e0b; }
+.stars { display: inline-flex; gap: 2px; align-items: center; }
+.stars .star-icon { width: 18px; height: 18px; color: #e2e8f0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05)); }
+.stars .star-icon.active { color: #f59e0b; }
 .review-count { font-size: 14px; font-weight: 700; color: #64748b; }
+.load-more-reviews {
+  border: 1px solid #dbeafe;
+  background: #fff;
+  color: #2563eb;
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+  transition: all 0.2s ease;
+}
+.load-more-reviews:hover:not(:disabled) {
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+.load-more-reviews:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 .price-box { margin-bottom: 35px; }
 .current-price { font-size: 42px; font-weight: 900; color: #1e293b; display: block; margin-bottom: 4px; }
@@ -624,4 +869,47 @@ function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }
 /* Animations */
 .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.qty-input {
+  width: 50px;
+  text-align: center;
+  font-weight: 800;
+  color: #1e293b;
+  font-size: 16px;
+  border: none;
+  background: transparent;
+  outline: none;
+  -moz-appearance: textfield;
+}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.qty-input-sm {
+  width: 40px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 15px;
+  border: none;
+  background: transparent;
+  outline: none;
+  -moz-appearance: textfield;
+}
+.qty-input-sm::-webkit-outer-spin-button,
+.qty-input-sm::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.btn-primary:disabled, .btn-secondary:disabled, .btn-cart-sm:disabled, .btn-buy-sm:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+  background: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
+}
 </style>

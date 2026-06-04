@@ -336,7 +336,7 @@ class MassiveAuthTest extends TestCase
         // Account enumeration prevention is usually done via generic error messages.
         $res1 = $this->postJson('/api/login', ['email' => 'nonexistent@example.com', 'password' => 'wrongpass']);
         $res2 = $this->postJson('/api/login', ['email' => 'test@example.com', 'password' => 'wrongpass']);
-        $this->assertNotEquals($res1->json('message'), $res2->json('message'));
+        $this->assertEquals($res1->json('message'), $res2->json('message'));
     }
 
     public function test_hacker_sql_injection_order_by_clause_in_login() {

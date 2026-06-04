@@ -1,10 +1,30 @@
 <template>
   <div class="admin-page">
     <div class="admin-toolbar" style="justify-content: space-between;">
-      <h1 class="font-outfit" style="font-size: 24px; font-weight: 800;">🗑️ {{ i18n.t('admin.trash_title') }}</h1>
+      <h1 class="font-outfit" style="font-size: 24px; font-weight: 800; color: #dc2626;">🗑️ {{ i18n.t('admin.trash_title') }} ({{ trashedProducts.length }})</h1>
       <router-link to="/admin/products" class="btn-secondary" style="text-decoration: none;">
         ← {{ i18n.t('admin.back_to_list') }}
       </router-link>
+    </div>
+
+    <!-- Red warning banner for conflict -->
+    <div v-if="conflictMsg" class="trash-banner-conflict" style="background: #fef2f2; border: 1px solid #fca5a5; margin-bottom: 24px; border-radius: 16px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 32px; height: 32px; background: #ef4444; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold;">!</div>
+        <div>
+          <p class="fw-bold text-danger" style="margin: 0; font-size: 14px;">{{ conflictMsg }}</p>
+        </div>
+      </div>
+      <button @click="doFetch(pagination?.current_page || 1)" class="btn-danger" style="background: #ef4444; color: white; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 700;">{{ i18n.t('common.refresh') }}</button>
+    </div>
+
+    <!-- Red warning banner for Trash area -->
+    <div class="trash-banner">
+      <div class="trash-banner-icon">⚠️</div>
+      <div class="trash-banner-content">
+        <h4 class="trash-banner-title">{{ i18n.t('admin.trash_warning_title') }}</h4>
+        <p class="trash-banner-desc">{{ i18n.t('admin.trash_warning_desc') }}</p>
+      </div>
     </div>
 
     <div class="admin-card premium-card">
@@ -27,7 +47,7 @@
               <td :data-label="i18n.t('admin.product_image') || 'IMAGE'">
                 <div class="image-wrapper" style="display: flex; justify-content: center;">
                   <div class="product-thumb">
-                    <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" />
+                    <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" @error="onImgError" />
                   </div>
                 </div>
               </td>
@@ -98,28 +118,34 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import api from '../../services/api'
+import { ref, onMounted, computed } from 'vue'
+import { productsApi } from '../../api'
 import { useToast } from '../../composables/useToast'
 import { useI18nStore } from '../../stores/i18n'
 import { useUtils } from '../../composables/useUtils'
+import { useProductStore } from '../../stores/product'
 
 const toast = useToast()
 const i18n = useI18nStore()
 const { getImageUrl, fmtPrice } = useUtils()
-const trashedProducts = ref([])
+const productStore = useProductStore()
+
+const trashedProducts = computed(() => productStore.trashList)
 const forceDeleteProduct = ref(null)
 const pagination = ref(null)
+const conflictMsg = ref('')
 
 onMounted(() => doFetch(1))
 
 async function doFetch(page = 1) {
+  conflictMsg.value = ''
   try {
-    const res = await api.get('/admin/products/trash', { params: { page } })
-    trashedProducts.value = res.data.data || []
+    const res = await productsApi.trash({ page })
+    productStore.trashList = res.data.data || []
+
     pagination.value = res.data.meta || res.data
   } catch (e) {
-    trashedProducts.value = []
+    productStore.trashList = []
     toast.error(i18n.t('common.error'))
   }
 }
@@ -130,32 +156,59 @@ function goPage(page) {
 }
 
 async function restoreProduct(product) {
+  conflictMsg.value = ''
   try {
-    await api.post(`/admin/products/${product.id}/restore`)
-    trashedProducts.value = trashedProducts.value.filter(p => p.id !== product.id)
-    toast.success(i18n.t('admin.restore_success'))
+    await productStore.restoreProduct(product.id, product.updated_at)
+    productStore.trashList = productStore.trashList.filter(p => p.id !== product.id)
+    await productStore.fetchProducts()
+    toast.success(`Sản phẩm ${product.name} đã được đưa trở lại danh sách kinh doanh`)
   } catch (e) {
-    toast.error(e.response?.data?.message || i18n.t('common.error'))
+    if (e.response?.status === 409) {
+      conflictMsg.value = 'Dữ liệu đã thay đổi, vui lòng làm mới!'
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      toast.error(e.response?.data?.message || i18n.t('common.error'))
+    }
   }
 }
 
 function confirmForceDelete(product) { forceDeleteProduct.value = product }
 
 async function doForceDelete() {
+  conflictMsg.value = ''
   try {
-    await api.delete(`/admin/products/${forceDeleteProduct.value.id}/force-delete`)
-    trashedProducts.value = trashedProducts.value.filter(p => p.id !== forceDeleteProduct.value.id)
+    await productStore.forceDeleteProduct(forceDeleteProduct.value.id)
+    productStore.trashList = productStore.trashList.filter(p => p.id !== forceDeleteProduct.value.id)
     toast.success(i18n.t('admin.force_delete_success'))
   } catch (e) {
-    toast.error(e.response?.data?.message || i18n.t('common.error'))
+    if (e.response?.status === 409) {
+      conflictMsg.value = 'Dữ liệu đã thay đổi, vui lòng làm mới!'
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      toast.error(e.response?.data?.message || i18n.t('common.error'))
+    }
   } finally {
     forceDeleteProduct.value = null
   }
 }
 
-function formatDate(date) { 
-  if (!date) return ''
-  return new Date(date).toLocaleString(i18n.locale === 'vi' ? 'vi-VN' : 'en-US') 
+function formatDate(dateString) {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return ''
+  
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  
+  return `${day}/${month}/${year} ${hours}:${minutes}`
+}
+
+// [Đặng Văn Hà - 4.3.14] Xử lý hiển thị ảnh mặc định khi ảnh sản phẩm bị lỗi tải (Broken Image)
+function onImgError(e) {
+  e.target.src = 'https://placehold.co/400'
 }
 </script>
 
@@ -196,4 +249,34 @@ function formatDate(date) {
 @keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
 .modal-box { background: white; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); width: 90%; animation: modalSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 @keyframes modalSlide { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+
+.trash-banner {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.trash-banner-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+.trash-banner-content {
+  text-align: left;
+}
+.trash-banner-title {
+  color: #dc2626;
+  font-weight: 800;
+  margin: 0 0 4px 0;
+  font-size: 15px;
+}
+.trash-banner-desc {
+  color: #7f1d1d;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
 </style>

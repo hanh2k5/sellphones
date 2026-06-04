@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Services\ProductService;
 use App\Http\Requests\ProductRequest;
+use App\Http\Requests\UploadImagesRequest;
+use App\Http\Requests\UploadFileRequest;
 use App\Http\Resources\ProductResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,24 +34,30 @@ class ProductController extends Controller
     {
         // Nhận query từ UI; service/model sẽ xử lý search, lọc giá và phân trang.
         $products = $this->productService->getAllProducts($request->all());
-        return ProductResource::collection($products);
+        $total = $products->total();
+        return ProductResource::collection($products)->additional([
+            'message' => "Tìm thấy {$total} sản phẩm trong tầm giá của bạn"
+        ]);
     }
 
     /**
      * [Đặng Văn Hà - 4.3.9] Hiển thị chi tiết sản phẩm (Eager Loading)
      */
-    public function show(Product $product)
+    public function show($id)
     {
+        $product = Product::find($id);
+        if (!$product) {
+            return response()->json(['message' => 'Sản phẩm không tồn tại hoặc đã bị xóa'], 404);
+        }
+
         /** @var \App\Models\User $user */
         $user = Auth::user();
         // Khách không thấy sản phẩm ngừng bán; admin vẫn được xem để quản lý.
         if (!$product->is_active && (!Auth::check() || !$user->isAdmin())) {
             abort(404);
         }
-        // Load sẵn danh mục, ảnh và review đã duyệt để trả chi tiết trong một response.
-        $product->load(['category', 'images', 'reviews' => function($query) {
-            $query->where('status', 'approved')->with('user:id,name');
-        }]);
+        // Review được tải riêng bằng endpoint simplePaginate để trang chi tiết không load quá nhiều cùng lúc.
+        $product->load(['category', 'images']);
         return (new ProductResource($product))->resolve();
     }
 
@@ -58,27 +66,22 @@ class ProductController extends Controller
      */
     public function store(ProductRequest $request)
     {
-        $this->authorizeAdmin();
-        // validated() chỉ lấy dữ liệu đã qua rule trong ProductRequest.
-        $product = $this->productService->createProduct($request->validated());
-        return (new ProductResource($product))
-            ->additional(['message' => 'Thêm sản phẩm thành công!']);
+        try {
+            // validated() chỉ lấy dữ liệu đã qua rule trong ProductRequest.
+            $product = $this->productService->createProduct($request->validated());
+            return (new ProductResource($product))
+                ->additional(['message' => 'Thêm sản phẩm thành công!'])
+                ->response()
+                ->setStatusCode(201);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
     }
 
-    /**
-     * [Đặng Văn Hà - 4.3.6] Sửa thông tin sản phẩm (Xử lý tranh chấp dữ liệu - Optimistic Locking)
-     */
-    public function update(ProductRequest $request, $id)
+    public function update(ProductRequest $request, Product $product)
     {
-        $this->authorizeAdmin();
-
-        $product = Product::find($id);
-        if (!$product) {
-            $trashed = Product::onlyTrashed()->find($id);
-            if ($trashed) {
-                return response()->json(['message' => __('messages.data_conflict')], 409);
-            }
-            return response()->json(['message' => 'Sản phẩm không tồn tại.'], 404);
+        if ($product->trashed()) {
+            return response()->json(['message' => __('messages.data_conflict')], 409);
         }
 
         try {
@@ -87,26 +90,17 @@ class ProductController extends Controller
             return (new ProductResource($updatedProduct))
                 ->additional(['message' => 'Cập nhật thành công!']);
         } catch (Exception $e) {
-            // Giữ đúng mã lỗi nghiệp vụ, đặc biệt là 409 Conflict.
-            $code = is_numeric($e->getCode()) && $e->getCode() >= 100 && $e->getCode() <= 599
-                ? $e->getCode()
-                : 500;
-
-            return response()->json(['message' => $e->getMessage()], $code);
+            if ($e->getCode() === 409) {
+                return response()->json(['message' => $e->getMessage()], 409);
+            }
+            return response()->json(['message' => 'Lỗi hệ thống, chưa thể cập nhật thông tin'], 500);
         }
     }
 
-    public function destroy(Request $request, $id)
+    public function destroy(Request $request, Product $product)
     {
-        $this->authorizeAdmin();
-
-        $product = Product::find($id);
-        if (!$product) {
-            $trashed = Product::onlyTrashed()->find($id);
-            if ($trashed) {
-                return response()->json(['message' => __('messages.data_conflict')], 409);
-            }
-            return response()->json(['message' => 'Sản phẩm không tồn tại.'], 404);
+        if ($product->trashed()) {
+            return response()->json(['message' => 'Cảnh báo: Dữ liệu đã thay đổi, vui lòng làm mới!'], 409);
         }
 
         try {
@@ -126,38 +120,63 @@ class ProductController extends Controller
      */
     public function trash()
     {
-        $this->authorizeAdmin();
         // Chỉ lấy các sản phẩm đã xóa mềm.
-        return response()->json($this->productService->getTrashed());
+        return ProductResource::collection($this->productService->getTrashed());
     }
 
-    public function restore($id)
+    public function restore(Request $request, $id)
     {
-        $this->authorizeAdmin();
-        // Khôi phục sản phẩm từ thùng rác về danh sách chính.
-        $product = $this->productService->restoreProduct($id);
-        return response()->json(['message' => 'Khôi phục thành công.', 'product' => $product]);
+        // Resolve thủ công để kiểm soát hoàn toàn message khi product không tồn tại.
+        $product = Product::withTrashed()->find($id);
+        if (!$product) {
+            return response()->json(['message' => 'Sản phẩm không tồn tại hoặc đã bị xóa vĩnh viễn.'], 404);
+        }
+
+        if (!$product->trashed()) {
+            return response()->json(['message' => 'Sản phẩm này đã được khôi phục bởi một Admin khác.'], 409);
+        }
+
+        try {
+            // Khôi phục sản phẩm từ thùng rác về danh sách chính.
+            $version = $request->input('updated_at');
+            $restoredProduct = $this->productService->restoreProduct($product, $version);
+            return response()->json(['message' => 'Khôi phục thành công.', 'product' => $restoredProduct]);
+        } catch (Exception $e) {
+            $code = is_numeric($e->getCode()) && $e->getCode() >= 100 && $e->getCode() <= 599
+                ? $e->getCode()
+                : 500;
+            return response()->json(['message' => $e->getMessage()], $code);
+        }
     }
 
     public function forceDelete($id)
     {
-        $this->authorizeAdmin();
-        $this->productService->forceDeleteProduct($id);
-        return response()->json(['message' => 'Đã xóa vĩnh viễn sản phẩm.']);
+        // Resolve thủ công để kiểm soát hoàn toàn message khi product không tồn tại.
+        $product = Product::withTrashed()->find($id);
+        if (!$product) {
+            return response()->json(['message' => 'Sản phẩm không tồn tại hoặc đã bị xóa vĩnh viễn.'], 404);
+        }
+
+        if (!$product->trashed()) {
+            return response()->json(['message' => 'Sản phẩm này đã được khôi phục bởi một Admin khác.'], 409);
+        }
+
+        try {
+            $this->productService->forceDeleteProduct($product);
+            return response()->json(['message' => 'Đã xóa vĩnh viễn sản phẩm.']);
+        } catch (Exception $e) {
+            $code = is_numeric($e->getCode()) && $e->getCode() >= 100 && $e->getCode() <= 599
+                ? $e->getCode()
+                : 500;
+            return response()->json(['message' => $e->getMessage()], $code);
+        }
     }
 
     /**
      * Upload nhiều ảnh chi tiết
      */
-    public function uploadImages(Request $request, Product $product)
+    public function uploadImages(UploadImagesRequest $request, Product $product)
     {
-        $this->authorizeAdmin();
-        // images[] phải là nhiều file ảnh, mỗi file tối đa 2MB.
-        $request->validate([
-            'images'   => 'required|array',
-            'images.*' => 'image|max:2048'
-        ]);
-
         $images = $this->productService->uploadProductImages($product, $request->file('images'));
         return response()->json(['message' => 'Upload ảnh thành công!', 'images' => $images]);
     }
@@ -165,9 +184,8 @@ class ProductController extends Controller
     /**
      * Xóa ảnh chi tiết
      */
-    public function deleteImage($id, $imageId)
+    public function deleteImage(Product $product, $imageId)
     {
-        $this->authorizeAdmin();
         $this->productService->deleteImage($imageId);
         return response()->json(['message' => 'Đã xóa ảnh chi tiết.']);
     }
@@ -175,30 +193,17 @@ class ProductController extends Controller
     /**
      * Upload file chung
      */
-    public function uploadFile(Request $request)
+    public function uploadFile(UploadFileRequest $request)
     {
-        $this->authorizeAdmin();
-        $request->validate([
-            'file' => 'required|file|max:5120|mimes:jpg,jpeg,png,webp,pdf,doc,docx'
-        ]);
-        
         $path = $this->productService->uploadFile($request->file('file'));
         return response()->json(['url' => asset("storage/$path"), 'path' => $path]);
     }
 
-    public function checkUpdated(Request $request, $id)
+    public function checkUpdated(Request $request, Product $product)
     {
         // Frontend polling endpoint này để biết sản phẩm có bị admin khác sửa chưa.
         $lastTime = $request->query('last_time', now()->subMinute());
-        return response()->json($this->productService->checkUpdated($id, $lastTime));
+        return response()->json($this->productService->checkUpdated($product, $lastTime));
     }
 
-    private function authorizeAdmin()
-    {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Yêu cầu quyền quản trị.');
-        }
-    }
 }

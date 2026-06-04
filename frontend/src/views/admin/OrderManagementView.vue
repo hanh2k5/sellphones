@@ -33,7 +33,7 @@
       class="mx-3 md:mx-0 mt-3 md:mt-0 mb-4 bg-red-50 border border-red-200 rounded-xl p-3 flex items-center justify-between shadow-sm animate-fade-in">
       <div class="flex items-center gap-2">
         <span class="text-lg">⚠️</span>
-        <p class="text-xs font-bold text-red-700 m-0">{{ i18n.t('admin.data_conflict_full') }}</p>
+        <p class="text-xs font-bold text-red-700 m-0">{{ conflictMessage || i18n.t('admin.data_conflict_full') }}</p>
       </div>
       <button @click="fetchOrders(); showConflictAlert = false"
         class="shrink-0 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors">
@@ -94,13 +94,22 @@
               </span>
             </div>
             <div class="col-span-2 flex justify-end gap-2">
-              <!-- Báo cáo 4.1.8: Duyệt đơn (Pending -> Shipping) -->
+              <!-- Báo cáo 4.1.8: Duyệt đơn (Pending -> Confirmed) -->
               <button v-if="order.status === 'pending'" @click="handleUpdateStatus(order)"
                 class="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white rounded-lg transition-all font-bold text-[10px] uppercase border border-green-200 shadow-sm whitespace-nowrap">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
                 <span>{{ i18n.t('admin.approve_order') }}</span>
+              </button>
+
+              <!-- Giao hàng (Confirmed -> Shipping) -->
+              <button v-if="order.status === 'confirmed'" @click="handleUpdateStatus(order)"
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-600 hover:text-white rounded-lg transition-all font-bold text-[10px] uppercase border border-sky-200 shadow-sm whitespace-nowrap">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <span>Giao hàng</span>
               </button>
 
               <!-- Hoàn tất đơn (Shipping -> Completed) -->
@@ -114,7 +123,7 @@
               </button>
 
               <!-- Báo cáo 4.1.9: Hủy đơn hàng (Admin/User) -->
-              <button v-if="['pending', 'shipping'].includes(order.status)" @click="handleCancel(order)"
+              <button v-if="['pending', 'confirmed'].includes(order.status)" @click="handleCancel(order)"
                 class="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white rounded-lg transition-all font-bold text-[10px] uppercase border border-rose-200 shadow-sm whitespace-nowrap">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -190,6 +199,15 @@
                   {{ i18n.t('admin.approve_order') }}
                 </button>
 
+                <!-- Giao hàng -->
+                <button v-if="order.status === 'confirmed'" @click="handleUpdateStatus(order)"
+                  class="flex items-center gap-1 px-2.5 py-1.5 bg-sky-600 text-white rounded-lg text-[10px] font-bold active:scale-95 transition-transform shadow-md shadow-sky-800/20 whitespace-nowrap">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                  Giao hàng
+                </button>
+
                 <!-- Hoàn tất -->
                 <button v-if="order.status === 'shipping'" @click="handleUpdateStatus(order)"
                   class="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold active:scale-95 transition-transform shadow-md shadow-blue-800/20 whitespace-nowrap">
@@ -201,7 +219,7 @@
                 </button>
 
                 <!-- Hủy đơn -->
-                <button v-if="['pending', 'shipping'].includes(order.status)" @click="handleCancel(order)"
+                <button v-if="['pending', 'confirmed'].includes(order.status)" @click="handleCancel(order)"
                   class="flex items-center gap-1 px-2.5 py-1.5 bg-rose-600 text-white rounded-lg text-[10px] font-bold active:scale-95 transition-transform shadow-md shadow-rose-800/20 whitespace-nowrap">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
@@ -275,6 +293,7 @@ const loading = ref(false)
 const search = ref('')
 const filterStatus = ref('')
 const showConflictAlert = ref(false)
+const conflictMessage = ref('')
 const pagination = ref({ current_page: 1, last_page: 1 })
 
 // Logic hiển thị trang thông minh (1 ... 4 5 6 ... 10)
@@ -297,6 +316,7 @@ const visiblePages = computed(() => {
 const statusTabs = computed(() => [
   { val: '', label: i18n.t('admin.all_orders') },
   { val: 'pending', label: i18n.t('order.status_pending') },
+  { val: 'confirmed', label: i18n.locale === 'vi' ? 'Đã xác nhận' : 'Confirmed' },
   { val: 'shipping', label: i18n.t('order.status_shipping') },
   { val: 'completed', label: i18n.t('order.status_completed') },
   { val: 'cancelled', label: i18n.t('order.status_cancelled') },
@@ -314,12 +334,25 @@ async function fetchOrders(page = 1) {
       per_page: 10 // Đã chỉnh về 10 theo ý bạn
     })
     orders.value = res.data.data
+    
+    const currentPage = res.data.current_page || res.data.meta?.current_page || 1
+    const lastPage = res.data.last_page || res.data.meta?.last_page || 1
+
+    // Nếu trang hiện tại bị trống và không phải trang đầu, quay lại trang trước
+    if (orders.value.length === 0 && currentPage > 1 && currentPage > lastPage) {
+      loading.value = false
+      await fetchOrders(currentPage - 1)
+      return
+    }
+
     // Đảm bảo lấy đúng thông tin phân trang từ Laravel
     pagination.value = {
-      current_page: res.data.current_page || res.data.meta?.current_page || 1,
-      last_page: res.data.last_page || res.data.meta?.last_page || 1,
+      current_page: currentPage,
+      last_page: lastPage,
       total: res.data.total || res.data.meta?.total || orders.value.length
     }
+    showConflictAlert.value = false
+    conflictMessage.value = ''
   } catch (e) {
     toast.error(e.response?.data?.message || i18n.t('common.error'))
   } finally { loading.value = false }
@@ -329,23 +362,38 @@ async function fetchOrders(page = 1) {
 async function handleUpdateStatus(order) {
   try {
     if (order.status === 'pending') {
-      const res = await ordersApi.adminConfirm(order.id, order.updated_at)
-      // Cập nhật State tức thì (Báo cáo 4.1.8) - Cực kỳ mượt mà
+      const res = await ordersApi.adminConfirm(order.id, 'confirmed', order.updated_at)
+      // Cập nhật State tức thời (Báo cáo 4.1.8) - Cực kỳ mượt mà
+      order.status = 'confirmed'
+      order.updated_at = res.data.order.updated_at
+    } else if (order.status === 'confirmed') {
+      const res = await ordersApi.adminUpdateStatus(order.id, 'shipping', order.updated_at)
       order.status = 'shipping'
       order.updated_at = res.data.order.updated_at
     } else if (order.status === 'shipping') {
       const res = await ordersApi.adminComplete(order.id, order.updated_at)
-      // Cập nhật State tức thì (Báo cáo 4.1.8)
+      // Cập nhật State tức thời (Báo cáo 4.1.8)
       order.status = 'completed'
       order.updated_at = res.data.order.updated_at
     }
 
+    // Nếu bộ lọc hiện tại khác trạng thái mới của đơn hàng, loại bỏ khỏi danh sách hiển thị
+    if (filterStatus.value && filterStatus.value !== order.status) {
+      orders.value = orders.value.filter(o => o.id !== order.id)
+    }
+
     toast.success(i18n.t('admin.order_updated_success'))
+    // Cập nhật/nạp lại danh sách từ server để đồng bộ và lấp đầy các vị trí trống
+    await fetchOrders(pagination.value.current_page)
   } catch (e) {
     if (e.response?.status === 409) {
       // Báo cáo 4.1.8 STT 3: Xử lý ngoại lệ, thông báo tranh chấp dữ liệu (Optimistic Locking)
+      conflictMessage.value = i18n.t('admin.data_conflict_full')
       showConflictAlert.value = true
-      toast.warning(e.response?.data?.message || i18n.t('admin.data_conflict'))
+      toast.warning(e.response?.data?.message || i18n.t('admin.data_conflict_full') || 'Cảnh báo: Đơn hàng đã thay đổi bởi người khác. Vui lòng tải lại!')
+    } else if (e.response?.status === 404) {
+      toast.warning(i18n.t('admin.order_already_deleted') || 'Đơn hàng này đã được xóa bởi người khác hoặc không còn tồn tại.')
+      showConflictAlert.value = true
     } else {
       toast.error(e.response?.data?.message || i18n.t('common.error'))
     }
@@ -357,14 +405,26 @@ async function handleCancel(order) {
   try {
     const res = await ordersApi.cancel(order.id, order.updated_at)
     toast.success(i18n.t('admin.order_updated_success'))
-    // Cập nhật State tức thì (Báo cáo 4.1.9)
+    // Cập nhật State tức thời (Báo cáo 4.1.9)
     order.status = 'cancelled'
     order.updated_at = res.data.order.updated_at
+
+    // Nếu bộ lọc hiện tại khác trạng thái mới của đơn hàng (cancelled), loại bỏ khỏi danh sách hiển thị
+    if (filterStatus.value && filterStatus.value !== 'cancelled') {
+      orders.value = orders.value.filter(o => o.id !== order.id)
+    }
+
+    // Đồng bộ lại danh sách từ server để lấp đầy và khớp số lượng
+    await fetchOrders(pagination.value.current_page)
   } catch (e) {
     if (e.response?.status === 409) {
       // Báo cáo 4.1.9 STT 2: Xử lý tranh chấp dữ liệu khi hủy
+      conflictMessage.value = i18n.t('admin.data_conflict_cancel') || 'Lỗi: Đơn hàng đã được xử lý bởi người khác!'
       showConflictAlert.value = true
-      toast.warning(e.response?.data?.message || i18n.t('admin.data_conflict'))
+      toast.warning(e.response?.data?.message || i18n.t('admin.data_conflict_cancel') || 'Lỗi: Đơn hàng đã được xử lý bởi người khác!')
+    } else if (e.response?.status === 404) {
+      toast.warning(i18n.t('admin.order_already_deleted') || 'Đơn hàng này đã được xóa bởi người khác hoặc không còn tồn tại.')
+      showConflictAlert.value = true
     } else {
       toast.error(e.response?.data?.message || i18n.t('common.error'))
     }
@@ -394,9 +454,12 @@ async function handleDelete(id) {
 
   try {
     await ordersApi.adminDelete(id)
-    toast.success(i18n.t('admin.order_deleted_success') || 'Đã xóa vĩnh viễn đơn hàng thành công.')
-    // Báo cáo 4.1.10 STT 3: Cập nhật State tức thì khi xóa thành công
+    toast.success('Đã xóa vĩnh viễn đơn hàng khỏi hệ thống.')
+    // Báo cáo 4.1.10 STT 3: Cập nhật State tức thời khi xóa thành công
     orders.value = orders.value.filter(o => o.id !== id)
+    
+    // Đồng bộ lại danh sách từ server để lấp đầy và khớp số lượng
+    await fetchOrders(pagination.value.current_page)
   } catch (e) {
     if (e.response?.status === 404) {
       // XỬ LÝ TRANH CHẤP (2 người cùng xóa): Đơn hàng vẫn còn đó cho đến khi nhấn Tải lại
@@ -412,6 +475,7 @@ function goPage(p) { fetchOrders(p) }
 function statusLabel(s) {
   return {
     pending: i18n.t('order.status_pending'),
+    confirmed: i18n.locale === 'vi' ? 'Đã xác nhận' : 'Confirmed',
     shipping: i18n.t('order.status_shipping'),
     completed: i18n.t('order.status_completed'),
     cancelled: i18n.t('order.status_cancelled')
@@ -420,6 +484,7 @@ function statusLabel(s) {
 function statusClass(s) {
   return {
     pending: 'bg-amber-100 text-amber-700 border border-amber-200',
+    confirmed: 'bg-indigo-100 text-indigo-700 border border-indigo-200',
     shipping: 'bg-blue-100 text-blue-700 border border-blue-200',
     completed: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
     cancelled: 'bg-rose-100 text-rose-700 border border-rose-200'

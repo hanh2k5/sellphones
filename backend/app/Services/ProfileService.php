@@ -19,7 +19,7 @@ class ProfileService
         $serverTime = $user->updated_at->timestamp;
 
         if ($clientTime < $serverTime) {
-            abort(409, 'Hồ sơ đã được cập nhật ở nơi khác. Vui lòng tải lại dữ liệu.');
+            abort(409, __('messages.profile_conflict'));
         }
 
         $user->update($data);
@@ -56,7 +56,7 @@ class ProfileService
             'changed'    => $serverTime > $clientTime,
             'user'       => $user,
             'updated_at' => $user->updated_at->toIso8601String(),
-            'message'    => 'Hồ sơ đã được cập nhật ở nơi khác. Vui lòng tải lại dữ liệu.'
+            'message'    => 'Thông tin của bạn đã được cập nhật ở nơi khác. Vui lòng tải lại trang!'
         ];
     }
 }

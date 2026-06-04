@@ -32,7 +32,7 @@
           <button
             class="btn-custom-buy"
             @click.stop="handleBuyNow"
-            :disabled="isAdding || isBuying"
+            :disabled="isAdding || isBuying || !isProductActive"
           >
             <span v-if="isBuying" class="spin-dot"></span>
             <span v-else>{{ i18n.t('home.shop_now') }}</span>
@@ -42,7 +42,7 @@
           <button 
             class="btn-custom-add" 
             @click.stop="handleAddToCart" 
-            :disabled="isAdding || isBuying"
+            :disabled="isAdding || isBuying || !isProductActive"
             :title="i18n.t('product.add_to_cart')"
           >
             <span v-if="isAdding" class="spin-dot-dark"></span>
@@ -73,12 +73,17 @@ const toast = useToast()
 
 const isAdding = ref(false)
 const isBuying = ref(false)
+const isProductActive = props.product.is_active !== false
 
 function goToDetail() {
   router.push(`/products/${props.product.id}`)
 }
 
 async function handleAddToCart() {
+  if (!isProductActive) {
+    toast.error(i18n.t('product.inactive'))
+    return
+  }
   if (props.product.stock <= 0) {
     toast.error(i18n.t('product.out_of_stock'))
     return
@@ -87,14 +92,20 @@ async function handleAddToCart() {
   const res = await cartStore.addToCart(props.product.id, 1)
   isAdding.value = false
   if (res.success) {
-    toast.success(i18n.t('common.cart_add_success'), {
+    toast.success(i18n.t('common.add_success'), {
       label: i18n.t('product.view_cart'),
       url: '/cart'
     })
+  } else {
+    toast.error(res.message || i18n.t('product.inactive'))
   }
 }
 
 async function handleBuyNow() {
+  if (!isProductActive) {
+    toast.error(i18n.t('product.inactive'))
+    return
+  }
   if (props.product.stock <= 0) {
     toast.error(i18n.t('product.out_of_stock'))
     return
@@ -104,11 +115,13 @@ async function handleBuyNow() {
   isBuying.value = false
   if (res.success) {
     router.push('/cart')
+  } else {
+    toast.error(res.message || i18n.t('product.inactive'))
   }
 }
 
 function onImgError(e) {
-  e.target.src = 'https://via.placeholder.com/180'
+  e.target.src = 'https://placehold.co/180'
 }
 </script>
 

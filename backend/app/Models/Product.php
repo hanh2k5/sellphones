@@ -12,8 +12,23 @@ class Product extends Model
 
     protected $fillable = [
         'name', 'price', 'hinh_anh', 'category_id',
-        'description', 'stock', 'avg_rating', 'is_active', 'is_featured',
+        'description', 'stock', 'avg_rating', 'is_active', 'is_featured', 'slug',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::saving(function ($product) {
+            $slug = \Illuminate\Support\Str::slug($product->name);
+            $originalSlug = $slug;
+            $count = 1;
+            while (Product::where('slug', $slug)->where('id', '!=', $product->id ?? 0)->exists()) {
+                $slug = $originalSlug . '-' . $count;
+                $count++;
+            }
+            $product->slug = $slug;
+        });
+    }
 
     /**
      * Cast: price được lưu decimal(12,2) theo ERD
@@ -24,6 +39,37 @@ class Product extends Model
         'is_active'  => 'boolean',
         'is_featured' => 'boolean',
     ];
+
+    public function getNameAttribute($value)
+    {
+        return htmlspecialchars(strip_tags($value), ENT_QUOTES, 'UTF-8');
+    }
+
+    public function setNameAttribute($value)
+    {
+        if (is_string($value)) {
+            $value = preg_replace('/　/u', ' ', $value);
+            $value = trim($value);
+        }
+        $this->attributes['name'] = $value;
+    }
+
+    public function setDescriptionAttribute($value)
+    {
+        if (is_string($value)) {
+            // Loại bỏ hoàn toàn thẻ <script>...</script>
+            $cleaned = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $value);
+            // Loại bỏ các sự kiện inline (như onload, onerror, onclick, v.v.)
+            $cleaned = preg_replace('/(<[^>]+)\b(on[a-z]+)\s*=\s*(["\'])(.*?)\3([^>]*>)/is', '$1$5', $cleaned);
+            $cleaned = preg_replace('/on\w+\s*=\s*(["\'])(.*?)\1/is', '', $cleaned);
+            // Loại bỏ các javascript: protocol
+            $cleaned = preg_replace('/href\s*=\s*(["\'])javascript:[^\1]*?\1/is', '', $cleaned);
+            $cleaned = preg_replace('/javascript:[^\s"\']*/is', '', $cleaned);
+            $this->attributes['description'] = $cleaned;
+        } else {
+            $this->attributes['description'] = $value;
+        }
+    }
 
     public function category()
     {
@@ -66,6 +112,7 @@ class Product extends Model
         // Mặc định chỉ lấy sản phẩm đang kinh doanh (is_active = true)
         // Trừ khi admin đang xem (có thể thêm flag admin nếu cần)
         if (!isset($filters['show_all'])) {
+            $query->where('price', '>', 0);
             $query->where('is_active', true);
             // Lọc luôn các sản phẩm thuộc danh mục đang bị ẩn
             $query->whereHas('category', function($q) {
@@ -75,9 +122,14 @@ class Product extends Model
         if (isset($filters['is_featured'])) {
             $query->where('is_featured', true);
         }
-        // Tìm theo tên hoặc mô tả sản phẩm.
+        // [Đặng Văn Hà] Tìm theo tên hoặc mô tả sản phẩm. Lọc ký tự đặc biệt trước khi đưa vào query.
         $query->when($filters['search'] ?? null, function ($q, $search) {
             if (is_array($search)) { $search = implode(' ', $search); }
+            // Loại bỏ thẻ HTML và các ký tự nguy hiểm <, >, / để chặn XSS/injection qua ô tìm kiếm.
+            $search = strip_tags((string) $search);
+            $search = preg_replace('/[<>\/\\\\]/', '', $search);
+            $search = trim($search);
+            if ($search === '') return;
             $q->where(function ($sub) use ($search) {
                 $sub->where('name', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
@@ -92,11 +144,23 @@ class Product extends Model
         });
 
         // Hỗ trợ cả tên tham số tiếng Anh và tiếng Việt từ frontend.
-        $priceFrom = $filters['price_from'] ?? $filters['gia_tu'] ?? null;
-        $priceTo   = $filters['price_to'] ?? $filters['gia_den'] ?? null;
+        $priceFrom = $filters['price_from'] ?? $filters['price_min'] ?? $filters['gia_tu'] ?? null;
+        $priceTo   = $filters['price_to'] ?? $filters['price_max'] ?? $filters['gia_den'] ?? null;
 
-        if ($priceFrom !== null) $query->where('price', '>=', $priceFrom);
-        if ($priceTo !== null)   $query->where('price', '<=', $priceTo);
+        if ($priceFrom !== null && $priceTo !== null) {
+            $min = (float) $priceFrom;
+            $max = (float) $priceTo;
+            if ($min > $max) {
+                $temp = $min;
+                $min = $max;
+                $max = $temp;
+            }
+            $query->whereBetween('price', [$min, $max]);
+        } elseif ($priceFrom !== null) {
+            $query->where('price', '>=', (float) $priceFrom);
+        } elseif ($priceTo !== null) {
+            $query->where('price', '<=', (float) $priceTo);
+        }
 
         // Chỉ cho sort theo các cột an toàn đã định nghĩa.
         $sortBy  = $filters['sort_by'] ?? 'created_at';

@@ -5,11 +5,17 @@
     </div>
 
     <div class="admin-grid-layout">
-      <!-- Category List (Tree) -->
+      <!-- Category List (Table with Search/Pagination) -->
       <CategoryTree 
         :categories="categories" 
+        :pagination="pagination"
+        :loading="loading"
+        v-model:searchQuery="searchQuery"
+        v-model:currentPage="currentPage"
         @edit="handleEdit" 
         @delete="deleteCategory" 
+        @search="handleSearch"
+        @page-change="handlePageChange"
       />
 
       <!-- Category Form -->
@@ -36,7 +42,11 @@ const i18n = useI18nStore()
 const { 
   categories, 
   allCats, 
+  loading,
   saving, 
+  searchQuery,
+  currentPage,
+  pagination,
   fetchCategories, 
   saveCategory, 
   deleteCategory 
@@ -45,10 +55,16 @@ const {
 const activeCat = ref(null)
 const formRef = ref(null)
 
-onMounted(fetchCategories)
+onMounted(() => {
+  fetchCategories(true)
+})
 
-function openNewForm() {
-  activeCat.value = null
+function handleSearch() {
+  fetchCategories(true)
+}
+
+function handlePageChange() {
+  fetchCategories(true)
 }
 
 function handleEdit(cat) {
@@ -83,3 +99,4 @@ async function handleSave({ id, data }) {
   }
 }
 </style>
+

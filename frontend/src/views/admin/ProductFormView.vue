@@ -34,13 +34,13 @@
           
           <div class="form-group">
             <label class="form-label">{{ i18n.t('product.price') }} ({{ i18n.locale === 'vi' ? 'VNĐ' : 'USD' }}) *</label>
-            <input v-model.number="form.price" type="number" min="0" class="form-input" :class="{'input-error': errors?.price}" @input="errors && (errors.price = null)" />
+            <input v-model.number="form.price" type="number" min="0" step="any" class="form-input" :class="{'input-error': errors?.price}" @input="errors && (errors.price = null)" @keypress="blockNonNumericPrice" />
             <p v-if="errors?.price" class="form-error-label">{{ errors.price[0] }}</p>
           </div>
 
           <div class="form-group">
             <label class="form-label">{{ i18n.t('product.stock') }} *</label>
-            <input v-model.number="form.stock" type="number" min="0" class="form-input" :class="{'input-error': errors?.stock}" @input="errors && (errors.stock = null)" />
+            <input v-model.number="form.stock" type="number" min="0" step="1" class="form-input" :class="{'input-error': errors?.stock}" @input="errors && (errors.stock = null)" @keypress="blockNonNumericStock" />
             <p v-if="errors?.stock" class="form-error-label">{{ errors.stock[0] }}</p>
           </div>
 
@@ -88,8 +88,15 @@
             <p v-if="uploadingMulti" class="text-success fw-bold small" style="margin-top: 8px;">{{ i18n.t('admin.uploading') }}</p>
           </div>
 
-          <div v-if="form.images?.length" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 16px;">
-            <div v-for="(img, idx) in form.images" :key="idx" style="aspect-ratio: 1; border: 1px solid #f0f0f0; border-radius: 12px; position: relative; overflow: hidden;">
+          <!-- [Đặng Văn Hà] Hiển thị preview: blob URL cho ảnh pending, URL thật cho ảnh đã upload -->
+          <div v-if="pendingPreviews.length || form.images?.length" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 16px;">
+            <!-- Ảnh đang chờ upload (blob preview) -->
+            <div v-for="(prev, idx) in pendingPreviews" :key="'pending-' + idx" style="aspect-ratio: 1; border: 2px dashed #3b82f6; border-radius: 12px; position: relative; overflow: hidden;">
+              <img :src="prev.url" style="width: 100%; height: 100%; object-fit: cover;" />
+              <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(59,130,246,0.7); color: white; font-size: 9px; text-align: center; padding: 2px;">⏳ Đang upload</div>
+            </div>
+            <!-- Ảnh đã lưu trên server -->
+            <div v-for="(img, idx) in form.images" :key="img.id || idx" style="aspect-ratio: 1; border: 1px solid #f0f0f0; border-radius: 12px; position: relative; overflow: hidden;">
               <img :src="getImageUrl(img.image_path)" style="width: 100%; height: 100%; object-fit: cover;" />
               <button type="button" @click="removeImage(idx)" style="position: absolute; inset: 0; background: rgba(0,0,0,0.5); color: white; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; opacity: 0; transition: 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
                 {{ i18n.t('common.delete') }}
@@ -100,7 +107,9 @@
 
         <div class="form-group">
           <label class="form-label">{{ i18n.t('product.description') }}</label>
-          <textarea v-model="form.description" rows="5" class="form-input" :placeholder="i18n.t('product.description') + '...'" style="resize: vertical;"></textarea>
+          <div id="editor-container" style="min-height: 200px;">
+            <div id="editor"></div>
+          </div>
         </div>
 
         <div style="display: flex; gap: 24px; background: #fafafa; padding: 16px; border-radius: 12px; border: 1px solid #f0f0f0;">
@@ -130,16 +139,18 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../../services/api'
+import { productsApi, categoriesApi } from '../../api'
 import { useToast } from '../../composables/useToast'
 import { useUtils } from '../../composables/useUtils'
 import { useI18nStore } from '../../stores/i18n'
+import { useProductStore } from '../../stores/product'
 
 const { getImageUrl } = useUtils()
 const toast = useToast()
 const i18n = useI18nStore()
+const productStore = useProductStore()
 const route = useRoute()
 const router = useRouter()
 const isEdit = computed(() => !!route.params.id)
@@ -152,6 +163,8 @@ const conflictMsg = ref('')
 const versionKey = ref(null)
 const uploadingMain = ref(false)
 const uploadingMulti = ref(false)
+// [Đặng Văn Hà] Lưu blob URL tạm để preview trước khi upload xong
+const pendingPreviews = ref([])
 
 const form = ref({ 
   name: '', price: 0, stock: 0, category_id: null, 
@@ -161,22 +174,72 @@ const form = ref({
 
 let pollingTimer = null
 
+const editorInstance = shallowRef(null)
+
 onMounted(async () => {
   try {
-    const cats = await api.get('/categories')
+    const cats = await categoriesApi.tree({ all: true })
     categories.value = cats.data.data || cats.data
+
+    if (window.ClassicEditor) {
+      window.ClassicEditor.create(document.querySelector('#editor'), {
+        toolbar: [ 'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', 'undo', 'redo' ]
+      })
+      .then(editor => {
+        editorInstance.value = editor
+        editor.setData(form.value.description || '')
+        editor.model.document.on('change:data', () => {
+          form.value.description = editor.getData()
+        })
+      })
+      .catch(err => {
+        console.error('Failed to init CKEditor', err)
+      })
+    }
+
     if (isEdit.value) {
       await refreshData()
     }
   } catch(e) {}
 })
 
-onUnmounted(() => stopPolling())
+onUnmounted(() => {
+  stopPolling()
+  if (editorInstance.value) {
+    editorInstance.value.destroy()
+      .then(() => {
+        editorInstance.value = null
+      })
+      .catch(err => console.error(err))
+  }
+})
+
+watch(() => form.value.description, (newVal) => {
+  if (editorInstance.value && editorInstance.value.getData() !== newVal) {
+    editorInstance.value.setData(newVal || '')
+  }
+})
+
+function blockNonNumericPrice(e) {
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter']
+  if (allowedKeys.includes(e.key)) return
+  if (!/^[0-9.]$/.test(e.key)) {
+    e.preventDefault()
+  }
+}
+
+function blockNonNumericStock(e) {
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter']
+  if (allowedKeys.includes(e.key)) return
+  if (!/^[0-9]$/.test(e.key)) {
+    e.preventDefault()
+  }
+}
 
 async function refreshData() {
   conflictMsg.value = ''
   try {
-    const res = await api.get(`/products/${route.params.id}`)
+    const res = await productsApi.show(route.params.id)
     const p = res.data
     form.value = { 
       name: p.name, price: Number(p.price), stock: Number(p.stock), 
@@ -202,16 +265,14 @@ function startPolling() {
   pollingTimer = setInterval(async () => {
     if (!isEdit.value || saving.value || !versionKey.value) return
     try {
-      const res = await api.get(`/admin/products/${route.params.id}/check-updated`, {
-        params: { last_time: versionKey.value }
-      })
+      const res = await productsApi.checkUpdated(route.params.id, versionKey.value)
       const remoteUpdatedAt = res.data.updated_at || res.data.product?.updated_at
       if (res.data.updated && remoteUpdatedAt) {
         const remoteTime = new Date(remoteUpdatedAt).getTime()
         const localTime = new Date(versionKey.value).getTime()
 
         if (remoteTime > localTime) {
-          conflictMsg.value = i18n.t('admin.data_conflict')
+          conflictMsg.value = 'Dữ liệu đã bị thay đổi bởi người khác. Vui lòng tải lại!'
           stopPolling()
         }
       }
@@ -240,27 +301,40 @@ async function handleFileUpload(e, mode) {
     formData.append('file', files[0])
     uploadingMain.value = true
     try {
-      const res = await api.post('/admin/upload', formData)
+      const res = await productsApi.upload(formData)
       form.value.hinh_anh = res.data.path
       toast.success(i18n.t('admin.image_upload_success'))
-    } catch (err) { toast.error(i18n.t('common.error')) }
+    } catch (err) {
+      toast.error('File không hợp lệ hoặc vượt quá 2MB')
+    }
     finally { uploadingMain.value = false; e.target.value = '' }
   } else {
     if (!isEdit.value) {
       toast.warning(i18n.t('admin.create_first'))
       return
     }
+    // [Đặng Văn Hà] Tạo blob URL để hiển thị preview ngay lập tức (chưa cần lưu server)
+    const previews = Array.from(files).map(f => ({ url: URL.createObjectURL(f), file: f }))
+    pendingPreviews.value = [...pendingPreviews.value, ...previews]
+
     const formData = new FormData()
     for (let i = 0; i < files.length; i++) {
       formData.append('images[]', files[i])
     }
     uploadingMulti.value = true
     try {
-      const res = await api.post(`/admin/products/${route.params.id}/images`, formData)
+      const res = await productsApi.uploadImages(route.params.id, formData)
       form.value.images = [...form.value.images, ...res.data.images]
       toast.success(i18n.t('admin.image_upload_success'))
-    } catch (err) { toast.error(i18n.t('common.error')) }
-    finally { uploadingMulti.value = false; e.target.value = '' }
+    } catch (err) {
+      toast.error('File không hợp lệ hoặc vượt quá 2MB')
+    } finally {
+      // [Đặng Văn Hà] Giải phóng bộ nhớ blob sau khi ảnh đã render xong (revokeObjectURL)
+      previews.forEach(p => URL.revokeObjectURL(p.url))
+      pendingPreviews.value = pendingPreviews.value.filter(p => !previews.includes(p))
+      uploadingMulti.value = false
+      e.target.value = ''
+    }
   }
 }
 
@@ -268,7 +342,7 @@ async function removeImage(idx) {
   const imgId = form.value.images[idx]?.id
   if (imgId) {
     try {
-      await api.delete(`/admin/products/${route.params.id}/images/${imgId}`)
+      await productsApi.deleteImage(route.params.id, imgId)
       form.value.images.splice(idx, 1)
       toast.success(i18n.t('admin.image_deleted_success'))
     } catch(e) { toast.error(i18n.t('common.error')) }
@@ -283,11 +357,11 @@ async function handleSave() {
     const payload = { ...form.value }
     if (isEdit.value) {
       payload.updated_at = versionKey.value
-      await api.put(`/admin/products/${route.params.id}`, payload)
+      await productStore.updateProduct(route.params.id, payload)
       toast.success(i18n.t('admin.product_saved_success'))
       router.push('/admin/products')
     } else {
-      await api.post('/admin/products', payload)
+      await productStore.createProduct(payload)
       toast.success(i18n.t('admin.product_saved_success'))
       router.push('/admin/products')
     }
@@ -296,7 +370,7 @@ async function handleSave() {
     let msg = i18n.t('common.error')
 
     if (e.response?.status === 409) {
-      conflictMsg.value = errorData?.message || i18n.t('admin.data_conflict')
+      conflictMsg.value = 'Dữ liệu đã bị thay đổi bởi người khác. Vui lòng tải lại!'
       msg = conflictMsg.value
       stopPolling()
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -328,6 +402,27 @@ async function handleSave() {
 .text-danger { color: #d70018; }
 .fw-bold { font-weight: 700; }
 .small { font-size: 12px; }
+
+/* CKEditor styling overrides */
+:deep(.ck-editor__editable_inline) {
+  min-height: 200px;
+  background: #f5f5f7 !important;
+  border: 1.5px solid transparent !important;
+  border-radius: 0 0 12px 12px !important;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none !important;
+}
+:deep(.ck-editor__editable_inline:focus) {
+  background: #fff !important;
+  border-color: #0071e3 !important;
+  box-shadow: 0 0 0 4px rgba(0,113,227,0.1) !important;
+}
+:deep(.ck-toolbar) {
+  background: #fafafa !important;
+  border: 1px solid #d2d2d7 !important;
+  border-radius: 12px 12px 0 0 !important;
+}
 
 /* Validation Styles */
 .input-error { border-color: #f43f5e !important; background-color: #fff1f2 !important; }

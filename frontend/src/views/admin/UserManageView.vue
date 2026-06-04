@@ -14,8 +14,13 @@
 
     <!-- Search & Add -->
     <div class="toolbar">
-      <input v-model="search" @keyup.enter="fetchUsers()" type="text"
+      <input v-model="search" type="text"
         :placeholder="i18n.t('admin.search_users_placeholder')" class="admin-search" />
+      <select v-model="selectedRole" class="admin-select">
+        <option value="">Tất cả vai trò</option>
+        <option value="user">Khách hàng</option>
+        <option value="admin">Admin</option>
+      </select>
       <button @click="openCreateModal" class="btn-primary">+ {{ i18n.t('admin.add_customer') }}</button>
     </div>
 
@@ -23,7 +28,7 @@
     <div class="table-card">
       <div v-if="loading" class="table-empty"><div>⏳</div><p>{{ i18n.t('common.loading') }}</p></div>
       <div v-else-if="!users.length" class="table-empty">
-        <div>👥</div><p>{{ i18n.t('common.no_data') }}</p>
+        <div>👥</div><p>Không tìm thấy người dùng phù hợp.</p>
       </div>
       <div v-else class="table-responsive">
         <table class="admin-table">
@@ -33,6 +38,7 @@
               <th>{{ i18n.t('common.email') }}</th>
               <th class="text-center">{{ i18n.t('admin.user_orders') }}</th>
               <th>{{ i18n.t('admin.spending') }}</th>
+              <th>Ngày tạo</th>
               <th>{{ i18n.t('admin.status') }}</th>
               <th class="text-center">{{ i18n.t('admin.actions') }}</th>
             </tr>
@@ -53,6 +59,7 @@
               <td class="text-muted" :data-label="i18n.t('common.email')">{{ u.email }}</td>
               <td class="text-center fw-bold" :data-label="i18n.t('admin.user_orders')">{{ u.orders_count || 0 }}</td>
               <td :data-label="i18n.t('admin.spending')"><span class="text-danger fw-bold">{{ fmtPrice(u.total_spent || 0) }}</span></td>
+              <td data-label="Ngày tạo">{{ u.created_at_fmt }}</td>
               <td :data-label="i18n.t('admin.status')">
                 <span class="status-badge" :class="(u.is_locked || !u.is_active) ? 'badge-danger' : 'badge-success'">
                   {{ !u.is_active ? i18n.t('admin.locked') : (u.is_locked ? 'Khóa tạm thời' : i18n.t('admin.active')) }}
@@ -166,20 +173,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import api from '../../services/api'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useUtils } from '../../composables/useUtils'
 import { useToast } from '../../composables/useToast'
 import { useI18nStore } from '../../stores/i18n'
+import { useUserStore } from '../../stores/user'
 import Swal from 'sweetalert2'
 
 const { fmtPrice } = useUtils()
 const toast = useToast()
 const i18n = useI18nStore()
-const users = ref([])
-const loading = ref(false)
+const userStore = useUserStore()
+
+const users = computed(() => userStore.list)
+const loading = computed(() => userStore.loading)
+const pagination = computed(() => userStore.pagination)
+
 const search = ref('')
-const pagination = ref({ current_page: 1, last_page: 1, total: 0 })
+const selectedRole = ref('')
 const showModal = ref(false)
 const editUser = ref(null)
 const saving = ref(false)
@@ -188,17 +199,28 @@ const form = ref({ name: '', email: '', password: '', role: 'user', phone: '', a
 
 onMounted(() => fetchUsers())
 
+let debounceTimeout = null
+watch(search, () => {
+  if (debounceTimeout) clearTimeout(debounceTimeout)
+  debounceTimeout = setTimeout(() => {
+    fetchUsers(1)
+  }, 400)
+})
+
+watch(selectedRole, () => {
+  fetchUsers(1)
+})
+
 async function fetchUsers(page = 1) {
-  loading.value = true
   try {
-    const res = await api.get('/admin/users', { params: { page, search: search.value || undefined } })
-    users.value = res.data.data
-    pagination.value = res.data.meta || { 
-      current_page: res.data.current_page || 1, 
-      last_page: res.data.last_page || 1, 
-      total: res.data.total || res.data.data?.length || 0 
-    }
-  } catch { toast.error(i18n.t('common.error')) } finally { loading.value = false }
+    await userStore.fetchUsers({ 
+      page, 
+      search: search.value || undefined,
+      role: selectedRole.value || undefined
+    })
+  } catch {
+    toast.error(i18n.t('common.error'))
+  }
 }
 
 async function unlockUser(id) {
@@ -216,9 +238,8 @@ async function unlockUser(id) {
   if (!result.isConfirmed) return
 
   try {
-    await api.post(`/admin/users/${id}/unlock`)
+    await userStore.unlockUser(id)
     toast.success(i18n.t('admin.user_unlocked_success'))
-    fetchUsers()
   } catch { toast.error(i18n.t('common.error')) }
 }
 
@@ -238,9 +259,8 @@ async function lockUser(id) {
   if (!result.isConfirmed) return
 
   try {
-    await api.post(`/admin/users/${id}/lock`)
+    await userStore.lockUser(id)
     toast.success(i18n.t('admin.user_locked_success'))
-    fetchUsers()
   } catch { toast.error(i18n.t('common.error')) }
 }
 
@@ -260,10 +280,12 @@ async function deleteUser(id) {
   if (!result.isConfirmed) return
 
   try {
-    await api.delete(`/admin/users/${id}`)
-    toast.success(i18n.t('admin.user_deleted_success'))
-    fetchUsers()
-  } catch { toast.error(i18n.t('common.error')) }
+    await userStore.deleteUser(id)
+    toast.success('Đã xóa tài khoản thành công.')
+  } catch (e) {
+    const msg = e.response?.data?.message || i18n.t('common.error')
+    toast.error(msg)
+  }
 }
 
 function openCreateModal() { 
@@ -276,23 +298,31 @@ function openCreateModal() {
 function openEditModal(u) { 
   editUser.value = u; 
   errors.value = {}
-  form.value = { name: u.name, email: u.email, password: '', role: u.role, phone: u.phone || '', address: u.address || '' }; 
+  form.value = { name: u.name, email: u.email, password: '', role: u.role, phone: u.phone || '', address: u.address || '', updated_at: u.updated_at }; 
   showModal.value = true 
 }
 
 async function saveUser() {
   errors.value = {}
   
-  // Client-side validation: Chặn ngay nếu các trường bắt buộc bị trống
+  // Client-side validation: Chặn ngay nếu các trường bắt buộc bị trống hoặc sai độ dài
   let hasError = false
   if (!form.value.name?.trim()) {
     errors.value.name = [i18n.t('auth.name_error') || 'Vui lòng nhập họ tên']
     hasError = true
+  } else if (form.value.name.trim().length > 50) {
+    errors.value.name = ['Vui lòng nhập họ tên hợp lệ (tối đa 50 ký tự).']
+    hasError = true
   }
+  
   if (!form.value.email?.trim()) {
     errors.value.email = [i18n.t('auth.email_error') || 'Vui lòng nhập email']
     hasError = true
+  } else if (form.value.email.trim().length > 100) {
+    errors.value.email = ['Vui lòng nhập email hợp lệ (tối đa 100 ký tự).']
+    hasError = true
   }
+  
   if (!editUser.value && !form.value.password?.trim()) {
     errors.value.password = [i18n.t('auth.password_error') || 'Vui lòng nhập mật khẩu']
     hasError = true
@@ -303,17 +333,18 @@ async function saveUser() {
   saving.value = true
   try {
     if (editUser.value) {
-      await api.put(`/admin/users/${editUser.value.id}`, form.value)
-      toast.success(i18n.t('admin.user_saved_success'))
+      await userStore.updateUser(editUser.value.id, form.value)
+      toast.success('Cập nhật thông tin thành công')
     } else {
-      await api.post('/admin/users', form.value)
+      await userStore.createUser(form.value)
       toast.success(i18n.t('admin.user_saved_success'))
     }
     showModal.value = false
-    fetchUsers()
   } catch (e) {
     if (e.response?.status === 422) {
       errors.value = e.response.data.errors || e.response.data
+    } else if (e.response?.status === 409) {
+      toast.error(e.response.data.message || 'Dữ liệu đã bị thay đổi ở tab khác, vui lòng tải lại!')
     } else {
       const msg = e.response?.data?.message || i18n.t('common.error')
       // Fallback: Nếu lỗi SQL hoặc lỗi hệ thống, đẩy vào nhãn đỏ cho Admin đọc thay vì messbox
@@ -342,6 +373,8 @@ function goPage(p) { fetchUsers(p) }
 .toolbar { display: flex; gap: 12px; align-items: center; }
 .admin-search { flex: 1; max-width: 400px; background: #fff; border: 1.5px solid #d2d2d7; border-radius: 12px; padding: 9px 16px; font-size: 13px; font-family: inherit; outline: none; transition: 0.2s; }
 .admin-search:focus { border-color: #0071e3; box-shadow: 0 0 0 3px rgba(0,113,227,0.1); }
+.admin-select { background: #fff; border: 1.5px solid #d2d2d7; border-radius: 12px; padding: 9px 16px; font-size: 13px; font-family: inherit; outline: none; transition: 0.2s; cursor: pointer; }
+.admin-select:focus { border-color: #0071e3; box-shadow: 0 0 0 3px rgba(0,113,227,0.1); }
 .btn-primary { background: #1d1d1f; color: #fff; border: none; border-radius: 12px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: 0.2s; white-space: nowrap; }
 .btn-primary:hover { background: #3a3a3c; }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }

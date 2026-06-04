@@ -114,8 +114,9 @@ async function handleLogin() {
 
   // Client-side validation
   let hasError = false
-  if (!emailVal) {
-    errors.value.email = [i18nStore.t('auth.email_error')]
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailVal || !emailRegex.test(emailVal)) {
+    errors.value.email = ['Vui lòng nhập email hợp lệ.']
     hasError = true
   }
   if (!passwordVal) {
@@ -130,7 +131,11 @@ async function handleLogin() {
   const result = await authStore.login(emailVal, passwordVal)
   if (result.success) {
     toast.success(i18nStore.t('common.login_success'))
-    router.push(route.query.redirect || '/')
+    if (authStore.isAdmin) {
+      router.push('/')
+    } else {
+      router.push(route.query.redirect || '/')
+    }
   } else {
     // Nếu là lỗi validation hoặc sai tài khoản
     if (result.data?.errors) {

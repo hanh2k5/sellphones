@@ -21,7 +21,7 @@
 
           <div class="nav-category-wrap desktop-only">
             <button type="button" class="nav-category-btn" @click.stop="$emit('toggle-categories')">
-              <span>{{ i18n.t('nav.all_categories') }}</span>
+              <span>{{ selectedCategoryName }}</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                 :class="{ 'rotate-180': showCategories }" class="transition-transform">
                 <path d="M6 9l6 6 6-6" />
@@ -225,6 +225,7 @@
 
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18nStore } from '../../stores/i18n'
 import { useUtils } from '../../composables/useUtils'
 
@@ -254,6 +255,26 @@ const emit = defineEmits([
 const i18n = useI18nStore()
 const { fmtPrice, getImageUrl } = useUtils()
 const showDropdown = ref(false)
+const route = useRoute()
+
+const selectedCategoryName = computed(() => {
+  const catId = route.query.category
+  if (!catId) return i18n.t('nav.all_categories')
+  const cat = findCategoryRecursive(props.categories || [], catId)
+  return cat ? i18n.transName(cat.name) : i18n.t('nav.all_categories')
+})
+
+function findCategoryRecursive(list, id) {
+  for (const c of list) {
+    if (c.id == id) return c
+    const children = c.children || c.active_children
+    if (children?.length) {
+      const found = findCategoryRecursive(children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
 const showMobileMenu = ref(false)
 
 const topCategories = computed(() => (props.categories || []).filter((c) => !c.parent_id))
@@ -288,7 +309,7 @@ function closeOnOutsideClick(e) {
 }
 
 function onImgError(e) {
-  e.target.src = 'https://via.placeholder.com/40'
+  e.target.src = 'https://placehold.co/40'
 }
 
 function getCategoryIcon(name) {

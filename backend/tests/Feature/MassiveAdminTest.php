@@ -98,7 +98,7 @@ class MassiveAdminTest extends TestCase
     public function test_admin_can_update_product() {
         $category = \App\Models\Category::factory()->create();
         $product = \App\Models\Product::factory()->create(['category_id' => $category->id]);
-        $this->withHeaders(['Authorization' => "Bearer {$this->token}"])->putJson("/api/admin/products/{$product->id}", ['name' => 'Updated Product', 'price' => 200000, 'stock' => 10, 'is_active' => true, 'category_id' => $category->id])->assertStatus(200);
+        $this->withHeaders(['Authorization' => "Bearer {$this->token}"])->putJson("/api/admin/products/{$product->id}", ['name' => 'Updated Product', 'price' => 200000, 'stock' => 10, 'is_active' => true, 'category_id' => $category->id, 'updated_at' => $product->updated_at])->assertStatus(200);
     }
 
 
@@ -210,7 +210,7 @@ class MassiveAdminTest extends TestCase
         $this->withHeaders(['Authorization' => "Bearer {$this->token}"])
              ->deleteJson("/api/admin/users/{$this->normalUser->id}")
              ->assertStatus(200);
-        $this->assertDatabaseMissing('users', ['id' => $this->normalUser->id]);
+        $this->assertSoftDeleted('users', ['id' => $this->normalUser->id]);
     }
 
     // ==========================================
@@ -306,7 +306,7 @@ class MassiveAdminTest extends TestCase
         $product = \App\Models\Product::factory()->create();
         $order = \App\Models\Order::factory()->create();
         $order->items()->create(['product_id' => $product->id, 'quantity' => 1, 'price_at_purchase' => 1000]);
-        $this->withHeaders(['Authorization' => "Bearer {$this->token}"])->deleteJson("/api/admin/products/{$product->id}/force-delete")->assertStatus(404);
+        $this->withHeaders(['Authorization' => "Bearer {$this->token}"])->deleteJson("/api/admin/products/{$product->id}/force-delete")->assertStatus(409);
     }
 
 

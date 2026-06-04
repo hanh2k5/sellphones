@@ -38,7 +38,7 @@
           </button>
 
           <div class="w-full md:w-32 h-32 md:h-32 bg-slate-50 rounded-xl md:rounded-2xl p-2 shrink-0 flex items-center justify-center">
-            <img :src="getImageUrl(item.product?.hinh_anh)" :alt="item.product?.name" class="w-full h-full object-contain" />
+            <img :src="getImageUrl(item.product?.hinh_anh)" :alt="item.product?.name" class="w-full h-full object-contain" @error="onImgError" />
           </div>
 
           <div class="flex-1">
@@ -97,6 +97,24 @@
             <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12.94 1.61a2 2 0 00-2.83 0l-8.5 8.5a2 2 0 000 2.83l7.07 7.07a2 2 0 002.83 0l8.5-8.5a2 2 0 00.59-1.41V4.5a2 2 0 00-2-2h-5.66zM16 10a2 2 0 110-4 2 2 0 010 4z"/></svg>
             Ưu đãi dành riêng cho bạn
           </h3>
+
+          <!-- Manual Voucher Input -->
+          <div class="flex gap-3 mb-6">
+            <input 
+              v-model="manualCode" 
+              type="text" 
+              placeholder="Nhập mã voucher..." 
+              class="flex-1 px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold uppercase text-slate-800"
+              :disabled="!!cartStore.appliedVoucher"
+            />
+            <button 
+              @click="selectVoucher(manualCode)" 
+              :disabled="!manualCode || !!cartStore.appliedVoucher"
+              class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              Áp dụng
+            </button>
+          </div>
 
           <!-- Applied Voucher Indicator -->
           <div v-if="cartStore.appliedVoucher" class="bg-[#d1e7dd] border border-[#badbcc] rounded-xl p-4 flex justify-between items-center mb-6">
@@ -184,7 +202,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { vouchersApi } from '../api'
 import { useCartStore } from '../stores/cart'
 import { useI18nStore } from '../stores/i18n'
@@ -203,6 +221,11 @@ const voucherError = ref('')
 const availableVouchers = ref([])
 const showManualInput = ref(false)
 const manualCode = ref('')
+
+// Tự động chuyển in hoa, không dấu, và loại bỏ ký tự đặc biệt/khoảng trắng
+watch(manualCode, (newVal) => {
+  manualCode.value = newVal.toUpperCase().replace(/[^A-Z0-9]/g, '')
+})
 
 onMounted(async () => {
   await cartStore.fetchCart(1)
@@ -281,7 +304,7 @@ async function confirmRemove(item) {
   if (result.isConfirmed) {
     const res = await cartStore.removeFromCart(item.id)
     if (res.success) {
-      toast.info(i18n.t('common.remove_success'))
+      toast.info(i18n.locale === 'vi' ? 'Đã xóa sản phẩm.' : 'Product removed.')
     } else {
       toast.error(i18n.t('common.remove_error'))
     }
@@ -313,6 +336,10 @@ function removeVoucher() {
   localStorage.removeItem('cart_voucher')
   localStorage.removeItem('cart_discount')
   toast.info(i18n.t('common.voucher_removed'))
+}
+
+function onImgError(e) {
+  e.target.src = 'https://placehold.co/400'
 }
 </script>
 

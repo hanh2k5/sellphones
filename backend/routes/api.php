@@ -83,38 +83,31 @@ Route::middleware('auth:sanctum')->group(function () {
         // Báo cáo 4.3.5: Thêm mới sản phẩm
         Route::post('/products', [ProductController::class, 'store']);
         // Báo cáo 4.3.6: Cập nhật sản phẩm
-        Route::put('/products/{id}', [ProductController::class, 'update']);
+        Route::put('/products/{product}', [ProductController::class, 'update'])->withTrashed();
         // Báo cáo 4.3.7: Xóa mềm sản phẩm
-        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+        Route::delete('/products/{product}', [ProductController::class, 'destroy'])->withTrashed();
         // Báo cáo 4.3.14: Thùng rác sản phẩm
         Route::get('/products/trash', [ProductController::class, 'trash']);
-        Route::post('/products/{id}/restore', [ProductController::class, 'restore']);
-        Route::delete('/products/{id}/force-delete', [ProductController::class, 'forceDelete']);
+        Route::post('/products/{product}/restore', [ProductController::class, 'restore']);
+        Route::delete('/products/{product}/force-delete', [ProductController::class, 'forceDelete']);
         // Báo cáo 4.3.15: Quản lý ảnh (Gallery)
         Route::post('/products/{product}/images', [ProductController::class, 'uploadImages']);
-        Route::delete('/products/{id}/images/{imageId}', [ProductController::class, 'deleteImage']);
+        Route::delete('/products/{product}/images/{imageId}', [ProductController::class, 'deleteImage']);
         // Upload file chung & Check update
         Route::post('/upload', [ProductController::class, 'uploadFile']);
-        Route::get('/products/{id}/check-updated', [ProductController::class, 'checkUpdated']);
+        Route::get('/products/{product}/check-updated', [ProductController::class, 'checkUpdated']);
 
         // QUẢN LÝ ĐÁNH GIÁ (Admin)
         Route::get('/reviews', [ReviewController::class, 'adminIndex']);
         Route::put('/reviews/{review}/moderate', [ReviewController::class, 'moderate']);
         Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
-
-        // QUẢN LÝ NGƯỜI DÙNG (Nguyễn Duy Khang - 4.2.1 → 4.2.4)
-        Route::get('/users', [AuthController::class, 'index']);
-        Route::post('/users', [AuthController::class, 'storeUser']);
-        Route::put('/users/{user}', [AuthController::class, 'updateUser']);
-        Route::delete('/users/{user}', [AuthController::class, 'destroyUser']);
-        Route::post('/users/{user}/lock', [AuthController::class, 'lock']);
-        Route::post('/users/{user}/unlock', [AuthController::class, 'unlock']);
     });
 
     // --- GIỎ HÀNG (Phan Đình Hạnh) ---
     Route::get('/cart', [CartController::class, 'index']);
     // Báo cáo 4.1.1 & 4.1.2: Thêm sản phẩm vào giỏ hàng & Kiểm tra tồn kho
     Route::post('/cart', [CartController::class, 'store']);
+    Route::post('/cart/add', [CartController::class, 'store']);
     Route::put('/cart/{id}', [CartController::class, 'update']);
     // Báo cáo 4.1.3: Xóa sản phẩm khỏi giỏ hàng
     Route::delete('/cart/{id}', [CartController::class, 'destroy']);

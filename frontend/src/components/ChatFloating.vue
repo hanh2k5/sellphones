@@ -120,6 +120,14 @@ const toggleChat = () => {
 
 const handleSend = async () => {
   if (!inputText.value.trim() || chatStore.loading) return
+  
+  if (inputText.value.length > 1000) {
+    toast.warning(i18n.locale === 'vi'
+      ? 'Tin nhắn quá dài (tối đa 1,000 ký tự).'
+      : 'Message too long (maximum 1,000 characters).')
+    return
+  }
+
   const text = inputText.value
   inputText.value = ''
   

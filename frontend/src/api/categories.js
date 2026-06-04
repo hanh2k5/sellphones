@@ -6,8 +6,8 @@ import api from '../services/api'
 
 export const categoriesApi = {
   // ─── Public ──────────────────────────────────────────────────────────────
-  tree:   () => api.get('/categories'),
-  flat:   () => api.get('/categories/flat'),
+  tree:   (params) => api.get('/categories', { params }),
+  flat:   (params) => api.get('/categories/flat', { params }),
 
   // ─── Admin ───────────────────────────────────────────────────────────────
   create: (data)    => api.post('/admin/categories', data),

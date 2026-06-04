@@ -90,12 +90,6 @@ const suggestions = ref([])
 const showSuggest = ref(false)
 let searchTimer = null
 const showCategories = ref(false)
-const handleVisibilityChange = () => {
-  if (document.visibilityState === 'visible') syncTabs()
-}
-const handleStorageChange = (e) => {
-  if (e.key === 'cart_voucher') cartStore.fetchCart()
-}
 
 function goCategory(id) {
   showCategories.value = false
@@ -139,25 +133,14 @@ function closeMenus(e) {
   if (!e.target.closest('.nav-category-wrap')) showCategories.value = false
 }
 
-// 2-tab sync: Fetch cart when tab becomes visible or storage changes
-function syncTabs() {
-  if (authStore.isLoggedIn) {
-    cartStore.fetchCart()
-  }
-}
-
 onMounted(() => { 
   fetchCategories()
   if (authStore.isLoggedIn) cartStore.fetchCart() 
   window.addEventListener('click', closeMenus)
-  window.addEventListener('visibilitychange', handleVisibilityChange)
-  window.addEventListener('storage', handleStorageChange)
 })
 
 onUnmounted(() => {
   window.removeEventListener('click', closeMenus)
-  window.removeEventListener('visibilitychange', handleVisibilityChange)
-  window.removeEventListener('storage', handleStorageChange)
 })
 
 async function handleLogout() {

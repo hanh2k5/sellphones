@@ -18,11 +18,14 @@ class ReviewResource extends JsonResource
             'id'         => $this->id,
             'user_id'    => $this->user_id,
             'product_id' => $this->product_id,
-            'order_id'   => $this->order_id,
             'rating'     => (int) $this->rating,
             'comment'    => $this->comment,
             'status'     => $this->status,
-            'user'       => new UserResource($this->whenLoaded('user')),
+            'user'       => $this->whenLoaded('user', fn () => $this->user ? [
+                'id'     => $this->user->id,
+                'name'   => $this->user->name,
+                'avatar' => data_get($this->user, 'avatar'),
+            ] : null),
             'product'    => new ProductResource($this->whenLoaded('product')),
             'created_at' => $this->created_at,
         ];

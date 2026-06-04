@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\Product;
 use App\Models\ProductImage;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Exception;
+
 
 /**
  * Service quản lý toàn bộ nghiệp vụ liên quan đến Sản phẩm.
@@ -35,11 +37,13 @@ class ProductService
      */
     public function createProduct(array $data)
     {
-        if (isset($data['hinh_anh_file'])) {
-            // Lưu ảnh vào thư mục storage/app/public/products
-            $data['hinh_anh'] = $data['hinh_anh_file']->store('products', 'public');
-        }
-        return Product::create($data);
+        return DB::transaction(function () use ($data) {
+            if (isset($data['hinh_anh_file'])) {
+                // Lưu ảnh vào thư mục storage/app/public/products
+                $data['hinh_anh'] = $data['hinh_anh_file']->store('products', 'public');
+            }
+            return Product::create($data);
+        });
     }
 
     /**
@@ -52,28 +56,38 @@ class ProductService
      */
     public function updateProduct(Product $product, array $data)
     {
-        if (isset($data['updated_at'])) {
-            // So sánh updated_at của client và DB để phát hiện sửa cùng lúc ở 2 tab.
-            $clientUpdatedAt = Carbon::parse($data['updated_at'])->utc()->format('Y-m-d\TH:i:s.u\Z');
-            $serverUpdatedAt = $product->updated_at->copy()->utc()->format('Y-m-d\TH:i:s.u\Z');
+        return DB::transaction(function () use ($product, $data) {
+            if (isset($data['updated_at'])) {
+                // So sánh updated_at của client và DB để phát hiện sửa cùng lúc ở 2 tab.
+                $clientUpdatedAt = Carbon::parse($data['updated_at'])->utc()->format('Y-m-d\TH:i:s.u\Z');
+                $serverUpdatedAt = $product->updated_at->copy()->utc()->format('Y-m-d\TH:i:s.u\Z');
 
-            if ($serverUpdatedAt !== $clientUpdatedAt) {
-                throw new Exception(__('messages.data_conflict'), 409);
+                if ($serverUpdatedAt !== $clientUpdatedAt) {
+                    throw new Exception(__('messages.data_conflict'), 409);
+                }
+
+                unset($data['updated_at']);
             }
 
-            unset($data['updated_at']);
-        }
-
-        // Xử lý thay thế ảnh cũ nếu có upload ảnh mới
-        if (isset($data['hinh_anh_file'])) {
-            if ($product->hinh_anh) {
-                Storage::disk('public')->delete($product->hinh_anh);
+            $oldImage = null;
+            // Xử lý thay thế ảnh cũ nếu có upload ảnh mới
+            if (isset($data['hinh_anh_file'])) {
+                $oldImage = $product->hinh_anh;
+                $data['hinh_anh'] = $data['hinh_anh_file']->store('products', 'public');
+            } elseif (isset($data['hinh_anh']) && $data['hinh_anh'] !== $product->hinh_anh) {
+                $oldImage = $product->hinh_anh;
             }
-            $data['hinh_anh'] = $data['hinh_anh_file']->store('products', 'public');
-        }
-        
-        $product->update($data);
-        return $product;
+            
+            $product->update($data);
+
+            if ($oldImage) {
+                // Dọn dẹp ảnh cũ trong Storage ngay sau khi DB cập nhật thành công
+                Storage::delete($oldImage);
+                Storage::disk('public')->delete($oldImage);
+            }
+
+            return $product;
+        });
     }
 
     /**
@@ -85,15 +99,27 @@ class ProductService
      */
     public function deleteProduct(Product $product, $version = null)
     {
-        if ($version) {
-            $clientUpdatedAt = Carbon::parse($version)->utc()->format('Y-m-d\TH:i:s.u\Z');
-            $serverUpdatedAt = $product->updated_at->copy()->utc()->format('Y-m-d\TH:i:s.u\Z');
+        return DB::transaction(function () use ($product, $version) {
+            if ($version) {
+                $clientUpdatedAt = Carbon::parse($version)->utc()->format('Y-m-d\TH:i:s.u\Z');
+                $serverUpdatedAt = $product->updated_at->copy()->utc()->format('Y-m-d\TH:i:s.u\Z');
 
-            if ($serverUpdatedAt !== $clientUpdatedAt) {
-                throw new Exception(__('messages.data_conflict'), 409);
+                if ($serverUpdatedAt !== $clientUpdatedAt) {
+                    throw new Exception('Cảnh báo: Dữ liệu đã thay đổi, vui lòng làm mới!', 409);
+                }
             }
-        }
-        return $product->delete();
+
+            // Kiểm tra nếu sản phẩm đang nằm trong đơn hàng trạng thái "pending" (Chờ xử lý)
+            $hasPendingOrder = $product->orderItems()->whereHas('order', function($q) {
+                $q->where('status', 'pending');
+            })->exists();
+
+            if ($hasPendingOrder) {
+                throw new Exception('Không thể xóa sản phẩm này vì đang nằm trong đơn hàng chờ xử lý.', 422);
+            }
+
+            return $product->delete();
+        });
     }
 
     /**
@@ -102,41 +128,88 @@ class ProductService
     public function getTrashed()
     {
         // onlyTrashed() chỉ lấy sản phẩm đang nằm trong thùng rác.
-        return Product::onlyTrashed()->with('category')->paginate(10);
+        return Product::onlyTrashed()->with('category')->get();
     }
 
-    /**
-     * Khôi phục sản phẩm từ thùng rác.
-     */
-    /**
-     * [Đặng Văn Hà - 4.3.14] Khôi phục sản phẩm từ thùng rác
-     */
-    public function restoreProduct($id)
+    public function restoreProduct(Product $product, $version = null)
     {
-        // Tìm trong thùng rác rồi restore để hiện lại sản phẩm.
-        $product = Product::onlyTrashed()->findOrFail($id);
-        $product->restore();
-        return $product;
+        return DB::transaction(function () use ($product, $version) {
+            if ($version) {
+                $clientUpdatedAt = Carbon::parse($version)->utc()->format('Y-m-d\TH:i:s.u\Z');
+                $serverUpdatedAt = $product->updated_at->copy()->utc()->format('Y-m-d\TH:i:s.u\Z');
+
+                if ($serverUpdatedAt !== $clientUpdatedAt) {
+                    throw new Exception('Cảnh báo: Dữ liệu đã thay đổi, vui lòng làm mới!', 409);
+                }
+            }
+
+            // [Đặng Văn Hà] Kiểm tra nếu danh mục cha bị xóa/ẩn, tự động gán vào danh mục 'Chưa phân loại'
+            $categoryId = $product->category_id;
+            $category = $categoryId ? \App\Models\Category::find($categoryId) : null;
+            $needsUncategorized = false;
+
+            if (!$category) {
+                $needsUncategorized = true;
+            } else {
+                $currentCat = $category;
+                while ($currentCat) {
+                    if (!$currentCat->is_active) {
+                        $needsUncategorized = true;
+                        break;
+                    }
+                    if ($currentCat->parent_id) {
+                        $parentCat = \App\Models\Category::find($currentCat->parent_id);
+                        if (!$parentCat) {
+                            $needsUncategorized = true;
+                            break;
+                        }
+                        $currentCat = $parentCat;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if ($needsUncategorized) {
+                $uncategorized = \App\Models\Category::firstOrCreate(
+                    ['name' => 'Chưa phân loại'],
+                    ['is_active' => true]
+                );
+                $product->category_id = $uncategorized->id;
+            }
+
+            $product->restore();
+            return $product;
+        });
     }
 
     /**
      * Xóa vĩnh viễn sản phẩm và các tài nguyên ảnh đi kèm.
      */
-    public function forceDeleteProduct($id)
+    public function forceDeleteProduct(Product $product)
     {
-        $product = Product::onlyTrashed()->findOrFail($id);
-        
-        // Xóa ảnh đại diện vật lý
-        if ($product->hinh_anh) {
-            Storage::disk('public')->delete($product->hinh_anh);
-        }
+        return DB::transaction(function () use ($product) {
+            // Ràng buộc: Tuyệt đối không xóa vĩnh viễn nếu sản phẩm đã phát sinh giao dịch (order_items)
+            if ($product->orderItems()->exists()) {
+                throw new Exception('Không thể xóa vĩnh viễn sản phẩm đã phát sinh giao dịch.', 400);
+            }
 
-        // Xóa toàn bộ ảnh chi tiết (Gallery) vật lý
-        foreach ($product->images as $image) {
-            Storage::disk('public')->delete($image->image_path);
-        }
-        
-        $product->forceDelete();
+            // Xóa ảnh đại diện vật lý
+            if ($product->hinh_anh) {
+                Storage::disk('public')->delete($product->hinh_anh);
+            }
+
+            // Xóa toàn bộ ảnh chi tiết (Gallery) vật lý và bản ghi trong bảng product_images
+            foreach ($product->images as $image) {
+                Storage::disk('public')->delete($image->image_path);
+                $image->delete();
+            }
+            
+            // Xóa thư mục chứa ảnh chi tiết nếu có
+            Storage::disk('public')->deleteDirectory("products/{$product->id}");
+            
+            $product->forceDelete();
+        });
     }
 
     /**
@@ -147,16 +220,29 @@ class ProductService
      */
     public function uploadProductImages(Product $product, array $files)
     {
-        $images = [];
-        foreach ($files as $file) {
-            // Mỗi ảnh được lưu theo thư mục riêng của sản phẩm.
-            $path = $file->store("products/{$product->id}", 'public');
-            $images[] = ProductImage::create([
-                'product_id' => $product->id,
-                'image_path' => $path
-            ]);
-        }
-        return $images;
+        // [Đặng Văn Hà] Bọc trong DB Transaction: nếu 1 ảnh lỗi DB, toàn bộ phiên upload bị rollback.
+        return DB::transaction(function () use ($product, $files) {
+            $images = [];
+            $storedPaths = []; // Ghi lại đường dẫn đã lưu để dọn dẹp nếu rollback
+            try {
+                foreach ($files as $file) {
+                    // Laravel tự băm (hash) tên file → đảm bảo duy nhất, không ghi đè ảnh cũ.
+                    $path = $file->store("products/{$product->id}", 'public');
+                    $storedPaths[] = $path;
+                    $images[] = ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_path' => $path
+                    ]);
+                }
+                return $images;
+            } catch (Exception $e) {
+                // Xóa file đã upload khỏi disk khi DB lỗi để tránh file orphan.
+                foreach ($storedPaths as $path) {
+                    Storage::disk('public')->delete($path);
+                }
+                throw $e;
+            }
+        });
     }
 
     /**
@@ -164,9 +250,16 @@ class ProductService
      */
     public function deleteImage($imageId)
     {
-        $image = ProductImage::findOrFail($imageId);
-        Storage::disk('public')->delete($image->image_path);
-        return $image->delete();
+        return DB::transaction(function () use ($imageId) {
+            $image = ProductImage::findOrFail($imageId);
+            $path = $image->image_path;
+            $deleted = $image->delete();
+            if ($deleted) {
+                Storage::delete($path);
+                Storage::disk('public')->delete($path);
+            }
+            return $deleted;
+        });
     }
 
     /**
@@ -180,9 +273,8 @@ class ProductService
     /**
      * Kiểm tra trạng thái cập nhật (dùng cho cơ chế Real-time Polling ở Frontend).
      */
-    public function checkUpdated($id, $lastTime)
+    public function checkUpdated(Product $product, $lastTime)
     {
-        $product = Product::findOrFail($id);
         return [
             // true nếu DB mới hơn thời điểm frontend đang giữ.
             'updated'    => $product->updated_at->gt($lastTime),

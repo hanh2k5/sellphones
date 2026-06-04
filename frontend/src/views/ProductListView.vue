@@ -23,7 +23,7 @@
         <div class="filter-divider-v d-none d-lg-block"></div>
 
         <div class="utility-row">
-          <select v-model="sortBy" @change="doFetch" class="select-minimal">
+          <select v-model="sortBy" @change="handleSortChange" class="select-minimal">
             <option value="">{{ i18n.t('common.newest') }}</option>
             <option value="price_asc">↑ {{ i18n.t('common.price_asc') }}</option>
             <option value="price_desc">↓ {{ i18n.t('common.price_desc') }}</option>
@@ -37,13 +37,37 @@
         </div>
       </div>
 
-      <!-- Price Range Row (Horizontal Scroll on Mobile) -->
-      <div class="price-filter-row mt-3">
-        <div class="price-pills">
-          <button v-for="range in priceRanges" :key="range.val" @click="setPriceRange(range)" class="pill-tag-minimal"
-            :class="{ active: currentRangeVal === range.val }">
-            {{ range.label }}
-          </button>
+      <!-- Price Range Slider (Dual-range Component) -->
+      <div class="slider-wrapper mt-3">
+        <div class="slider-label-row">
+          <span class="slider-label-title">{{ i18n.t('product.filter_price') || 'Lọc giá' }}</span>
+          <span class="slider-label-value">{{ fmtPrice(tempMinPrice) }} — {{ fmtPrice(tempMaxPrice) }}</span>
+        </div>
+        <div class="custom-slider-container">
+          <div class="custom-slider-track"></div>
+          <div class="custom-slider-range" :style="rangeStyle"></div>
+          <input 
+            type="range" 
+            v-model.number="tempMinPrice" 
+            :min="minLimit" 
+            :max="maxLimit" 
+            :step="step" 
+            class="range-thumb range-min" 
+            @input="onMinSliderInput" 
+          />
+          <input 
+            type="range" 
+            v-model.number="tempMaxPrice" 
+            :min="minLimit" 
+            :max="maxLimit" 
+            :step="step" 
+            class="range-thumb range-max" 
+            @input="onMaxSliderInput" 
+          />
+        </div>
+        <div class="slider-limits">
+          <span>0đ</span>
+          <span>50.000.000đ</span>
         </div>
       </div>
 
@@ -67,15 +91,24 @@
 
     <!-- Empty State - Premium -->
     <div v-else-if="productStore.list.length === 0" class="empty-state reveal-item">
-      <div class="empty-icon-wrap">🔍</div>
-      <h3>{{ i18n.t('product.not_found') }}</h3>
-      <p>{{ i18n.t('product.search_placeholder') }}</p>
+      <div class="empty-illustration-wrap">
+        <img src="/images/no_results.png" alt="No products found" class="empty-illustration" />
+      </div>
+      <h3>{{ i18n.t('product.not_found') || 'Không tìm thấy sản phẩm' }}</h3>
+      <p>{{ i18n.t('product.search_placeholder') || 'Thử thay đổi bộ lọc hoặc khoảng giá của bạn.' }}</p>
       <button class="pill-modern active" @click="resetFilter">
-        {{ i18n.t('product.clear_filter') }}
+        {{ i18n.t('product.clear_filter') || 'Xóa bộ lọc' }}
       </button>
     </div>
 
     <template v-else>
+      <!-- Filter Result Info -->
+      <div v-if="isFilterActive" class="filter-result-info reveal-item mb-4">
+        <div class="filter-message-badge">
+          <span>💡 {{ productStore.listMessage || `Tìm thấy ${productStore.pagination?.total || 0} sản phẩm trong tầm giá của bạn` }}</span>
+        </div>
+      </div>
+
       <div class="home-grid" ref="gridRef">
         <ProductCard v-for="product in productStore.list" :key="product.id" :product="product" />
       </div>
@@ -114,16 +147,41 @@ import { useProductStore } from '../stores/product'
 import { useI18nStore } from '../stores/i18n'
 import ProductCard from '../components/ProductCard.vue'
 import { categoriesApi } from '../api'
+import { useUtils } from '../composables/useUtils'
 
 const productStore = useProductStore()
 const i18n = useI18nStore()
 const route = useRoute()
 const router = useRouter()
-const currentRangeVal = ref('')
 const sortBy = ref('')
-const giaTu = ref('')
-const giaDen = ref('')
 const categories = ref([])
+
+// Range limits
+const minLimit = 0
+const maxLimit = 50000000
+const step = 500000
+
+// Local ranges for dragging slider
+const tempMinPrice = ref(minLimit)
+const tempMaxPrice = ref(maxLimit)
+
+// Computed active range percentage style for dual range track
+const rangeStyle = computed(() => {
+  const leftPercent = (tempMinPrice.value / maxLimit) * 100
+  const rightPercent = 100 - (tempMaxPrice.value / maxLimit) * 100
+  return {
+    left: `${leftPercent}%`,
+    right: `${rightPercent}%`
+  }
+})
+
+// Format price helper
+const { fmtPrice, fmtDate, getImageUrl } = useUtils()
+
+// Check if any price filter is active
+const isFilterActive = computed(() => {
+  return productStore.listFilters.gia_tu !== '' || productStore.listFilters.gia_den !== ''
+})
 
 // Logic hiển thị trang thông minh
 const visiblePages = computed(() => {
@@ -163,14 +221,15 @@ const activeParentId = computed(() => {
 const activeSubCategories = computed(() => {
   if (!activeParentId.value) return []
   const parent = categories.value.find(c => c.id == activeParentId.value)
-  return parent?.children || []
+  return parent?.children || parent?.active_children || []
 })
 
 function findCategoryRecursive(list, id) {
   for (const c of list) {
     if (c.id == id) return c
-    if (c.children?.length) {
-      const found = findCategoryRecursive(c.children, id)
+    const children = c.children || c.active_children
+    if (children?.length) {
+      const found = findCategoryRecursive(children, id)
       if (found) return found
     }
   }
@@ -179,7 +238,8 @@ function findCategoryRecursive(list, id) {
 
 function isParentActive(parent) {
   if (currentCatId.value == parent.id) return true
-  return parent.children?.some(c => c.id == currentCatId.value)
+  const children = parent.children || parent.active_children
+  return children?.some(c => c.id == currentCatId.value)
 }
 
 function setCategory(id) {
@@ -190,20 +250,11 @@ function resetCategory() {
   router.push({ path: '/products', query: { ...route.query, category: undefined, page: 1 } })
 }
 
-const priceRanges = computed(() => [
-  { val: '', label: i18n.t('product.price_all'), from: '', to: '' },
-  { val: 'u5', label: i18n.t('product.price_under_5'), from: '', to: '5000000' },
-  { val: '510', label: i18n.t('product.price_5_10'), from: '5000000', to: '10000000' },
-  { val: '1020', label: i18n.t('product.price_10_20'), from: '10000000', to: '20000000' },
-  { val: 'o20', label: i18n.t('product.price_over_20'), from: '20000000', to: '' },
-])
-
 function initReveal() {
   try {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry, index) => {
         if (entry.isIntersecting) {
-          // Staggered delay logic
           setTimeout(() => entry.target.classList.add('is-visible'), index * 60)
           observer.unobserve(entry.target)
         }
@@ -218,21 +269,119 @@ function initReveal() {
 let isMounted = false
 
 onMounted(() => {
-  doFetch(route.query.page || 1)
   fetchCategories()
+  
+  // Sync URL query to Store filters on mount
+  if (Object.keys(route.query).length > 0) {
+    productStore.setFilters({
+      category_id: route.query.category || null,
+      search: route.query.search || '',
+      gia_tu: route.query.gia_tu || '',
+      gia_den: route.query.gia_den || '',
+      page: Number(route.query.page) || 1,
+      sort_by: route.query.sort_by || 'created_at',
+      sort_dir: route.query.sort_dir || 'desc'
+    })
+    
+    // Sync local sliders
+    tempMinPrice.value = route.query.gia_tu ? Number(route.query.gia_tu) : minLimit
+    tempMaxPrice.value = route.query.gia_den ? Number(route.query.gia_den) : maxLimit
+  } else {
+    // If no query parameters, but Store has filters, push them to the URL
+    const sf = productStore.listFilters
+    if (sf.category_id || sf.search || sf.gia_tu || sf.gia_den || sf.page > 1) {
+      router.replace({
+        path: '/products',
+        query: {
+          category: sf.category_id || undefined,
+          search: sf.search || undefined,
+          gia_tu: sf.gia_tu || undefined,
+          gia_den: sf.gia_den || undefined,
+          page: sf.page || undefined,
+          sort_by: sf.sort_by || undefined,
+          sort_dir: sf.sort_dir || undefined
+        }
+      })
+      // Sync local sliders
+      tempMinPrice.value = sf.gia_tu ? Number(sf.gia_tu) : minLimit
+      tempMaxPrice.value = sf.gia_den ? Number(sf.gia_den) : maxLimit
+    } else {
+      tempMinPrice.value = minLimit
+      tempMaxPrice.value = maxLimit
+    }
+  }
+
+  sortBy.value = route.query.sort_by === 'price' 
+    ? (route.query.sort_dir === 'asc' ? 'price_asc' : 'price_desc') 
+    : ''
+
   isMounted = true
+  doFetch(productStore.listFilters.page)
 })
 
-watch(() => route.query, () => {
+// Watch route query to update Store (handles browser Back button)
+watch(() => route.query, (newQuery) => {
   if (!isMounted) return
-  doFetch(route.query.page || 1)
+  
+  productStore.setFilters({
+    category_id: newQuery.category || null,
+    search: newQuery.search || '',
+    gia_tu: newQuery.gia_tu || '',
+    gia_den: newQuery.gia_den || '',
+    page: Number(newQuery.page) || 1,
+    sort_by: newQuery.sort_by || 'created_at',
+    sort_dir: newQuery.sort_dir || 'desc'
+  })
+  
+  // Sync local sliders
+  tempMinPrice.value = newQuery.gia_tu ? Number(newQuery.gia_tu) : minLimit
+  tempMaxPrice.value = newQuery.gia_den ? Number(newQuery.gia_den) : maxLimit
+  
+  sortBy.value = newQuery.sort_by === 'price' 
+    ? (newQuery.sort_dir === 'asc' ? 'price_asc' : 'price_desc') 
+    : ''
 }, { deep: true })
 
-function setPriceRange(range) {
-  currentRangeVal.value = range.val;
-  giaTu.value = range.from;
-  giaDen.value = range.to;
-  doFetch()
+// Watch Store filters and trigger API call
+watch(() => productStore.listFilters, () => {
+  if (!isMounted) return
+  doFetch(productStore.listFilters.page)
+}, { deep: true })
+
+let debounceTimer = null
+function handleSliderChange() {
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    productStore.setFilters({
+      gia_tu: tempMinPrice.value === minLimit ? '' : String(tempMinPrice.value),
+      gia_den: tempMaxPrice.value === maxLimit ? '' : String(tempMaxPrice.value),
+      page: 1
+    })
+    
+    router.push({
+      path: '/products',
+      query: {
+        ...route.query,
+        gia_tu: tempMinPrice.value === minLimit ? undefined : tempMinPrice.value,
+        gia_den: tempMaxPrice.value === maxLimit ? undefined : tempMaxPrice.value,
+        page: 1
+      }
+    })
+  }, 300)
+}
+
+function onMinSliderInput() {
+  if (tempMinPrice.value > tempMaxPrice.value - step) {
+    tempMinPrice.value = tempMaxPrice.value - step
+  }
+  handleSliderChange()
+}
+
+function onMaxSliderInput() {
+  if (tempMaxPrice.value < tempMinPrice.value + step) {
+    tempMaxPrice.value = tempMinPrice.value + step
+  }
+  handleSliderChange()
 }
 
 async function doFetch(page = 1) {
@@ -243,8 +392,6 @@ async function doFetch(page = 1) {
     page,
     category_id,
     search,
-    gia_tu: giaTu.value || undefined,
-    gia_den: giaDen.value || undefined,
     sort_by: sortBy.value ? 'price' : 'created_at',
     sort_dir: (sortBy.value === 'price_asc') ? 'asc' : 'desc',
     per_page: 15
@@ -253,12 +400,27 @@ async function doFetch(page = 1) {
 }
 
 function resetFilter() {
-  currentRangeVal.value = '';
-  giaTu.value = '';
-  giaDen.value = '';
-  sortBy.value = '';
+  tempMinPrice.value = minLimit
+  tempMaxPrice.value = maxLimit
+  sortBy.value = ''
+  productStore.resetFilters()
   router.push({ path: '/products', query: {} })
-  doFetch()
+}
+
+function handleSortChange() {
+  const sort_by = sortBy.value ? 'price' : 'created_at'
+  const sort_dir = (sortBy.value === 'price_asc') ? 'asc' : 'desc'
+  productStore.setFilters({ sort_by, sort_dir, page: 1 })
+  
+  router.push({
+    path: '/products',
+    query: {
+      ...route.query,
+      sort_by: sortBy.value ? 'price' : undefined,
+      sort_dir: sortBy.value ? ((sortBy.value === 'price_asc') ? 'asc' : 'desc') : undefined,
+      page: 1
+    }
+  })
 }
 
 function goPage(page) {
@@ -751,5 +913,157 @@ function goPage(page) {
 .empty-state p {
   color: #64748b;
   margin-bottom: 24px;
+}
+
+/* Dual Range Slider Styles */
+.slider-wrapper {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  margin-top: 15px;
+  margin-bottom: 5px;
+}
+
+.slider-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.slider-label-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.slider-label-value {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0071e3;
+  background: #f5f5f7;
+  padding: 5px 12px;
+  border-radius: 8px;
+  letter-spacing: -0.01em;
+}
+
+.custom-slider-container {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  margin: 15px 0;
+  display: flex;
+  align-items: center;
+}
+
+.custom-slider-track {
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  background: #e8e8ed;
+  border-radius: 2px;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.custom-slider-range {
+  position: absolute;
+  height: 4px;
+  background: #0071e3;
+  border-radius: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.range-thumb {
+  position: absolute;
+  width: 100%;
+  height: 20px;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  top: 0;
+  left: 0;
+  margin: 0;
+  z-index: 2;
+}
+
+.range-thumb::-webkit-slider-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #0071e3;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-appearance: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
+}
+
+.range-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background-color: #f5f5f7;
+}
+
+.range-thumb::-webkit-slider-thumb:active {
+  transform: scale(0.9);
+  background-color: #0071e3;
+}
+
+.range-thumb::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #0071e3;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.slider-limits {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #86868b;
+  font-weight: 700;
+  margin-top: 10px;
+}
+
+/* Empty State Illustration */
+.empty-illustration-wrap {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.empty-illustration {
+  width: 180px;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.85;
+}
+
+/* Filter Result Message Badge */
+.filter-result-info {
+  display: flex;
+  margin-top: 10px;
+}
+
+.filter-message-badge {
+  background: #f5f5f7;
+  color: #1d1d1f;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 </style>

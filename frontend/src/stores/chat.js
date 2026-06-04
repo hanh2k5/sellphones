@@ -34,10 +34,11 @@ export const useChatStore = defineStore('chat', () => {
       return res.data; // QUAN TRỌNG: Trả về để Component biết mà hiện thông báo
     } catch (e) {
       console.error("AI Chat Error:", e)
+      const errorMsg = e.response?.data?.message || "Rất tiếc, tôi đang gặp khó khăn khi kết nối. Bạn vui lòng thử lại sau nhé!"
       messages.value.push({ 
         id: Date.now()+1, 
         role: 'assistant', 
-        message_content: "Rất tiếc, tôi đang gặp khó khăn khi kết nối. Bạn vui lòng thử lại sau nhé!", 
+        message_content: errorMsg, 
         created_at: new Date().toISOString() 
       })
       return null;
