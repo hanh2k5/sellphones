@@ -27,7 +27,7 @@
               <td :data-label="i18n.t('admin.product_image') || 'IMAGE'">
                 <div class="image-wrapper" style="display: flex; justify-content: center;">
                   <div class="product-thumb">
-                    <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" />
+                    <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" @error="onImgError" />
                   </div>
                 </div>
               </td>
@@ -156,6 +156,10 @@ async function doForceDelete() {
 function formatDate(date) { 
   if (!date) return ''
   return new Date(date).toLocaleString(i18n.locale === 'vi' ? 'vi-VN' : 'en-US') 
+}
+
+function onImgError(e) {
+  e.target.src = 'https://placehold.co/600x600/f5f5f7/86868b?text=SellPhones'
 }
 </script>
 

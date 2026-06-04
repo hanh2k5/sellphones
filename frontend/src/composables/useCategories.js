@@ -40,9 +40,10 @@ export function useCategories() {
       await fetchCategories()
       return { success: true }
     } catch (e) {
-      const errorMsg = e.response?.data?.message || i18n.t('common.error')
+      const errorData = e.response?.data
+      const errorMsg = errorData?.message || i18n.t('common.error')
       toast.error(errorMsg)
-      return { success: false, error: errorMsg }
+      return { success: false, error: errorData?.errors || errorMsg }
     } finally {
       saving.value = false
     }

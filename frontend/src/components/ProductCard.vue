@@ -108,7 +108,7 @@ async function handleBuyNow() {
 }
 
 function onImgError(e) {
-  e.target.src = 'https://via.placeholder.com/180'
+  e.target.src = 'https://placehold.co/600x600/f5f5f7/86868b?text=SellPhones'
 }
 </script>
 

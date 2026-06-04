@@ -73,7 +73,7 @@
             </button>
           </div>
           <div v-if="form.hinh_anh" style="margin-top: 10px; width: 100px; height: 100px; background: #f5f5f7; border-radius: 12px; padding: 4px; position: relative;">
-            <img :src="getImageUrl(form.hinh_anh)" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" />
+            <img :src="getImageUrl(form.hinh_anh)" @error="onImgError" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" />
             <button type="button" @click="form.hinh_anh = ''" style="position: absolute; top: -5px; right: -5px; width: 24px; height: 24px; background: #ef4444; color: white; border: none; border-radius: 50%; cursor: pointer;">×</button>
           </div>
         </div>
@@ -90,7 +90,7 @@
 
           <div v-if="form.images?.length" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 16px;">
             <div v-for="(img, idx) in form.images" :key="idx" style="aspect-ratio: 1; border: 1px solid #f0f0f0; border-radius: 12px; position: relative; overflow: hidden;">
-              <img :src="getImageUrl(img.image_path)" style="width: 100%; height: 100%; object-fit: cover;" />
+              <img :src="getImageUrl(img.image_path)" @error="onImgError" style="width: 100%; height: 100%; object-fit: cover;" />
               <button type="button" @click="removeImage(idx)" style="position: absolute; inset: 0; background: rgba(0,0,0,0.5); color: white; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; opacity: 0; transition: 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
                 {{ i18n.t('common.delete') }}
               </button>
@@ -243,7 +243,10 @@ async function handleFileUpload(e, mode) {
       const res = await api.post('/admin/upload', formData)
       form.value.hinh_anh = res.data.path
       toast.success(i18n.t('admin.image_upload_success'))
-    } catch (err) { toast.error(i18n.t('common.error')) }
+    } catch (err) {
+      const errMsg = err.response?.data?.errors?.file?.[0] || err.response?.data?.message || i18n.t('common.error')
+      toast.error(errMsg)
+    }
     finally { uploadingMain.value = false; e.target.value = '' }
   } else {
     if (!isEdit.value) {
@@ -259,7 +262,12 @@ async function handleFileUpload(e, mode) {
       const res = await api.post(`/admin/products/${route.params.id}/images`, formData)
       form.value.images = [...form.value.images, ...res.data.images]
       toast.success(i18n.t('admin.image_upload_success'))
-    } catch (err) { toast.error(i18n.t('common.error')) }
+    } catch (err) {
+      const errorData = err.response?.data
+      const firstFieldErr = errorData?.errors ? Object.values(errorData.errors).flat()[0] : null
+      const errMsg = firstFieldErr || errorData?.message || i18n.t('common.error')
+      toast.error(errMsg)
+    }
     finally { uploadingMulti.value = false; e.target.value = '' }
   }
 }
@@ -310,6 +318,10 @@ async function handleSave() {
     }
     toast.error(msg)
   } finally { saving.value = false }
+}
+
+function onImgError(e) {
+  e.target.src = 'https://placehold.co/600x600/f5f5f7/86868b?text=SellPhones'
 }
 </script>
 

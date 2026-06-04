@@ -152,10 +152,14 @@ class ProductController extends Controller
     public function uploadImages(Request $request, Product $product)
     {
         $this->authorizeAdmin();
-        // images[] phải là nhiều file ảnh, mỗi file tối đa 2MB.
         $request->validate([
             'images'   => 'required|array',
-            'images.*' => 'image|max:2048'
+            'images.*' => 'image|max:2048|mimes:jpg,jpeg,png,webp'
+        ], [
+            'images.required' => 'Vui lòng chọn các hình ảnh để tải lên.',
+            'images.*.image' => 'Tệp tải lên phải là một hình ảnh.',
+            'images.*.mimes' => 'Hình ảnh phụ phải có định dạng jpg, jpeg, png, hoặc webp.',
+            'images.*.max' => 'Hình ảnh phụ không được vượt quá 2MB.',
         ]);
 
         $images = $this->productService->uploadProductImages($product, $request->file('images'));
@@ -179,7 +183,12 @@ class ProductController extends Controller
     {
         $this->authorizeAdmin();
         $request->validate([
-            'file' => 'required|file|max:5120|mimes:jpg,jpeg,png,webp,pdf,doc,docx'
+            'file' => 'required|image|max:2048|mimes:jpg,jpeg,png,webp'
+        ], [
+            'file.required' => 'Vui lòng chọn hình ảnh để tải lên.',
+            'file.image' => 'Tệp tải lên phải là một hình ảnh.',
+            'file.mimes' => 'Hình ảnh đại diện phải có định dạng jpg, jpeg, png, hoặc webp.',
+            'file.max' => 'Hình ảnh đại diện không được vượt quá 2MB.',
         ]);
         
         $path = $this->productService->uploadFile($request->file('file'));

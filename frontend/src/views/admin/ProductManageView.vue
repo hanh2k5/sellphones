@@ -66,7 +66,7 @@
               <td :data-label="i18n.t('admin.product_image') || 'IMAGE'">
                 <div class="image-wrapper" style="display: flex; justify-content: center;">
                   <div style="width:44px;height:44px;background:#f5f5f7;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-                    <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" style="width:100%;height:100%;object-fit:contain;padding:4px;" />
+                    <img :src="getImageUrl(p.hinh_anh)" :alt="p.name" @error="onImgError" style="width:100%;height:100%;object-fit:contain;padding:4px;" />
                   </div>
                 </div>
               </td>
@@ -234,6 +234,10 @@ async function softDelete(product) {
       confirmButtonColor: '#e11d48'
     })
   }
+}
+
+function onImgError(e) {
+  e.target.src = 'https://placehold.co/600x600/f5f5f7/86868b?text=SellPhones'
 }
 </script>
 

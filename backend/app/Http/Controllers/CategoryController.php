@@ -41,8 +41,16 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $this->authorizeAdmin();
-        // Tên danh mục bắt buộc không được trùng.
-        $request->validate(['name' => 'required|string|max:255|unique:categories,name']);
+        // Tên danh mục bắt buộc không được trùng, không chứa khoảng trắng liên tiếp.
+        $request->validate(
+            ['name' => ['required', 'string', 'max:255', 'not_regex:/ {2,}/', 'unique:categories,name']],
+            [
+                'name.required' => 'Vui lòng nhập tên danh mục.',
+                'name.unique'   => 'Tên danh mục này đã tồn tại.',
+                'name.max'      => 'Tên danh mục không được vượt quá 255 ký tự.',
+                'name.not_regex'=> 'Tên danh mục không được chứa nhiều khoảng trắng liên tiếp.',
+            ]
+        );
         
         $category = $this->categoryService->create($request->all());
         return response()->json($category, 201);
@@ -52,7 +60,15 @@ class CategoryController extends Controller
     {
         $this->authorizeAdmin();
         // Khi sửa, cho phép giữ tên cũ của chính danh mục này.
-        $request->validate(['name' => 'required|string|max:255|unique:categories,name,' . $category->id]);
+        $request->validate(
+            ['name' => ['required', 'string', 'max:255', 'not_regex:/ {2,}/', 'unique:categories,name,' . $category->id]],
+            [
+                'name.required' => 'Vui lòng nhập tên danh mục.',
+                'name.unique'   => 'Tên danh mục này đã tồn tại.',
+                'name.max'      => 'Tên danh mục không được vượt quá 255 ký tự.',
+                'name.not_regex'=> 'Tên danh mục không được chứa nhiều khoảng trắng liên tiếp.',
+            ]
+        );
         
         $updatedCategory = $this->categoryService->update($category, $request->all());
         return response()->json($updatedCategory);

@@ -27,16 +27,16 @@
         <!-- LEFT: Images -->
         <div class="image-gallery">
           <div class="main-image-wrap">
-            <img :src="getImageUrl(activeImage || product.hinh_anh)" :alt="product.name" class="main-img" />
+            <img :src="getImageUrl(activeImage || product.hinh_anh)" :alt="product.name" class="main-img" @error="onImgError" />
           </div>
           <div v-if="product.images?.length" class="thumbnail-list">
             <button @click="activeImage = product.hinh_anh"
               class="thumb-btn" :class="{ active: !activeImage || activeImage === product.hinh_anh }">
-              <img :src="getImageUrl(product.hinh_anh)" />
+              <img :src="getImageUrl(product.hinh_anh)" @error="onImgError" />
             </button>
             <button v-for="img in product.images" :key="img.id" @click="activeImage = img.image_path"
               class="thumb-btn" :class="{ active: activeImage === img.image_path }">
-              <img :src="getImageUrl(img.image_path)" />
+              <img :src="getImageUrl(img.image_path)" @error="onImgError" />
             </button>
           </div>
         </div>
@@ -439,7 +439,7 @@ async function deleteReview(review) {
   }
 }
 
-function onImgError(e) { e.target.src = 'https://via.placeholder.com/400' }
+function onImgError(e) { e.target.src = 'https://placehold.co/600x600/f5f5f7/86868b?text=SellPhones' }
 </script>
 
 <style scoped>
