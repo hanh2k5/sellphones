@@ -20,6 +20,7 @@ class CategoryService
      */
     public function getTree()
     {
+        // Lấy category gốc và load trước 2 cấp con để tránh query lặp.
         return Category::whereNull('parent_id')
             ->with('children.children')
             ->orderBy('name')
@@ -53,6 +54,7 @@ class CategoryService
      */
     public function delete(Category $category)
     {
+        // Không xóa danh mục đang được sản phẩm sử dụng.
         if ($category->products()->count() > 0) {
             throw new Exception(__('messages.category_has_products'), 422);
         }

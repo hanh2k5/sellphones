@@ -30,6 +30,7 @@ class ProductRequest extends FormRequest
             'hinh_anh'      => 'nullable|string',
             'description'   => 'nullable|string',
             'is_active'     => 'nullable|boolean',
+            // Khi sửa, frontend gửi updated_at để chống 2 tab ghi đè nhau.
             'updated_at'    => $this->isMethod('put') ? 'required|date' : 'nullable|date',
         ];
     }
