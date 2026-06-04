@@ -83,9 +83,9 @@ Route::middleware('auth:sanctum')->group(function () {
         // Báo cáo 4.3.5: Thêm mới sản phẩm
         Route::post('/products', [ProductController::class, 'store']);
         // Báo cáo 4.3.6: Cập nhật sản phẩm
-        Route::put('/products/{product}', [ProductController::class, 'update']);
+        Route::put('/products/{id}', [ProductController::class, 'update']);
         // Báo cáo 4.3.7: Xóa mềm sản phẩm
-        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
         // Báo cáo 4.3.14: Thùng rác sản phẩm
         Route::get('/products/trash', [ProductController::class, 'trash']);
         Route::post('/products/{id}/restore', [ProductController::class, 'restore']);
