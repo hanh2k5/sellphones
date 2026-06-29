@@ -4,14 +4,15 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CategorySeeder extends Seeder
 {
     public function run(): void
     {
-       DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Schema::disableForeignKeyConstraints();
         DB::table('categories')->truncate();
-      DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        Schema::enableForeignKeyConstraints();
 
         // Danh mục cha
         DB::table('categories')->insert([
@@ -28,5 +29,9 @@ class CategorySeeder extends Seeder
             ['id' => 7, 'parent_id' => 5, 'name' => 'Sạc & Cáp', 'slug' => 'sac-cap', 'created_at' => now(), 'updated_at' => now()],
             ['id' => 8, 'parent_id' => 5, 'name' => 'Tai nghe', 'slug' => 'tai-nghe', 'created_at' => now(), 'updated_at' => now()],
         ]);
+
+        if (config('database.default') === 'pgsql') {
+            DB::select("SELECT setval(pg_get_serial_sequence('categories', 'id'), coalesce(max(id), 1)) FROM categories;");
+        }
     }
 }

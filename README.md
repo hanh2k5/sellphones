@@ -76,6 +76,27 @@ Giao diện người dùng được phát triển bằng Vue.js.
 
 ---
 
+## 🔑 Tài khoản thử nghiệm (Demo Accounts)
+
+Sau khi chạy lệnh seed cơ sở dữ liệu (`migrate --seed`), hệ thống sẽ tự động tạo sẵn các tài khoản sau để bạn đăng nhập thử nghiệm:
+
+### 1. Tài khoản Quản trị (Admin)
+- **Email:** `admin@gmail.com`
+- **Mật khẩu:** `11111111`
+- **Quyền hạn:** Truy cập trang Dashboard Admin (`/admin`), quản lý sản phẩm, danh mục, đơn hàng, kho hàng...
+
+### 2. Tài khoản Khách hàng (User)
+- **Email:** `hanh2005k@gmail.com`
+- **Mật khẩu:** `11111111`
+- **Quyền hạn:** Mua sắm, thêm vào giỏ hàng, đặt hàng, xem lịch sử mua hàng...
+
+### 3. Tài khoản Đánh giá Demo (Review User)
+- **Email:** `ha@gmail.com`
+- **Mật khẩu:** `11111111`
+- **Quyền hạn:** Tài khoản phụ được tạo sẵn dùng để thử nghiệm tính năng đánh giá & phản hồi sản phẩm.
+
+---
+
 ## 🧪 Chạy Kiểm thử (Testing)
 
 Dự án đã được tích hợp bộ test tự động (Automated Tests) sử dụng PHPUnit, kiểm tra khắt khe các tính năng và lỗ hổng bảo mật.

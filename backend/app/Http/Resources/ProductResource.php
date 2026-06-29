@@ -21,7 +21,7 @@ class ProductResource extends JsonResource
             'price_fmt'      => number_format($this->price, 0, ',', '.') . ' VNĐ',
             'stock'          => $this->stock,
             'hinh_anh'       => $this->hinh_anh,
-            'hinh_anh_url'   => $this->hinh_anh ? asset('storage/' . $this->hinh_anh) : 'https://placehold.co/600x600',
+            'hinh_anh_url'   => $this->hinh_anh ? (str_starts_with($this->hinh_anh, 'http') ? $this->hinh_anh : asset('storage/' . $this->hinh_anh)) : 'https://placehold.co/600x600',
             'description'    => $this->description,
             'category_id'    => $this->category_id,
             'category'       => new CategoryResource($this->whenLoaded('category')),

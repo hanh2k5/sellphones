@@ -196,7 +196,8 @@ class ProductController extends Controller
     public function uploadFile(UploadFileRequest $request)
     {
         $path = $this->productService->uploadFile($request->file('file'));
-        return response()->json(['url' => asset("storage/$path"), 'path' => $path]);
+        $url = str_starts_with($path, 'http') ? $path : \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+        return response()->json(['url' => $url, 'path' => $path]);
     }
 
     public function checkUpdated(Request $request, Product $product)

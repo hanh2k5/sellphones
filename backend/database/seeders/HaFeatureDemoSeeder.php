@@ -88,7 +88,7 @@ class HaFeatureDemoSeeder extends Seeder
         );
 
         $otherUser = User::firstOrCreate(
-            ['email' => 'ha.demo.user@gmail.com'],
+            ['email' => 'ha@gmail.com'],
             [
                 'name' => 'Khach demo Ha',
                 'password' => Hash::make('11111111'),
