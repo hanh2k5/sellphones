@@ -40,7 +40,11 @@ class ProductService
         return DB::transaction(function () use ($data) {
             if (isset($data['hinh_anh_file'])) {
                 // Lưu ảnh vào thư mục storage/app/public/products
-                $data['hinh_anh'] = $data['hinh_anh_file']->store('products', 'public');
+                if (env('PUBLIC_STORAGE_DRIVER') === 'cloudinary') {
+                    $data['hinh_anh'] = \App\Services\CloudinaryService::upload($data['hinh_anh_file'], 'products');
+                } else {
+                    $data['hinh_anh'] = $data['hinh_anh_file']->store('products', 'public');
+                }
             }
             return Product::create($data);
         });
@@ -73,7 +77,11 @@ class ProductService
             // Xử lý thay thế ảnh cũ nếu có upload ảnh mới
             if (isset($data['hinh_anh_file'])) {
                 $oldImage = $product->hinh_anh;
-                $data['hinh_anh'] = $data['hinh_anh_file']->store('products', 'public');
+                if (env('PUBLIC_STORAGE_DRIVER') === 'cloudinary') {
+                    $data['hinh_anh'] = \App\Services\CloudinaryService::upload($data['hinh_anh_file'], 'products');
+                } else {
+                    $data['hinh_anh'] = $data['hinh_anh_file']->store('products', 'public');
+                }
             } elseif (isset($data['hinh_anh']) && $data['hinh_anh'] !== $product->hinh_anh) {
                 $oldImage = $product->hinh_anh;
             }
@@ -82,8 +90,12 @@ class ProductService
 
             if ($oldImage) {
                 // Dọn dẹp ảnh cũ trong Storage ngay sau khi DB cập nhật thành công
-                Storage::delete($oldImage);
-                Storage::disk('public')->delete($oldImage);
+                if (env('PUBLIC_STORAGE_DRIVER') === 'cloudinary') {
+                    \App\Services\CloudinaryService::delete($oldImage);
+                } else {
+                    Storage::delete($oldImage);
+                    Storage::disk('public')->delete($oldImage);
+                }
             }
 
             return $product;
@@ -196,17 +208,27 @@ class ProductService
 
             // Xóa ảnh đại diện vật lý
             if ($product->hinh_anh) {
-                Storage::disk('public')->delete($product->hinh_anh);
+                if (env('PUBLIC_STORAGE_DRIVER') === 'cloudinary') {
+                    \App\Services\CloudinaryService::delete($product->hinh_anh);
+                } else {
+                    Storage::disk('public')->delete($product->hinh_anh);
+                }
             }
 
             // Xóa toàn bộ ảnh chi tiết (Gallery) vật lý và bản ghi trong bảng product_images
             foreach ($product->images as $image) {
-                Storage::disk('public')->delete($image->image_path);
+                if (env('PUBLIC_STORAGE_DRIVER') === 'cloudinary') {
+                    \App\Services\CloudinaryService::delete($image->image_path);
+                } else {
+                    Storage::disk('public')->delete($image->image_path);
+                }
                 $image->delete();
             }
             
             // Xóa thư mục chứa ảnh chi tiết nếu có
-            Storage::disk('public')->deleteDirectory("products/{$product->id}");
+            if (env('PUBLIC_STORAGE_DRIVER') !== 'cloudinary') {
+                Storage::disk('public')->deleteDirectory("products/{$product->id}");
+            }
             
             $product->forceDelete();
         });
@@ -227,7 +249,11 @@ class ProductService
             try {
                 foreach ($files as $file) {
                     // Laravel tự băm (hash) tên file → đảm bảo duy nhất, không ghi đè ảnh cũ.
-                    $path = $file->store("products/{$product->id}", 'public');
+                    if (env('PUBLIC_STORAGE_DRIVER') === 'cloudinary') {
+                        $path = \App\Services\CloudinaryService::upload($file, "products/{$product->id}");
+                    } else {
+                        $path = $file->store("products/{$product->id}", 'public');
+                    }
                     $storedPaths[] = $path;
                     $images[] = ProductImage::create([
                         'product_id' => $product->id,
@@ -238,7 +264,11 @@ class ProductService
             } catch (Exception $e) {
                 // Xóa file đã upload khỏi disk khi DB lỗi để tránh file orphan.
                 foreach ($storedPaths as $path) {
-                    Storage::disk('public')->delete($path);
+                    if (env('PUBLIC_STORAGE_DRIVER') === 'cloudinary') {
+                        \App\Services\CloudinaryService::delete($path);
+                    } else {
+                        Storage::disk('public')->delete($path);
+                    }
                 }
                 throw $e;
             }
@@ -255,8 +285,12 @@ class ProductService
             $path = $image->image_path;
             $deleted = $image->delete();
             if ($deleted) {
-                Storage::delete($path);
-                Storage::disk('public')->delete($path);
+                if (env('PUBLIC_STORAGE_DRIVER') === 'cloudinary') {
+                    \App\Services\CloudinaryService::delete($path);
+                } else {
+                    Storage::delete($path);
+                    Storage::disk('public')->delete($path);
+                }
             }
             return $deleted;
         });
@@ -267,7 +301,11 @@ class ProductService
      */
     public function uploadFile($file, $folder = 'uploads')
     {
-        return $file->store($folder, 'public');
+        if (env('PUBLIC_STORAGE_DRIVER') === 'cloudinary') {
+            return \App\Services\CloudinaryService::upload($file, $folder);
+        } else {
+            return $file->store($folder, 'public');
+        }
     }
 
     /**

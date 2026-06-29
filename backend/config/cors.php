@@ -19,11 +19,16 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5174', 'http://127.0.0.1:5174'],
+    'allowed_origins' => [
+        env('FRONTEND_URL', 'http://localhost:5174'),
+        'http://localhost:5174',
+        'http://127.0.0.1:5174',
+    ],
 
     'allowed_origins_patterns' => [
         '#^http://localhost(:\d+)?$#',
         '#^http://127\.0\.0\.1(:\d+)?$#',
+        '#^https://.*\.vercel\.app$#',
     ],
 
     'allowed_headers' => ['*'],
